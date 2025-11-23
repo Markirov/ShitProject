@@ -367,7 +367,67 @@
         const MAX_TRAITS = 6; 
 
         // --- FUNCIONES DE GUARDADO Y CARGA (JSON Y CLOUD) ---
+        function collectSheetData() {
+            const getVal = (id) => { const el = document.getElementById(id); return el ? el.value : ""; };
+            const getTxt = (id) => { const el = document.getElementById(id); return el ? el.innerText : ""; };
+
+            const datos = {
+                campaign: "ELH", // Default fallback
+                nombre: getVal('nombre-field'),
+                jugador: getVal('jugador-field'),
+                str: getTxt('attr-str'), dex: getTxt('attr-dex'), int: getTxt('attr-int'), cha: getTxt('attr-cha'),
+                origen: getVal('origen-output'), afiliacion: getVal('faction-output'), estudios: getVal('estudios-output'),
+                sexo: getVal('sexo-field'), altura: getVal('altura-field'), peso: getVal('peso-field'),
+                pelo: getVal('pelo-field'), ojos: getVal('ojos-field'), finalYear: getVal('edad-field'),
+                cbills: getVal('sheet-cbills'), salary: getVal('sheet-salary'),
+                xpTotal: getVal('sheet-xp-total'), xpAvail: getVal('sheet-xp-avail'),
+                merits: [], demerits: [], weapons: [], armor: [], notes: [],
+                mechModel: getVal('mech-output') // Raw string
+            };
+
+            const meritContainer = document.getElementById('merit-container');
+            if (meritContainer) { meritContainer.querySelectorAll('div').forEach(d => datos.merits.push(d.innerText)); }
+
+            const demeritContainer = document.getElementById('demerit-container');
+            if (demeritContainer) { demeritContainer.querySelectorAll('div').forEach(d => datos.demerits.push(d.innerText)); }
+
+            // Weapons
+            const tables = document.querySelectorAll('.weapon-table');
+            if(tables.length > 0) {
+                tables[0].querySelectorAll('tbody tr').forEach(row => {
+                    const sel = row.querySelector('select');
+                    if(sel && sel.value) {
+                         const inputs = row.querySelectorAll('input');
+                         datos.weapons.push({
+                             name: sel.value, dmg: inputs[0].value, s: inputs[1].value, m: inputs[2].value, l: inputs[3].value,
+                             car: inputs[4].value, rec: inputs[5].value, w: inputs[6].value
+                         });
+                    }
+                });
+            }
+            // Armor
+            if(tables.length > 1) {
+                 tables[1].querySelectorAll('tbody tr').forEach(row => {
+                     const inputs = row.querySelectorAll('input');
+                     let hasData = false; inputs.forEach(i => { if(i.value) hasData = true; });
+                     if(hasData) {
+                         datos.armor.push({ type: inputs[0].value, prot: inputs[1].value, loc: [inputs[2].value, inputs[3].value, inputs[4].value, inputs[5].value] });
+                     }
+                 });
+            }
+            // Notes
+            const noteInputs = document.querySelectorAll('.section.grid-3 input.sheet-input');
+            noteInputs.forEach(inp => { if(inp.value) datos.notes.push(inp.value); });
+
+            return datos;
+        }
+
         function recogerDatosDeUI() {
+            // Check context
+            if (document.getElementById('ficha-container').style.display !== 'none') {
+                return collectSheetData();
+            }
+
             const datos = {
                 campaign: document.getElementById('campaign-select').value,
                 decade: document.getElementById('select-decade').value,
@@ -409,6 +469,46 @@
                 });
             }
             return datos;
+        }
+
+        function fillSheetExtras(datos) {
+            // Fill Weapons
+            if (datos.weapons && datos.weapons.length > 0) {
+                 const tables = document.querySelectorAll('.weapon-table');
+                 if(tables.length > 0) {
+                     const rows = tables[0].querySelectorAll('tbody tr');
+                     datos.weapons.forEach((w, idx) => {
+                         if(idx < rows.length) {
+                             const sel = rows[idx].querySelector('select');
+                             const inputs = rows[idx].querySelectorAll('input');
+                             sel.value = w.name;
+                             inputs[0].value = w.dmg; inputs[1].value = w.s; inputs[2].value = w.m; inputs[3].value = w.l;
+                             inputs[4].value = w.car; inputs[5].value = w.rec; inputs[6].value = w.w;
+                         }
+                     });
+                 }
+            }
+            // Fill Armor
+            if (datos.armor && datos.armor.length > 0) {
+                 const tables = document.querySelectorAll('.weapon-table');
+                 if(tables.length > 1) {
+                     const rows = tables[1].querySelectorAll('tbody tr');
+                     datos.armor.forEach((a, idx) => {
+                         if(idx < rows.length) {
+                             const inputs = rows[idx].querySelectorAll('input');
+                             inputs[0].value = a.type; inputs[1].value = a.prot;
+                             if(a.loc) { inputs[2].value = a.loc[0]; inputs[3].value = a.loc[1]; inputs[4].value = a.loc[2]; inputs[5].value = a.loc[3]; }
+                         }
+                     });
+                 }
+            }
+            // Fill Notes
+             if (datos.notes && datos.notes.length > 0) {
+                 const noteInputs = document.querySelectorAll('.section.grid-3 input.sheet-input');
+                 datos.notes.forEach((n, idx) => {
+                     if(idx < noteInputs.length) noteInputs[idx].value = n;
+                 });
+             }
         }
 
         function rellenarUIConDatos(datos) {
@@ -474,6 +574,11 @@
                 }
             }
             updatePoints();
+
+            if (document.getElementById('ficha-container').style.display !== 'none') {
+                generarFicha();
+                fillSheetExtras(datos);
+            }
         }
 
         // 1. Guardar/Cargar LOCAL (JSON)
@@ -518,11 +623,16 @@
                 alert("¡Error! Debes configurar la variable GOOGLE_SCRIPT_URL en el código HTML primero.");
                 return;
             }
-            const nombreJugador = document.getElementById('search-cloud-name').value;
+
+            const isSheet = (document.getElementById('ficha-container').style.display !== 'none');
+            const nombreJugador = isSheet
+                ? document.getElementById('search-cloud-name-sheet').value
+                : document.getElementById('search-cloud-name').value;
+
             if (!nombreJugador) { alert("Escribe el nombre del JUGADOR para buscar."); return; }
 
-            const btn = document.getElementById('btn-cloud-search');
-            const resultsDiv = document.getElementById('cloud-search-results');
+            const btn = isSheet ? document.getElementById('btn-cloud-search-sheet') : document.getElementById('btn-cloud-search');
+            const resultsDiv = isSheet ? document.getElementById('cloud-search-results-sheet') : document.getElementById('cloud-search-results');
 
             btn.disabled = true; btn.innerText = "Buscando...";
             resultsDiv.style.display = 'none';
@@ -591,7 +701,8 @@
             const datos = recogerDatosDeUI();
             if (!datos.nombre) { alert("El personaje necesita un nombre para guardarse."); return; }
 
-            const btn = document.getElementById('btn-cloud-save');
+            const isSheet = (document.getElementById('ficha-container').style.display !== 'none');
+            const btn = isSheet ? document.getElementById('btn-cloud-save-sheet') : document.getElementById('btn-cloud-save');
             const originalText = btn.innerText;
             btn.disabled = true; btn.innerText = "Guardando...";
 
@@ -1407,6 +1518,33 @@
 
     <div id="ficha-container">
         <button class="edit-mode-btn no-print" onclick="volverAEdicion()">⬅ Volver a Edición</button>
+
+        <!-- SECCIÓN DE GESTIÓN (NUBE Y ARCHIVOS) - COPIA FICHA -->
+        <div class="no-print" style="margin-bottom: 20px; margin-top: 60px; padding: 15px; background: #e3f2fd; border-radius: 8px; border: 1px solid #90caf9;">
+            <h3 style="margin-top:0; border:none; text-align:center;">GESTIÓN DE PERSONAJES (FICHA)</h3>
+
+            <!-- BUSCADOR NUBE -->
+            <div style="display:flex; flex-direction:column; margin-bottom: 15px;">
+                <div style="display:flex; gap:10px; justify-content: center; align-items: center;">
+                    <input type="text" id="search-cloud-name-sheet" placeholder="Nombre del Jugador..." style="padding: 8px; font-size: 16px; width: 60%;">
+                    <button id="btn-cloud-search-sheet" onclick="buscarEnNube()" class="random-button" style="background-color: #0288d1; font-size: 16px;">🔍 Cargar de Nube</button>
+                </div>
+                <div id="cloud-search-results-sheet"></div>
+            </div>
+
+            <hr style="margin: 15px 0; border-top: 1px solid #ccc;">
+
+            <!-- BOTONES ACCIÓN -->
+            <div style="display:flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
+                <button id="btn-cloud-save-sheet" onclick="guardarEnNube()" class="random-button" style="background-color: #28a745; font-size: 16px;">☁️ Guardar en Nube</button>
+
+                <span style="border-left: 1px solid #999; margin: 0 10px;"></span>
+
+                <button onclick="exportarDatos()" class="random-button" style="background-color: #6c757d; font-size: 14px;">💾 Bajar JSON</button>
+                <input type="file" id="file-input-sheet" style="display: none;" onchange="importarDatos(this)">
+                <button onclick="document.getElementById('file-input-sheet').click()" class="random-button" style="background-color: #ff9800; font-size: 14px;">📂 Subir JSON</button>
+            </div>
+        </div>
         
         <div class="no-print" style="text-align: center; margin: 10px 0 20px 0;">
             <p style="background:#ffeb3b; padding:5px;"><strong>INSTRUCCIONES:</strong> Todos los campos son editables. Haz clic en los cuadrados para subir nivel/atributo. El sistema recalculará las tiradas automáticamente.</p>
