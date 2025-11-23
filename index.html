@@ -130,6 +130,39 @@
             -webkit-appearance: none; text-align: left; text-align-last: left; padding-left: 5px;
         }
 
+        /* RESULTADOS DE BÚSQUEDA NUBE */
+        #cloud-search-results {
+            display: none;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-top: 10px;
+            padding: 10px;
+            text-align: left;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .cloud-result-item {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .cloud-result-item:hover { background-color: #f0f8ff; }
+        .cloud-result-item:last-child { border-bottom: none; }
+        .cloud-result-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            padding: 4px 8px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
         /* BOTÓN VOLVER A EDITAR */
         .edit-mode-btn {
             position: fixed;
@@ -397,33 +430,73 @@
         }
 
         // 2. Guardar/Cargar NUBE (Google Apps Script)
+        let personajesEncontradosCache = [];
+
         function buscarEnNube() {
             if (GOOGLE_SCRIPT_URL.includes("YOUR_GOOGLE_SCRIPT")) {
                 alert("¡Error! Debes configurar la variable GOOGLE_SCRIPT_URL en el código HTML primero.");
                 return;
             }
-            const nombre = document.getElementById('search-cloud-name').value;
-            if (!nombre) { alert("Escribe un nombre para buscar."); return; }
+            const nombreJugador = document.getElementById('search-cloud-name').value;
+            if (!nombreJugador) { alert("Escribe el nombre del JUGADOR para buscar."); return; }
 
             const btn = document.getElementById('btn-cloud-search');
-            btn.disabled = true; btn.innerText = "Buscando...";
+            const resultsDiv = document.getElementById('cloud-search-results');
 
-            fetch(`${GOOGLE_SCRIPT_URL}?nombre=${encodeURIComponent(nombre)}`)
+            btn.disabled = true; btn.innerText = "Buscando...";
+            resultsDiv.style.display = 'none';
+            resultsDiv.innerHTML = '';
+
+            fetch(`${GOOGLE_SCRIPT_URL}?jugador=${encodeURIComponent(nombreJugador)}`)
             .then(response => response.json())
             .then(data => {
                 btn.disabled = false; btn.innerText = "🔍 Buscar";
                 if (data.result === "success") {
-                    rellenarUIConDatos(data.data);
-                    alert(`Personaje '${nombre}' cargado desde la nube.\nXP Total Actualizada: ${data.data.xpTotal}`);
+                    const personajes = data.personajes;
+
+                    if (!personajes || personajes.length === 0) {
+                        alert("No se encontraron personajes para ese jugador.");
+                        return;
+                    }
+
+                    if (personajes.length === 1) {
+                        rellenarUIConDatos(personajes[0]);
+                        alert(`Personaje '${personajes[0].nombre}' cargado exitosamente.\nXP Total: ${personajes[0].xpTotal}`);
+                    } else {
+                        // Múltiples resultados
+                        personajesEncontradosCache = personajes;
+                        resultsDiv.style.display = 'block';
+                        let html = `<div style="font-weight:bold; margin-bottom:5px;">Se encontraron ${personajes.length} personajes:</div>`;
+
+                        personajes.forEach((p, index) => {
+                            html += `
+                            <div class="cloud-result-item" onclick="cargarPersonajeDesdeCache(${index})">
+                                <div>
+                                    <strong>${p.nombre}</strong> <span style="font-size:11px; color:#666;">(${p.campaign})</span>
+                                </div>
+                                <button class="cloud-result-btn">Cargar</button>
+                            </div>`;
+                        });
+                        resultsDiv.innerHTML = html;
+                    }
                 } else {
-                    alert("Error: " + data.msg);
+                    alert("Error: " + (data.msg || "Error desconocido al buscar."));
                 }
             })
             .catch(error => {
                 btn.disabled = false; btn.innerText = "🔍 Buscar";
                 console.error("Error:", error);
-                alert("Error de conexión con la nube.");
+                alert("Error de conexión con la nube: " + error);
             });
+        }
+
+        function cargarPersonajeDesdeCache(index) {
+            if (personajesEncontradosCache[index]) {
+                const p = personajesEncontradosCache[index];
+                rellenarUIConDatos(p);
+                document.getElementById('cloud-search-results').style.display = 'none';
+                alert(`Personaje '${p.nombre}' cargado exitosamente.`);
+            }
         }
 
         function guardarEnNube() {
@@ -1126,9 +1199,12 @@
             <h3 style="margin-top:0; border:none; text-align:center;">GESTIÓN DE PERSONAJES</h3>
 
             <!-- BUSCADOR NUBE -->
-            <div style="display:flex; gap:10px; margin-bottom: 15px; justify-content: center; align-items: center;">
-                <input type="text" id="search-cloud-name" placeholder="Nombre exacto en la Nube..." style="padding: 8px; font-size: 16px; width: 60%;">
-                <button id="btn-cloud-search" onclick="buscarEnNube()" class="random-button" style="background-color: #0288d1; font-size: 16px;">🔍 Cargar de Nube</button>
+            <div style="display:flex; flex-direction:column; margin-bottom: 15px;">
+                <div style="display:flex; gap:10px; justify-content: center; align-items: center;">
+                    <input type="text" id="search-cloud-name" placeholder="Nombre del Jugador..." style="padding: 8px; font-size: 16px; width: 60%;">
+                    <button id="btn-cloud-search" onclick="buscarEnNube()" class="random-button" style="background-color: #0288d1; font-size: 16px;">🔍 Cargar de Nube</button>
+                </div>
+                <div id="cloud-search-results"></div>
             </div>
 
             <hr style="margin: 15px 0; border-top: 1px solid #ccc;">
