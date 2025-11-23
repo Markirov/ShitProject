@@ -203,10 +203,91 @@
             background-color: #d32f2f;
         }
 
+        /* --- LANDING PAGE & FUTURISTIC THEME --- */
+        #landing-page {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #0a0a0a;
+            background-image:
+                linear-gradient(rgba(0, 20, 0, 0.7), rgba(0, 20, 0, 0.9)),
+                repeating-linear-gradient(0deg, transparent, transparent 1px, #0f0 1px, transparent 2px),
+                radial-gradient(circle at center, #1a1a1a 0%, #000 100%);
+            background-size: 100% 100%, 100% 4px, 100% 100%;
+            z-index: 2000;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            color: #0f0;
+            font-family: 'Orbitron', 'Impact', sans-serif;
+        }
+
+        .landing-title {
+            font-size: 60px;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            text-shadow: 0 0 10px #0f0, 0 0 20px #0f0;
+            margin-bottom: 50px;
+            border: 2px solid #0f0;
+            padding: 20px;
+            background: rgba(0, 20, 0, 0.8);
+            box-shadow: 0 0 15px #0f0, inset 0 0 15px #0f0;
+        }
+
+        .landing-menu {
+            display: flex; flex-direction: column; gap: 20px;
+            width: 300px;
+        }
+
+        .cyber-button {
+            background: rgba(0, 20, 0, 0.6);
+            border: 1px solid #0f0;
+            color: #0f0;
+            padding: 15px;
+            font-size: 18px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cyber-button:hover {
+            background: #0f0;
+            color: #000;
+            box-shadow: 0 0 20px #0f0;
+            transform: scale(1.05);
+        }
+
+        .cyber-button.disabled {
+            border-color: #555;
+            color: #555;
+            pointer-events: none;
+            background: rgba(20, 20, 20, 0.6);
+        }
+
+        .back-to-home-btn {
+            position: fixed;
+            top: 70px;
+            left: 20px;
+            z-index: 999;
+            background-color: #333;
+            color: #0f0;
+            border: 1px solid #0f0;
+            padding: 12px 24px;
+            border-radius: 0;
+            cursor: pointer;
+            font-family: 'Impact', sans-serif;
+            text-transform: uppercase;
+            box-shadow: 0 0 5px #0f0;
+        }
+        .back-to-home-btn:hover {
+            background-color: #0f0;
+            color: #000;
+        }
+
         /* IMPRESIÓN */
         @media print {
             body { margin: 10px; font-size: 9pt; padding-top: 0; }
-            #pre-generacion, .no-print, #points-counter, .edit-mode-btn, .trait-remove-btn { display: none !important; }
+            #pre-generacion, .no-print, #points-counter, .edit-mode-btn, .trait-remove-btn, #landing-page, .back-to-home-btn { display: none !important; }
             #ficha-container { display: block !important; }
             .skill-table td.skill-level-col { color: #003399 !important; -webkit-print-color-adjust: exact; }
             .section { page-break-inside: avoid; border: 1px solid #999; }
@@ -462,6 +543,8 @@
                     if (personajes.length === 1) {
                         rellenarUIConDatos(personajes[0]);
                         alert(`Personaje '${personajes[0].nombre}' cargado exitosamente.\nXP Total: ${personajes[0].xpTotal}`);
+                        // Si cargamos desde la nube y estábamos en landing, ir al generador
+                        goToGenerator();
                     } else {
                         // Múltiples resultados
                         personajesEncontradosCache = personajes;
@@ -496,6 +579,7 @@
                 rellenarUIConDatos(p);
                 document.getElementById('cloud-search-results').style.display = 'none';
                 alert(`Personaje '${p.nombre}' cargado exitosamente.`);
+                goToGenerator();
             }
         }
 
@@ -948,6 +1032,22 @@
             }
         }
 
+        // NAVEGACIÓN
+        function goToGenerator() {
+            document.getElementById('landing-page').style.display = 'none';
+            document.getElementById('pre-generacion').style.display = 'block';
+            document.getElementById('points-counter').style.display = 'block';
+        }
+
+        function goHome() {
+            if(confirm("¿Volver al inicio? Se perderán los datos no guardados.")) {
+                document.getElementById('landing-page').style.display = 'flex';
+                document.getElementById('pre-generacion').style.display = 'none';
+                document.getElementById('ficha-container').style.display = 'none';
+                document.getElementById('points-counter').style.display = 'none';
+            }
+        }
+
         // FUNCIÓN PARA VOLVER A MODO EDICIÓN
         function volverAEdicion() {
             if(confirm("¿Seguro que quieres volver al modo edición? Perderás los cambios realizados directamente en la ficha.")) {
@@ -1000,9 +1100,11 @@
         }
 
         function init() {
-            document.getElementById('pre-generacion').style.display = 'block';
+            // Estado inicial: Landing Page visible, lo demás oculto
+            document.getElementById('landing-page').style.display = 'flex';
+            document.getElementById('pre-generacion').style.display = 'none';
             document.getElementById('ficha-container').style.display = 'none';
-            document.getElementById('points-counter').style.display = 'block';
+            document.getElementById('points-counter').style.display = 'none';
 
             const originSelect = document.getElementById('origen-select');
             ORIGIN_LIST.forEach(o => { let opt = document.createElement('option'); opt.value = o; opt.text = o; originSelect.add(opt); });
@@ -1189,9 +1291,22 @@
 </head>
 <body>
 
-    <div id="points-counter">Puntos Restantes: <span id="points-val">150</span></div>
+    <!-- LANDING PAGE -->
+    <div id="landing-page">
+        <div class="landing-title">MECHWARRIOR<br><span style="font-size:30px; display:block; text-align:center; margin-top:10px;">DATABASE SYSTEM</span></div>
+        <div class="landing-menu">
+            <button class="cyber-button" onclick="goToGenerator()">Generador de Personajes</button>
+            <button class="cyber-button disabled">Mech Hangar [WIP]</button>
+            <button class="cyber-button disabled">Galactic Map [WIP]</button>
+            <button class="cyber-button disabled">Mission Log [WIP]</button>
+        </div>
+    </div>
 
-    <div id="pre-generacion">
+    <div id="points-counter" style="display:none;">Puntos Restantes: <span id="points-val">150</span></div>
+
+    <div id="pre-generacion" style="display:none;">
+        <button class="back-to-home-btn no-print" onclick="goHome()">⚠️ SALIR AL MENÚ</button>
+
         <h1>GENERADOR DE FICHA MECHWARRIOR</h1>
         
         <!-- SECCIÓN DE GESTIÓN (NUBE Y ARCHIVOS) -->
@@ -1502,6 +1617,7 @@ M117.667564,518.839600
 	C110.116524,635.079895 111.008652,633.412903 110.367477,631.275085 
 	C103.240112,607.511169 106.073318,583.843018 110.729515,560.106201 
 	C113.386971,546.558777 114.356010,532.710632 117.667564,518.839600 
+z
 z"/>
                     </svg>
                     
