@@ -1562,8 +1562,23 @@
                 document.getElementById('ficha-container').style.display = 'none';
                 document.getElementById('galactic-map').style.display = 'none';
                 document.getElementById('trr-infantry').style.display = 'none';
+                document.getElementById('trr-utilities').style.display = 'none';
+                document.getElementById('mech-hangar').style.display = 'none';
+                document.getElementById('vehicle-depot').style.display = 'none';
                 document.getElementById('points-counter').style.display = 'none';
             }
+        }
+
+        function goHomeNoConfirm() {
+            document.getElementById('landing-page').style.display = 'flex';
+            document.getElementById('pre-generacion').style.display = 'none';
+            document.getElementById('ficha-container').style.display = 'none';
+            document.getElementById('galactic-map').style.display = 'none';
+            document.getElementById('trr-infantry').style.display = 'none';
+            document.getElementById('trr-utilities').style.display = 'none';
+            document.getElementById('mech-hangar').style.display = 'none';
+            document.getElementById('vehicle-depot').style.display = 'none';
+            document.getElementById('points-counter').style.display = 'none';
         }
 
         function goHomeFromTRR() {
@@ -1572,6 +1587,9 @@
             document.getElementById('ficha-container').style.display = 'none';
             document.getElementById('galactic-map').style.display = 'none';
             document.getElementById('trr-infantry').style.display = 'none';
+            document.getElementById('trr-utilities').style.display = 'none';
+            document.getElementById('mech-hangar').style.display = 'none';
+            document.getElementById('vehicle-depot').style.display = 'none';
             document.getElementById('trr-landing').style.display = 'flex';
             document.getElementById('trr-combat').style.display = 'none';
             document.getElementById('trr-weapons').style.display = 'none';
@@ -1618,6 +1636,9 @@
             document.getElementById('landing-page').style.display = 'none';
             document.getElementById('galactic-map').style.display = 'block';
             document.getElementById('trr-infantry').style.display = 'none';
+            document.getElementById('trr-utilities').style.display = 'none';
+            document.getElementById('mech-hangar').style.display = 'none';
+            document.getElementById('vehicle-depot').style.display = 'none';
             document.getElementById('pre-generacion').style.display = 'none';
             document.getElementById('ficha-container').style.display = 'none';
             document.getElementById('points-counter').style.display = 'none';
@@ -1627,6 +1648,9 @@
             document.getElementById('landing-page').style.display = 'none';
             document.getElementById('galactic-map').style.display = 'none';
             document.getElementById('trr-infantry').style.display = 'block';
+            document.getElementById('trr-utilities').style.display = 'none';
+            document.getElementById('mech-hangar').style.display = 'none';
+            document.getElementById('vehicle-depot').style.display = 'none';
             document.getElementById('trr-landing').style.display = 'flex';
             document.getElementById('trr-combat').style.display = 'none';
             document.getElementById('trr-weapons').style.display = 'none';
@@ -1703,7 +1727,6 @@
             const location = INFANTRY_TABLE[result];
             
             // Mostrar resultado
-            document.getElementById('hit-dice-value').textContent = result;
             document.getElementById('hit-location-text').textContent = location;
             
             // Ocultar resultados anteriores de crítico
@@ -1759,7 +1782,6 @@
             
             // Limpiar localización
             document.getElementById('hit-location-text').textContent = '-';
-            document.getElementById('hit-dice-value').textContent = '';
             
             // Ocultar resultados
             document.getElementById('crit-alert').style.display = 'none';
@@ -1817,9 +1839,9 @@
                 
                 row.addEventListener('mouseleave', function() {
                     const result = this.getAttribute('data-result');
-                    const currentResult = document.getElementById('hit-dice-value').textContent;
                     
-                    if (result !== currentResult) {
+                    // Solo restaurar el fondo si no está seleccionado
+                    if (this.style.background !== 'rgba(183, 28, 28, 0.4)') {
                         // Verificar si es crítico (11, 22, 33, 44, 55, 66)
                         const isCritical = (result[0] === result[1]);
                         if (isCritical) {
@@ -1852,6 +1874,107 @@
             document.getElementById('trr-landing').style.display = 'flex';
             document.getElementById('trr-combat').style.display = 'none';
             document.getElementById('trr-weapons').style.display = 'none';
+        }
+
+        // NAVEGACIÓN TRR UTILIDADES
+        function goToTRRUtilities() {
+            document.getElementById('landing-page').style.display = 'none';
+            document.getElementById('trr-utilities').style.display = 'block';
+            document.getElementById('trr-utilities-landing').style.display = 'flex';
+            document.getElementById('cluster-table').style.display = 'none';
+            document.getElementById('damage-grouper').style.display = 'none';
+            document.getElementById('modifiers-table').style.display = 'none';
+            document.getElementById('pre-generacion').style.display = 'none';
+            document.getElementById('ficha-container').style.display = 'none';
+            document.getElementById('points-counter').style.display = 'none';
+        }
+
+        function goToClusterTable() {
+            document.getElementById('trr-utilities-landing').style.display = 'none';
+            document.getElementById('cluster-table').style.display = 'block';
+            document.getElementById('damage-grouper').style.display = 'none';
+            document.getElementById('modifiers-table').style.display = 'none';
+        }
+
+        function goToDamageGrouper() {
+            document.getElementById('trr-utilities-landing').style.display = 'none';
+            document.getElementById('cluster-table').style.display = 'none';
+            document.getElementById('damage-grouper').style.display = 'block';
+            document.getElementById('modifiers-table').style.display = 'none';
+        }
+
+        function goToModifiersTable() {
+            document.getElementById('trr-utilities-landing').style.display = 'none';
+            document.getElementById('cluster-table').style.display = 'none';
+            document.getElementById('damage-grouper').style.display = 'none';
+            document.getElementById('modifiers-table').style.display = 'block';
+        }
+
+        function backToTRRUtilitiesLanding() {
+            document.getElementById('trr-utilities-landing').style.display = 'flex';
+            document.getElementById('cluster-table').style.display = 'none';
+            document.getElementById('damage-grouper').style.display = 'none';
+            document.getElementById('modifiers-table').style.display = 'none';
+        }
+
+        // NAVEGACIÓN MECH HANGAR
+        function goToMechHangar() {
+            document.getElementById('landing-page').style.display = 'none';
+            document.getElementById('mech-hangar').style.display = 'block';
+            document.getElementById('mech-hangar-landing').style.display = 'flex';
+            document.getElementById('mech-locations').style.display = 'none';
+            document.getElementById('mech-criticals').style.display = 'none';
+            document.getElementById('pre-generacion').style.display = 'none';
+            document.getElementById('ficha-container').style.display = 'none';
+            document.getElementById('points-counter').style.display = 'none';
+        }
+
+        function goToMechLocations() {
+            document.getElementById('mech-hangar-landing').style.display = 'none';
+            document.getElementById('mech-locations').style.display = 'block';
+            document.getElementById('mech-criticals').style.display = 'none';
+        }
+
+        function goToMechCriticals() {
+            document.getElementById('mech-hangar-landing').style.display = 'none';
+            document.getElementById('mech-locations').style.display = 'none';
+            document.getElementById('mech-criticals').style.display = 'block';
+        }
+
+        function backToMechHangarLanding() {
+            document.getElementById('mech-hangar-landing').style.display = 'flex';
+            document.getElementById('mech-locations').style.display = 'none';
+            document.getElementById('mech-criticals').style.display = 'none';
+        }
+
+        // NAVEGACIÓN DEPOSITO DE VEHICULOS
+        function goToVehicleDepot() {
+            document.getElementById('landing-page').style.display = 'none';
+            document.getElementById('vehicle-depot').style.display = 'block';
+            document.getElementById('vehicle-depot-landing').style.display = 'flex';
+            document.getElementById('vehicle-locations').style.display = 'none';
+            document.getElementById('vehicle-criticals').style.display = 'none';
+            document.getElementById('pre-generacion').style.display = 'none';
+            document.getElementById('ficha-container').style.display = 'none';
+            document.getElementById('points-counter').style.display = 'none';
+        }
+
+        function goToVehicleLocations() {
+            document.getElementById('vehicle-depot-landing').style.display = 'none';
+            document.getElementById('vehicle-locations').style.display = 'block';
+            document.getElementById('vehicle-criticals').style.display = 'none';
+        }
+
+        function goToVehicleCriticals() {
+            document.getElementById('vehicle-depot-landing').style.display = 'none';
+            document.getElementById('vehicle-locations').style.display = 'none';
+            document.getElementById('vehicle-criticals').style.display = 'block';
+        }
+
+        function backToVehicleDepotLanding() {
+            document.getElementById('vehicle-depot-landing').style.display = 'flex';
+            document.getElementById('vehicle-locations').style.display = 'none';
+            document.getElementById('vehicle-criticals').style.display = 'none';
         }
 
         // TABLA DE ARMAS DE INFANTERÍA
@@ -90852,13 +90975,206 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
             <button class="cyber-button" onclick="goToGenerator()">Generador de Personajes</button>
             <button class="cyber-button" onclick="goToSheetDirectly()">Editor de Personajes</button>
             <button class="cyber-button" onclick="goToTRRInfantry()">TRR Infantería</button>
-            <button class="cyber-button disabled">TRR [WIP]</button>
-            <button class="cyber-button disabled">Mech Hangar [WIP]</button>
-            <button class="cyber-button disabled">Vehicle Depot [WIP]</button>
+            <button class="cyber-button" onclick="goToTRRUtilities()">TRR Utilidades</button>
+            <button class="cyber-button" onclick="goToMechHangar()">Mech Hangar</button>
+            <button class="cyber-button" onclick="goToVehicleDepot()">Deposito de Vehiculos</button>
             <button class="cyber-button" onclick="goToGalacticMap()">Galactic Map</button>
             <button class="cyber-button disabled">Mission Log [WIP]</button>
             <button class="cyber-button disabled">Lance Builder [WIP]</button>
             <button class="cyber-button disabled">Database Archive [WIP]</button>
+        </div>
+    </div>
+
+    <!-- TRR UTILIDADES SECTION -->
+    <div id="trr-utilities" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #0a0a0a; background-image: linear-gradient(rgba(15, 20, 25, 0.85), rgba(10, 10, 10, 0.95)), repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(74, 90, 106, 0.1) 2px, transparent 4px), repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(183, 28, 28, 0.08) 40px, rgba(183, 28, 28, 0.08) 41px), repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(183, 28, 28, 0.08) 40px, rgba(183, 28, 28, 0.08) 41px), radial-gradient(circle at center, #1a1a1a 0%, #000 100%); background-size: 100% 100%, 100% 4px, 100% 100%, 100% 100%, 100% 100%; z-index: 2000; overflow-y: auto; padding-top: 60px;">
+        
+        <!-- SUBPORTADA TRR UTILIDADES -->
+        <div id="trr-utilities-landing" style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: calc(100vh - 120px); padding: 20px; position: relative;">
+            <button class="back-to-home-btn no-print" onclick="goHomeNoConfirm()" style="position: fixed; top: 20px; left: 20px;">⚠️ VOLVER AL MENÚ</button>
+            
+            <div style="text-align:center; margin-bottom: 60px; position: relative; z-index: 1;">
+                <h1 style="font-family: Impact, sans-serif; color: #ff8c42; text-transform: uppercase; letter-spacing: 5px; text-shadow: 0 0 20px rgba(255, 140, 66, 0.8), 0 0 40px rgba(255, 140, 66, 0.4), 2px 2px 8px rgba(0,0,0,0.8); font-size: 56px; margin-bottom: 15px; animation: glow-pulse 2s ease-in-out infinite;">
+                    TRR UTILIDADES
+                </h1>
+                <div style="width: 80%; height: 3px; background: linear-gradient(90deg, transparent, #b71c1c 20%, #b71c1c 80%, transparent); margin: 20px auto; box-shadow: 0 0 10px rgba(183, 28, 28, 0.6);"></div>
+                <p style="color: #888; font-family: 'Courier New', monospace; font-size: 18px; letter-spacing: 3px; text-shadow: 0 0 5px rgba(136, 136, 136, 0.5);">TABLA DE RESOLUCIÓN RÁPIDA - Herramientas de Combate</p>
+            </div>
+            
+            <div style="display: flex; gap: 40px; justify-content: center; flex-wrap: wrap; position: relative; z-index: 1;">
+                <button class="cyber-button" onclick="goToClusterTable()" style="width: 320px; height: 100px; font-size: 18px; position: relative; overflow: hidden; background: linear-gradient(135deg, rgba(26, 26, 26, 0.9) 0%, rgba(10, 10, 10, 0.95) 100%); border: 3px solid #b71c1c; box-shadow: 0 0 30px rgba(183, 28, 28, 0.5), inset 0 0 30px rgba(0, 0, 0, 0.5); transition: all 0.3s;">
+                    <div style="position: relative; z-index: 1;">
+                        <span style="display: block; font-size: 32px; margin-bottom: 5px;">🎯</span>
+                        TABLA DE CLUSTER
+                    </div>
+                </button>
+                <button class="cyber-button" onclick="goToDamageGrouper()" style="width: 320px; height: 100px; font-size: 18px; position: relative; overflow: hidden; background: linear-gradient(135deg, rgba(26, 26, 26, 0.9) 0%, rgba(10, 10, 10, 0.95) 100%); border: 3px solid #b71c1c; box-shadow: 0 0 30px rgba(183, 28, 28, 0.5), inset 0 0 30px rgba(0, 0, 0, 0.5); transition: all 0.3s;">
+                    <div style="position: relative; z-index: 1;">
+                        <span style="display: block; font-size: 32px; margin-bottom: 5px;">💥</span>
+                        AGRUPADOR DE DAÑOS
+                    </div>
+                </button>
+                <button class="cyber-button" onclick="goToModifiersTable()" style="width: 320px; height: 100px; font-size: 18px; position: relative; overflow: hidden; background: linear-gradient(135deg, rgba(26, 26, 26, 0.9) 0%, rgba(10, 10, 10, 0.95) 100%); border: 3px solid #b71c1c; box-shadow: 0 0 30px rgba(183, 28, 28, 0.5), inset 0 0 30px rgba(0, 0, 0, 0.5); transition: all 0.3s;">
+                    <div style="position: relative; z-index: 1;">
+                        <span style="display: block; font-size: 32px; margin-bottom: 5px;">📊</span>
+                        TABLA DE MODIFICADORES
+                    </div>
+                </button>
+            </div>
+        </div>
+        
+        <!-- SUBSECCIÓN: TABLA DE CLUSTER -->
+        <div id="cluster-table" style="display:none; padding: 20px;">
+            <button class="back-to-home-btn no-print" onclick="backToTRRUtilitiesLanding()" style="position: fixed; top: 20px; left: 20px;">⬅️ VOLVER</button>
+            <button class="back-to-home-btn no-print" onclick="goHomeNoConfirm()" style="position: fixed; top: 20px; left: 220px; background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%);">🏠 MENÚ</button>
+            
+            <div style="text-align:center; margin: 20px auto; max-width: 1600px; padding: 20px;">
+                <h1 style="font-family: Impact, sans-serif; color: #ff8c42; text-transform: uppercase; letter-spacing: 4px; text-shadow: 2px 2px 8px rgba(255, 140, 66, 0.5); font-size: 36px; margin-bottom: 40px; border-bottom: 2px solid #b71c1c; padding-bottom: 15px;">
+                    TABLA DE CLUSTER
+                </h1>
+                <p style="color: #888; font-size: 18px;">Contenido en desarrollo...</p>
+            </div>
+        </div>
+        
+        <!-- SUBSECCIÓN: AGRUPADOR DE DAÑOS -->
+        <div id="damage-grouper" style="display:none; padding: 20px;">
+            <button class="back-to-home-btn no-print" onclick="backToTRRUtilitiesLanding()" style="position: fixed; top: 20px; left: 20px;">⬅️ VOLVER</button>
+            <button class="back-to-home-btn no-print" onclick="goHomeNoConfirm()" style="position: fixed; top: 20px; left: 220px; background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%);">🏠 MENÚ</button>
+            
+            <div style="text-align:center; margin: 20px auto; max-width: 1600px; padding: 20px;">
+                <h1 style="font-family: Impact, sans-serif; color: #ff8c42; text-transform: uppercase; letter-spacing: 4px; text-shadow: 2px 2px 8px rgba(255, 140, 66, 0.5); font-size: 36px; margin-bottom: 40px; border-bottom: 2px solid #b71c1c; padding-bottom: 15px;">
+                    AGRUPADOR DE DAÑOS
+                </h1>
+                <p style="color: #888; font-size: 18px;">Contenido en desarrollo...</p>
+            </div>
+        </div>
+        
+        <!-- SUBSECCIÓN: TABLA DE MODIFICADORES -->
+        <div id="modifiers-table" style="display:none; padding: 20px;">
+            <button class="back-to-home-btn no-print" onclick="backToTRRUtilitiesLanding()" style="position: fixed; top: 20px; left: 20px;">⬅️ VOLVER</button>
+            <button class="back-to-home-btn no-print" onclick="goHomeNoConfirm()" style="position: fixed; top: 20px; left: 220px; background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%);">🏠 MENÚ</button>
+            
+            <div style="text-align:center; margin: 20px auto; max-width: 1600px; padding: 20px;">
+                <h1 style="font-family: Impact, sans-serif; color: #ff8c42; text-transform: uppercase; letter-spacing: 4px; text-shadow: 2px 2px 8px rgba(255, 140, 66, 0.5); font-size: 36px; margin-bottom: 40px; border-bottom: 2px solid #b71c1c; padding-bottom: 15px;">
+                    TABLA DE MODIFICADORES
+                </h1>
+                <p style="color: #888; font-size: 18px;">Contenido en desarrollo...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MECH HANGAR SECTION -->
+    <div id="mech-hangar" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #0a0a0a; background-image: linear-gradient(rgba(15, 20, 25, 0.85), rgba(10, 10, 10, 0.95)), repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(74, 90, 106, 0.1) 2px, transparent 4px), repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(183, 28, 28, 0.08) 40px, rgba(183, 28, 28, 0.08) 41px), repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(183, 28, 28, 0.08) 40px, rgba(183, 28, 28, 0.08) 41px), radial-gradient(circle at center, #1a1a1a 0%, #000 100%); background-size: 100% 100%, 100% 4px, 100% 100%, 100% 100%, 100% 100%; z-index: 2000; overflow-y: auto; padding-top: 60px;">
+        
+        <!-- SUBPORTADA MECH HANGAR -->
+        <div id="mech-hangar-landing" style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: calc(100vh - 120px); padding: 20px; position: relative;">
+            <button class="back-to-home-btn no-print" onclick="goHome()" style="position: fixed; top: 20px; left: 20px;">⚠️ VOLVER AL MENÚ</button>
+            
+            <div style="text-align:center; margin-bottom: 60px; position: relative; z-index: 1;">
+                <h1 style="font-family: Impact, sans-serif; color: #ff8c42; text-transform: uppercase; letter-spacing: 5px; text-shadow: 0 0 20px rgba(255, 140, 66, 0.8), 0 0 40px rgba(255, 140, 66, 0.4), 2px 2px 8px rgba(0,0,0,0.8); font-size: 56px; margin-bottom: 15px; animation: glow-pulse 2s ease-in-out infinite;">
+                    MECH HANGAR
+                </h1>
+                <div style="width: 80%; height: 3px; background: linear-gradient(90deg, transparent, #b71c1c 20%, #b71c1c 80%, transparent); margin: 20px auto; box-shadow: 0 0 10px rgba(183, 28, 28, 0.6);"></div>
+                <p style="color: #888; font-family: 'Courier New', monospace; font-size: 18px; letter-spacing: 3px; text-shadow: 0 0 5px rgba(136, 136, 136, 0.5);">Sistema de Combate para BattleMechs</p>
+            </div>
+            
+            <div style="display: flex; gap: 40px; justify-content: center; flex-wrap: wrap; position: relative; z-index: 1;">
+                <button class="cyber-button" onclick="goToMechLocations()" style="width: 320px; height: 100px; font-size: 22px; position: relative; overflow: hidden; background: linear-gradient(135deg, rgba(26, 26, 26, 0.9) 0%, rgba(10, 10, 10, 0.95) 100%); border: 3px solid #b71c1c; box-shadow: 0 0 30px rgba(183, 28, 28, 0.5), inset 0 0 30px rgba(0, 0, 0, 0.5); transition: all 0.3s;">
+                    <div style="position: relative; z-index: 1;">
+                        <span style="display: block; font-size: 32px; margin-bottom: 5px;">🎯</span>
+                        LOCALIZACIONES
+                    </div>
+                </button>
+                <button class="cyber-button" onclick="goToMechCriticals()" style="width: 320px; height: 100px; font-size: 22px; position: relative; overflow: hidden; background: linear-gradient(135deg, rgba(26, 26, 26, 0.9) 0%, rgba(10, 10, 10, 0.95) 100%); border: 3px solid #b71c1c; box-shadow: 0 0 30px rgba(183, 28, 28, 0.5), inset 0 0 30px rgba(0, 0, 0, 0.5); transition: all 0.3s;">
+                    <div style="position: relative; z-index: 1;">
+                        <span style="display: block; font-size: 32px; margin-bottom: 5px;">⚠️</span>
+                        CRITICOS
+                    </div>
+                </button>
+            </div>
+        </div>
+        
+        <!-- SUBSECCIÓN: MECH LOCALIZACIONES -->
+        <div id="mech-locations" style="display:none; padding: 20px;">
+            <button class="back-to-home-btn no-print" onclick="backToMechHangarLanding()" style="position: fixed; top: 20px; left: 20px;">⬅️ VOLVER</button>
+            <button class="back-to-home-btn no-print" onclick="goHomeNoConfirm()" style="position: fixed; top: 20px; left: 220px; background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%);">🏠 MENÚ</button>
+            
+            <div style="text-align:center; margin: 20px auto; max-width: 1600px; padding: 20px;">
+                <h1 style="font-family: Impact, sans-serif; color: #ff8c42; text-transform: uppercase; letter-spacing: 4px; text-shadow: 2px 2px 8px rgba(255, 140, 66, 0.5); font-size: 36px; margin-bottom: 40px; border-bottom: 2px solid #b71c1c; padding-bottom: 15px;">
+                    LOCALIZACIONES DE IMPACTO - BATTLEMECH
+                </h1>
+                <p style="color: #888; font-size: 18px;">Contenido en desarrollo...</p>
+            </div>
+        </div>
+        
+        <!-- SUBSECCIÓN: MECH CRÍTICOS -->
+        <div id="mech-criticals" style="display:none; padding: 20px;">
+            <button class="back-to-home-btn no-print" onclick="backToMechHangarLanding()" style="position: fixed; top: 20px; left: 20px;">⬅️ VOLVER</button>
+            <button class="back-to-home-btn no-print" onclick="goHomeNoConfirm()" style="position: fixed; top: 20px; left: 220px; background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%);">🏠 MENÚ</button>
+            
+            <div style="text-align:center; margin: 20px auto; max-width: 1600px; padding: 20px;">
+                <h1 style="font-family: Impact, sans-serif; color: #ff8c42; text-transform: uppercase; letter-spacing: 4px; text-shadow: 2px 2px 8px rgba(255, 140, 66, 0.5); font-size: 36px; margin-bottom: 40px; border-bottom: 2px solid #b71c1c; padding-bottom: 15px;">
+                    CRÍTICOS - BATTLEMECH
+                </h1>
+                <p style="color: #888; font-size: 18px;">Contenido en desarrollo...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- DEPOSITO DE VEHICULOS SECTION -->
+    <div id="vehicle-depot" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #0a0a0a; background-image: linear-gradient(rgba(15, 20, 25, 0.85), rgba(10, 10, 10, 0.95)), repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(74, 90, 106, 0.1) 2px, transparent 4px), repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(183, 28, 28, 0.08) 40px, rgba(183, 28, 28, 0.08) 41px), repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(183, 28, 28, 0.08) 40px, rgba(183, 28, 28, 0.08) 41px), radial-gradient(circle at center, #1a1a1a 0%, #000 100%); background-size: 100% 100%, 100% 4px, 100% 100%, 100% 100%, 100% 100%; z-index: 2000; overflow-y: auto; padding-top: 60px;">
+        
+        <!-- SUBPORTADA DEPOSITO DE VEHICULOS -->
+        <div id="vehicle-depot-landing" style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: calc(100vh - 120px); padding: 20px; position: relative;">
+            <button class="back-to-home-btn no-print" onclick="goHome()" style="position: fixed; top: 20px; left: 20px;">⚠️ VOLVER AL MENÚ</button>
+            
+            <div style="text-align:center; margin-bottom: 60px; position: relative; z-index: 1;">
+                <h1 style="font-family: Impact, sans-serif; color: #ff8c42; text-transform: uppercase; letter-spacing: 5px; text-shadow: 0 0 20px rgba(255, 140, 66, 0.8), 0 0 40px rgba(255, 140, 66, 0.4), 2px 2px 8px rgba(0,0,0,0.8); font-size: 56px; margin-bottom: 15px; animation: glow-pulse 2s ease-in-out infinite;">
+                    DEPOSITO DE VEHICULOS
+                </h1>
+                <div style="width: 80%; height: 3px; background: linear-gradient(90deg, transparent, #b71c1c 20%, #b71c1c 80%, transparent); margin: 20px auto; box-shadow: 0 0 10px rgba(183, 28, 28, 0.6);"></div>
+                <p style="color: #888; font-family: 'Courier New', monospace; font-size: 18px; letter-spacing: 3px; text-shadow: 0 0 5px rgba(136, 136, 136, 0.5);">Sistema de Combate para Vehículos Blindados</p>
+            </div>
+            
+            <div style="display: flex; gap: 40px; justify-content: center; flex-wrap: wrap; position: relative; z-index: 1;">
+                <button class="cyber-button" onclick="goToVehicleLocations()" style="width: 320px; height: 100px; font-size: 22px; position: relative; overflow: hidden; background: linear-gradient(135deg, rgba(26, 26, 26, 0.9) 0%, rgba(10, 10, 10, 0.95) 100%); border: 3px solid #b71c1c; box-shadow: 0 0 30px rgba(183, 28, 28, 0.5), inset 0 0 30px rgba(0, 0, 0, 0.5); transition: all 0.3s;">
+                    <div style="position: relative; z-index: 1;">
+                        <span style="display: block; font-size: 32px; margin-bottom: 5px;">🎯</span>
+                        LOCALIZACIONES
+                    </div>
+                </button>
+                <button class="cyber-button" onclick="goToVehicleCriticals()" style="width: 320px; height: 100px; font-size: 22px; position: relative; overflow: hidden; background: linear-gradient(135deg, rgba(26, 26, 26, 0.9) 0%, rgba(10, 10, 10, 0.95) 100%); border: 3px solid #b71c1c; box-shadow: 0 0 30px rgba(183, 28, 28, 0.5), inset 0 0 30px rgba(0, 0, 0, 0.5); transition: all 0.3s;">
+                    <div style="position: relative; z-index: 1;">
+                        <span style="display: block; font-size: 32px; margin-bottom: 5px;">⚠️</span>
+                        CRITICOS
+                    </div>
+                </button>
+            </div>
+        </div>
+        
+        <!-- SUBSECCIÓN: VEHICLE LOCALIZACIONES -->
+        <div id="vehicle-locations" style="display:none; padding: 20px;">
+            <button class="back-to-home-btn no-print" onclick="backToVehicleDepotLanding()" style="position: fixed; top: 20px; left: 20px;">⬅️ VOLVER</button>
+            <button class="back-to-home-btn no-print" onclick="goHomeNoConfirm()" style="position: fixed; top: 20px; left: 220px; background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%);">🏠 MENÚ</button>
+            
+            <div style="text-align:center; margin: 20px auto; max-width: 1600px; padding: 20px;">
+                <h1 style="font-family: Impact, sans-serif; color: #ff8c42; text-transform: uppercase; letter-spacing: 4px; text-shadow: 2px 2px 8px rgba(255, 140, 66, 0.5); font-size: 36px; margin-bottom: 40px; border-bottom: 2px solid #b71c1c; padding-bottom: 15px;">
+                    LOCALIZACIONES DE IMPACTO - VEHÍCULOS
+                </h1>
+                <p style="color: #888; font-size: 18px;">Contenido en desarrollo...</p>
+            </div>
+        </div>
+        
+        <!-- SUBSECCIÓN: VEHICLE CRÍTICOS -->
+        <div id="vehicle-criticals" style="display:none; padding: 20px;">
+            <button class="back-to-home-btn no-print" onclick="backToVehicleDepotLanding()" style="position: fixed; top: 20px; left: 20px;">⬅️ VOLVER</button>
+            <button class="back-to-home-btn no-print" onclick="goHomeNoConfirm()" style="position: fixed; top: 20px; left: 220px; background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%);">🏠 MENÚ</button>
+            
+            <div style="text-align:center; margin: 20px auto; max-width: 1600px; padding: 20px;">
+                <h1 style="font-family: Impact, sans-serif; color: #ff8c42; text-transform: uppercase; letter-spacing: 4px; text-shadow: 2px 2px 8px rgba(255, 140, 66, 0.5); font-size: 36px; margin-bottom: 40px; border-bottom: 2px solid #b71c1c; padding-bottom: 15px;">
+                    CRÍTICOS - VEHÍCULOS
+                </h1>
+                <p style="color: #888; font-size: 18px;">Contenido en desarrollo...</p>
+            </div>
         </div>
     </div>
 
@@ -90885,7 +91201,7 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
     </div>
 
     <!-- TRR INFANTERÍA SECTION -->
-    <div id="trr-infantry" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #0a0a0a; background-image: linear-gradient(rgba(15, 20, 25, 0.85), rgba(10, 10, 10, 0.95)), repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(74, 90, 106, 0.03) 2px, transparent 4px), radial-gradient(circle at center, #1a1a1a 0%, #000 100%); background-size: 100% 100%, 100% 4px, 100% 100%; z-index: 2000; overflow-y: auto; padding-top: 60px;">
+    <div id="trr-infantry" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #0a0a0a; background-image: linear-gradient(rgba(15, 20, 25, 0.85), rgba(10, 10, 10, 0.95)), repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(74, 90, 106, 0.1) 2px, transparent 4px), repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(183, 28, 28, 0.08) 40px, rgba(183, 28, 28, 0.08) 41px), repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(183, 28, 28, 0.08) 40px, rgba(183, 28, 28, 0.08) 41px), radial-gradient(circle at center, #1a1a1a 0%, #000 100%); background-size: 100% 100%, 100% 4px, 100% 100%, 100% 100%, 100% 100%; z-index: 2000; overflow-y: auto; padding-top: 60px;">
         
         <!-- SUBPORTADA TRR -->
         <div id="trr-landing" style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: calc(100vh - 120px); padding: 20px; position: relative;">
