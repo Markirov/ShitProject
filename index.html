@@ -364,6 +364,15 @@
             }
         }
 
+        @keyframes glow-pulse {
+            0%, 100% { 
+                text-shadow: 0 0 20px rgba(255, 140, 66, 0.8), 2px 2px 8px rgba(0,0,0,0.8);
+            }
+            50% { 
+                text-shadow: 0 0 40px rgba(255, 140, 66, 1), 0 0 60px rgba(255, 140, 66, 0.6), 2px 2px 8px rgba(0,0,0,0.8);
+            }
+        }
+
         /* ESQUEMAS DE ARMAS LATERALES */
         /* CONTENEDOR DE SILUETAS DE MECHS (IZQUIERDA) - ESTILO BLUEPRINT */
         .mech-silhouette-container {
@@ -1563,6 +1572,9 @@
             document.getElementById('ficha-container').style.display = 'none';
             document.getElementById('galactic-map').style.display = 'none';
             document.getElementById('trr-infantry').style.display = 'none';
+            document.getElementById('trr-landing').style.display = 'flex';
+            document.getElementById('trr-combat').style.display = 'none';
+            document.getElementById('trr-weapons').style.display = 'none';
             document.getElementById('points-counter').style.display = 'none';
         }
 
@@ -1615,6 +1627,9 @@
             document.getElementById('landing-page').style.display = 'none';
             document.getElementById('galactic-map').style.display = 'none';
             document.getElementById('trr-infantry').style.display = 'block';
+            document.getElementById('trr-landing').style.display = 'flex';
+            document.getElementById('trr-combat').style.display = 'none';
+            document.getElementById('trr-weapons').style.display = 'none';
             document.getElementById('pre-generacion').style.display = 'none';
             document.getElementById('ficha-container').style.display = 'none';
             document.getElementById('points-counter').style.display = 'none';
@@ -1690,22 +1705,26 @@
             // Mostrar resultado
             document.getElementById('hit-dice-value').textContent = result;
             document.getElementById('hit-location-text').textContent = location;
-            document.getElementById('hit-result').style.display = 'block';
             
             // Ocultar resultados anteriores de crítico
             document.getElementById('crit-result').style.display = 'none';
             
             // Remover highlight anterior
-            document.querySelectorAll('.trr-row').forEach(row => {
-                row.style.background = 'rgba(183, 28, 28, 0.1)';
-                row.style.transform = 'none';
+            document.querySelectorAll('.trr-row-table').forEach(row => {
+                const rowResult = row.getAttribute('data-result');
+                const isCritical = (rowResult[0] === rowResult[1]);
+                
+                if (isCritical) {
+                    row.style.background = 'rgba(183, 28, 28, 0.15)';
+                } else {
+                    row.style.background = '';
+                }
             });
             
             // Highlight de la fila seleccionada
-            const selectedRow = document.querySelector(`.trr-row[data-result="${result}"]`);
+            const selectedRow = document.querySelector(`.trr-row-table[data-result="${result}"]`);
             if (selectedRow) {
                 selectedRow.style.background = 'rgba(183, 28, 28, 0.4)';
-                selectedRow.style.transform = 'translateX(5px)';
             }
             
             // Verificar si es crítico (dobles)
@@ -1735,18 +1754,27 @@
 
         function clearResults() {
             // Limpiar dados
-            document.getElementById('dice1').textContent = '?';
-            document.getElementById('dice2').textContent = '?';
+            document.getElementById('dice1').textContent = '-';
+            document.getElementById('dice2').textContent = '-';
+            
+            // Limpiar localización
+            document.getElementById('hit-location-text').textContent = '-';
+            document.getElementById('hit-dice-value').textContent = '';
             
             // Ocultar resultados
-            document.getElementById('hit-result').style.display = 'none';
             document.getElementById('crit-alert').style.display = 'none';
             document.getElementById('crit-result').style.display = 'none';
             
             // Remover highlights
-            document.querySelectorAll('.trr-row').forEach(row => {
-                row.style.background = 'rgba(183, 28, 28, 0.1)';
-                row.style.transform = 'none';
+            document.querySelectorAll('.trr-row-table').forEach(row => {
+                const result = row.getAttribute('data-result');
+                const isCritical = (result[0] === result[1]);
+                
+                if (isCritical) {
+                    row.style.background = 'rgba(183, 28, 28, 0.15)';
+                } else {
+                    row.style.background = '';
+                }
             });
             
             currentCritLocation = "";
@@ -1772,26 +1800,189 @@
 
         // Añadir event listeners a las filas de la tabla cuando cargue la página
         document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('.trr-row').forEach(row => {
+            // Event listeners para las filas de tabla
+            document.querySelectorAll('.trr-row-table').forEach(row => {
                 row.addEventListener('click', function() {
                     const result = this.getAttribute('data-result');
                     selectHitFromTable(result);
                 });
                 
-                // Hover effect
+                // Hover effect para tablas
                 row.addEventListener('mouseenter', function() {
-                    if (this.style.background !== 'rgba(183, 28, 28, 0.4)') {
-                        this.style.background = 'rgba(183, 28, 28, 0.25)';
+                    const currentBg = this.style.background;
+                    if (!currentBg.includes('rgba(183, 28, 28, 0.4)')) {
+                        this.style.background = 'rgba(183, 28, 28, 0.3)';
                     }
                 });
                 
                 row.addEventListener('mouseleave', function() {
-                    if (this.style.background !== 'rgba(183, 28, 28, 0.4)') {
-                        this.style.background = 'rgba(183, 28, 28, 0.1)';
+                    const result = this.getAttribute('data-result');
+                    const currentResult = document.getElementById('hit-dice-value').textContent;
+                    
+                    if (result !== currentResult) {
+                        // Verificar si es crítico (11, 22, 33, 44, 55, 66)
+                        const isCritical = (result[0] === result[1]);
+                        if (isCritical) {
+                            this.style.background = 'rgba(183, 28, 28, 0.15)';
+                        } else {
+                            this.style.background = '';
+                        }
                     }
                 });
             });
+            
+            // Cargar tabla de armas al inicio
+            loadWeaponsTable();
         });
+
+        // NAVEGACIÓN TRR SUBSECCIONES
+        function goToTRRCombat() {
+            document.getElementById('trr-landing').style.display = 'none';
+            document.getElementById('trr-combat').style.display = 'block';
+            document.getElementById('trr-weapons').style.display = 'none';
+        }
+
+        function goToTRRWeapons() {
+            document.getElementById('trr-landing').style.display = 'none';
+            document.getElementById('trr-combat').style.display = 'none';
+            document.getElementById('trr-weapons').style.display = 'block';
+        }
+
+        function backToTRRLanding() {
+            document.getElementById('trr-landing').style.display = 'flex';
+            document.getElementById('trr-combat').style.display = 'none';
+            document.getElementById('trr-weapons').style.display = 'none';
+        }
+
+        // TABLA DE ARMAS DE INFANTERÍA
+        const INFANTRY_WEAPON_TABLE = [
+            { name: "Arco Corto", dmg: "1D6+1", s: "2", m: "5", l: "8", car: "1", rec: "1", w: "2", tipo: "Arco", especial: "Insonoro", clase: "Arco", size: "Pequeño" },
+            { name: "Arco Largo", dmg: "1D6+3", s: "4", m: "9", l: "14", car: "1", rec: "1", w: "3", tipo: "Rifle", especial: "Insonoro", clase: "Arco", size: "Medio" },
+            { name: "Ballesta Ligera", dmg: "2D6", s: "2", m: "5", l: "10", car: "1", rec: "1", w: "4", tipo: "Rifle", especial: "Insonoro", clase: "Ballesta", size: "Medio" },
+            { name: "Ballesta Pesada", dmg: "2D6+3", s: "3", m: "7", l: "13", car: "1", rec: "1", w: "6", tipo: "Rifle", especial: "Insonoro", clase: "Ballesta", size: "Grande" },
+            { name: "Blazer", dmg: "4D6+2 X2", s: "9", m: "21", l: "30", car: "2", rec: "1", w: "10", tipo: "Rifle", especial: "", clase: "Laser", size: "Grande" },
+            { name: "Carabina GyroSlug", dmg: "2D6+5", s: "6", m: "15", l: "30", car: "20", rec: "1", w: "3", tipo: "Rifle", especial: "", clase: "Gyro", size: "Medio" },
+            { name: "Escopeta", dmg: "3D6+2", s: "3", m: "5", l: "8", car: "6", rec: "1", w: "4", tipo: "Rifle", especial: "", clase: "Balistica", size: "Pequeño" },
+            { name: "Escopeta 2 cañones", dmg: "3D6+2", s: "3", m: "4", l: "5", car: "2", rec: "1", w: "3", tipo: "Rifle", especial: "", clase: "Balistica", size: "Medio" },
+            { name: "Lanzador AMCA", dmg: "5D6+6", s: "10", m: "36", l: "54", car: "2", rec: "1", w: "18", tipo: "Rifle", especial: "", clase: "Misil", size: "Enorme" },
+            { name: "Lanzador AMCA Pesado", dmg: "10D6+6", s: "15", m: "40", l: "48", car: "4", rec: "4", w: "20", tipo: "Rifle", especial: "", clase: "Misil", size: "Enorme" },
+            { name: "Lanzallamas", dmg: "2D6", s: "2", m: "4", l: "6", car: "12", rec: "1", w: "15", tipo: "Rifle", especial: "Inflamable", clase: "Inflamable", size: "Enorme" },
+            { name: "Mauser 960 Lanzagranadas", dmg: "2D6+3", s: "6", m: "15", l: "25", car: "6", rec: "-", w: "10", tipo: "Rifle", especial: "Explosivo", clase: "Explosivo", size: "Grande" },
+            { name: "Mauser 960 Laser Pulso", dmg: "3D6+3", s: "7", m: "15", l: "30", car: "10", rec: "-", w: "10", tipo: "Rifle", especial: "-2 Impactar", clase: "Pulso", size: "Grande" },
+            { name: "MG", dmg: "4D6+3", s: "10", m: "20", l: "42", car: "15", rec: "1", w: "10", tipo: "Rifle", especial: "", clase: "Balistica", size: "Medio" },
+            { name: "Pistola Agujas", dmg: "1D6+2", s: "3", m: "-", l: "-", car: "10", w: "1", rec: "1", tipo: "Pistola", especial: "Ignora Blindaje", clase: "Agujas", size: "Pequeño" },
+            { name: "Pistola Automatica", dmg: "2D6", s: "2", m: "4", l: "8", car: "10", w: "1.5", rec: "1", tipo: "Pistola", especial: "", clase: "Balistica", size: "Pequeño" },
+            { name: "Pistola Automatica Mydron", dmg: "1D6+3", s: "2", m: "4", l: "12", car: "20", w: "1.5", rec: "1", tipo: "Pistola", especial: "", clase: "Balistica", size: "Pequeño" },
+            { name: "Pistola de Pulsos", dmg: "3D6", s: "2", m: "4", l: "8", car: "10", w: "1", rec: "1", tipo: "Pistola", especial: "-2 Impactar", clase: "Pulso", size: "Medio" },
+            { name: "Pistola GyroJet", dmg: "3D6+3", s: "1", m: "2", l: "-", car: "2", w: "2", rec: "1", tipo: "Pistola", especial: "", clase: "Gyro", size: "Medio" },
+            { name: "Pistola Laser", dmg: "4D6", s: "3", m: "6", l: "12", car: "20", w: "1", rec: "1", tipo: "Pistola", especial: "", clase: "Laser", size: "Medio" },
+            { name: "Pistola Laser Nakjama", dmg: "3D6", s: "4", m: "9", l: "14", car: "20", w: "1", rec: "1", tipo: "Pistola", especial: "", clase: "Laser", size: "Medio" },
+            { name: "Pistola Laser Sunbeam", dmg: "5D6", s: "3", m: "6", l: "11", car: "5", w: "1", rec: "1", tipo: "Pistola", especial: "", clase: "Laser", size: "Medio" },
+            { name: "Pistola LaserM", dmg: "2D6", s: "2", m: "4", l: "6", car: "3", w: "0.5", rec: "1", tipo: "Pistola", especial: "", clase: "Laser", size: "A" },
+            { name: "Pistola Semi", dmg: "2D6+3", s: "2", m: "4", l: "8", car: "6", w: "1", rec: "1", tipo: "Pistola", especial: "", clase: "Balistica", size: "Pequeño" },
+            { name: "Pistola Sonica", dmg: "S", s: "2", m: "5", l: "8", car: "25", w: "1.5", rec: "1", tipo: "Pistola", especial: "Especial", clase: "Sonica", size: "Medio" },
+            { name: "Pistola Sternsnacht", dmg: "4D6+2", s: "2", m: "4", l: "12", car: "3", w: "2.5", rec: "1", tipo: "Pistola", especial: "", clase: "Balistica", size: "Pequeño" },
+            { name: "Pistola Tranquilizante", dmg: "S", s: "2", m: "4", l: "6", car: "10", w: "1", rec: "1", tipo: "Pistola", especial: "Especial", clase: "Tranquilizante", size: "Medio" },
+            { name: "PistolaM", dmg: "1D6+3", s: "2", m: "-", l: "-", car: "5", w: "0.5", rec: "1", tipo: "Pistola", especial: "", clase: "Balistica", size: "A" },
+            { name: "PistolaM Agujas", dmg: "1D6", s: "1", m: "-", l: "-", car: "5", w: "0.3", rec: "1", tipo: "Pistola", especial: "", clase: "Agujas", size: "A" },
+            { name: "Rifle", dmg: "3D6", s: "6", m: "15", l: "30", car: "10", w: "4", rec: "1", tipo: "Rifle", especial: "", clase: "Balistica", size: "Grande" },
+            { name: "Rifle Agujas", dmg: "2D6+2", s: "6", m: "7", l: "8", car: "20", w: "2", rec: "1", tipo: "Rifle", especial: "Ignora Blindaje", clase: "Agujas", size: "Medio" },
+            { name: "Rifle de Pulsos", dmg: "3D6+2", s: "6", m: "14", l: "28", car: "5", w: "5", rec: "1", tipo: "Rifle", especial: "-2 Impactar", clase: "Pulso", size: "Medio" },
+            { name: "Rifle Federated", dmg: "2D6+2", s: "8", m: "18", l: "33", car: "10", w: "4.5", rec: "1", tipo: "Rifle", especial: "", clase: "Balistica", size: "Grande" },
+            { name: "Rifle GyroJet", dmg: "3D6+6", s: "12", m: "36", l: "72", car: "10", w: "6", rec: "1", tipo: "Rifle", especial: "", clase: "Gyro", size: "Grande" },
+            { name: "Rifle GyroJet Pesado", dmg: "6D6+6", s: "12", m: "36", l: "72", car: "5", w: "18", rec: "1", tipo: "Rifle", especial: "", clase: "Gyro", size: "Grande" },
+            { name: "Rifle GyroSlug", dmg: "3D6+3", s: "8", m: "35", l: "42", car: "50", w: "12", rec: "1", tipo: "Rifle", especial: "", clase: "Gyro", size: "Grande" },
+            { name: "Rifle Laser", dmg: "4D6+2", s: "9", m: "21", l: "42", car: "10", w: "5", rec: "1", tipo: "Rifle", especial: "", clase: "Laser", size: "Medio" },
+            { name: "Rifle Laser Intek", dmg: "2D6+2", s: "12", m: "30", l: "51", car: "10", w: "8", rec: "1", tipo: "Rifle", especial: "", clase: "Laser", size: "Medio" },
+            { name: "Rifle Laser MagnaStar", dmg: "4D6+2", s: "9", m: "21", l: "30", car: "4", w: "5", rec: "1", tipo: "Rifle", especial: "", clase: "Laser", size: "Medio" },
+            { name: "Rifle Pesado Zeus", dmg: "6D6", s: "7", m: "18", l: "28", car: "5", w: "12", rec: "1", tipo: "Rifle", especial: "", clase: "Balistica", size: "Grande" },
+            { name: "SMG", dmg: "3D6", s: "3", m: "7", l: "10", car: "50", w: "3", rec: "1", tipo: "Rifle", especial: "Rafaga", clase: "Balistica", size: "Medio" },
+            { name: "SMG Imperator", dmg: "2D6", s: "4", m: "8", l: "11", car: "50", w: "4", rec: "1", tipo: "Rifle", especial: "Rafaga", clase: "Balistica", size: "Medio" },
+            { name: "SMG Rorynex", dmg: "3D6+3", s: "3", m: "6", l: "9", car: "100", w: "3", rec: "1", tipo: "Rifle", especial: "Rafaga", clase: "Balistica", size: "Medio" }
+        ];
+
+        function loadWeaponsTable() {
+            renderWeaponsTable(INFANTRY_WEAPON_TABLE);
+        }
+
+        function renderWeaponsTable(weapons) {
+            const tbody = document.getElementById('weapons-tbody');
+            const noResults = document.getElementById('no-results');
+            const counter = document.getElementById('results-count');
+            
+            tbody.innerHTML = '';
+            
+            if (weapons.length === 0) {
+                noResults.style.display = 'block';
+                counter.textContent = '0';
+                return;
+            }
+            
+            noResults.style.display = 'none';
+            counter.textContent = weapons.length;
+            
+            weapons.forEach((weapon, index) => {
+                const row = document.createElement('tr');
+                row.style.borderBottom = '1px solid rgba(183, 28, 28, 0.2)';
+                row.style.transition = 'background 0.3s';
+                
+                // Alternar colores de fila
+                if (index % 2 === 0) {
+                    row.style.background = 'rgba(0, 0, 0, 0.3)';
+                }
+                
+                // Hover effect
+                row.addEventListener('mouseenter', function() {
+                    this.style.background = 'rgba(183, 28, 28, 0.2)';
+                });
+                row.addEventListener('mouseleave', function() {
+                    this.style.background = index % 2 === 0 ? 'rgba(0, 0, 0, 0.3)' : 'transparent';
+                });
+                
+                row.innerHTML = `
+                    <td style="padding: 10px 8px; color: #ddd;">${weapon.name}</td>
+                    <td style="padding: 10px 8px; text-align: center; color: #ff8c42; font-weight: bold;">${weapon.dmg}</td>
+                    <td style="padding: 10px 8px; text-align: center; color: #aaa;">${weapon.s}</td>
+                    <td style="padding: 10px 8px; text-align: center; color: #aaa;">${weapon.m}</td>
+                    <td style="padding: 10px 8px; text-align: center; color: #aaa;">${weapon.l}</td>
+                    <td style="padding: 10px 8px; text-align: center; color: #aaa;">${weapon.car}</td>
+                    <td style="padding: 10px 8px; text-align: center; color: #aaa;">${weapon.rec}</td>
+                    <td style="padding: 10px 8px; text-align: center; color: #aaa;">${weapon.w}</td>
+                    <td style="padding: 10px 8px; text-align: center; color: #4a9eff;">${weapon.tipo}</td>
+                    <td style="padding: 10px 8px; text-align: center; color: #b71c1c;">${weapon.clase}</td>
+                    <td style="padding: 10px 8px; text-align: center; color: #888;">${weapon.size}</td>
+                    <td style="padding: 10px 8px; color: ${weapon.especial ? '#00ff00' : '#666'};">${weapon.especial || '-'}</td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+        }
+
+        function filterWeapons() {
+            const nameFilter = document.getElementById('filter-name').value.toLowerCase();
+            const tipoFilter = document.getElementById('filter-tipo').value;
+            const claseFilter = document.getElementById('filter-clase').value;
+            const sizeFilter = document.getElementById('filter-size').value;
+            
+            const filtered = INFANTRY_WEAPON_TABLE.filter(weapon => {
+                const matchName = weapon.name.toLowerCase().includes(nameFilter);
+                const matchTipo = !tipoFilter || weapon.tipo === tipoFilter;
+                const matchClase = !claseFilter || weapon.clase === claseFilter;
+                const matchSize = !sizeFilter || weapon.size === sizeFilter;
+                
+                return matchName && matchTipo && matchClase && matchSize;
+            });
+            
+            renderWeaponsTable(filtered);
+        }
+
+        function clearFilters() {
+            document.getElementById('filter-name').value = '';
+            document.getElementById('filter-tipo').value = '';
+            document.getElementById('filter-clase').value = '';
+            document.getElementById('filter-size').value = '';
+            filterWeapons();
+        }
 
         // AÑADIR NUEVA HABILIDAD MANUAL
         function agregarHabilidadManual() {
@@ -90695,219 +90886,467 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
 
     <!-- TRR INFANTERÍA SECTION -->
     <div id="trr-infantry" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #0a0a0a; background-image: linear-gradient(rgba(15, 20, 25, 0.85), rgba(10, 10, 10, 0.95)), repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(74, 90, 106, 0.03) 2px, transparent 4px), radial-gradient(circle at center, #1a1a1a 0%, #000 100%); background-size: 100% 100%, 100% 4px, 100% 100%; z-index: 2000; overflow-y: auto; padding-top: 60px;">
-        <button class="back-to-home-btn no-print" onclick="goHomeFromTRR()">⚠️ VOLVER AL MENÚ</button>
         
-        <div style="text-align:center; margin: 20px auto; max-width: 1400px; padding: 20px;">
-            <h1 style="font-family: Impact, sans-serif; color: #b71c1c; text-transform: uppercase; letter-spacing: 3px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">
-                TRR - TABLA DE RESOLUCIÓN RÁPIDA
-            </h1>
-            <p style="color: #888; font-family: 'Courier New', monospace; margin-bottom: 30px;">Sistema de Impactos para Infantería</p>
+        <!-- SUBPORTADA TRR -->
+        <div id="trr-landing" style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: calc(100vh - 120px); padding: 20px; position: relative;">
+            <button class="back-to-home-btn no-print" onclick="goHomeFromTRR()" style="position: fixed; top: 20px; left: 20px;">⚠️ VOLVER AL MENÚ</button>
             
-            <!-- Contenedor principal con tablas laterales -->
-            <div style="display: flex; gap: 30px; justify-content: center; align-items: flex-start;">
+            <!-- Efecto de scanlines CRT + cuadrícula blueprint en toda la subportada -->
+            <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-image: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(183, 28, 28, 0.03) 2px, rgba(183, 28, 28, 0.03) 4px), repeating-linear-gradient(90deg, transparent, transparent 20px, rgba(183, 28, 28, 0.05) 20px, rgba(183, 28, 28, 0.05) 21px), repeating-linear-gradient(0deg, transparent, transparent 20px, rgba(183, 28, 28, 0.05) 20px, rgba(183, 28, 28, 0.05) 21px); pointer-events: none; opacity: 0.8;"></div>
+            
+            <!-- Viñeta oscura en los bordes -->
+            <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(circle at center, transparent 40%, rgba(0, 0, 0, 0.5) 100%); pointer-events: none;"></div>
+            
+            <div style="text-align:center; margin-bottom: 60px; position: relative; z-index: 1;">
+                <h1 style="font-family: Impact, sans-serif; color: #ff8c42; text-transform: uppercase; letter-spacing: 5px; text-shadow: 0 0 20px rgba(255, 140, 66, 0.8), 0 0 40px rgba(255, 140, 66, 0.4), 2px 2px 8px rgba(0,0,0,0.8); font-size: 56px; margin-bottom: 15px; animation: glow-pulse 2s ease-in-out infinite;">
+                    TRR INFANTERÍA
+                </h1>
+                <div style="width: 80%; height: 3px; background: linear-gradient(90deg, transparent, #b71c1c 20%, #b71c1c 80%, transparent); margin: 20px auto; box-shadow: 0 0 10px rgba(183, 28, 28, 0.6);"></div>
+                <p style="color: #888; font-family: 'Courier New', monospace; font-size: 18px; letter-spacing: 3px; text-shadow: 0 0 5px rgba(136, 136, 136, 0.5);">TABLA DE RESOLUCIÓN RÁPIDA - Sistema de Combate</p>
+            </div>
+            
+            <div style="display: flex; gap: 40px; justify-content: center; flex-wrap: wrap; position: relative; z-index: 1;">
+                <button class="cyber-button" onclick="goToTRRCombat()" style="width: 320px; height: 100px; font-size: 22px; position: relative; overflow: hidden; background: linear-gradient(135deg, rgba(26, 26, 26, 0.9) 0%, rgba(10, 10, 10, 0.95) 100%); border: 3px solid #b71c1c; box-shadow: 0 0 30px rgba(183, 28, 28, 0.5), inset 0 0 30px rgba(0, 0, 0, 0.5); transition: all 0.3s;">
+                    <!-- Efecto de cuadrícula en el botón -->
+                    <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-image: repeating-linear-gradient(90deg, transparent, transparent 10px, rgba(183, 28, 28, 0.1) 10px, rgba(183, 28, 28, 0.1) 11px), repeating-linear-gradient(0deg, transparent, transparent 10px, rgba(183, 28, 28, 0.1) 10px, rgba(183, 28, 28, 0.1) 11px); pointer-events: none;"></div>
+                    <div style="position: relative; z-index: 1;">
+                        <span style="display: block; font-size: 32px; margin-bottom: 5px;">⚔️</span>
+                        COMBATE
+                    </div>
+                </button>
+                <button class="cyber-button" onclick="goToTRRWeapons()" style="width: 320px; height: 100px; font-size: 22px; position: relative; overflow: hidden; background: linear-gradient(135deg, rgba(26, 26, 26, 0.9) 0%, rgba(10, 10, 10, 0.95) 100%); border: 3px solid #b71c1c; box-shadow: 0 0 30px rgba(183, 28, 28, 0.5), inset 0 0 30px rgba(0, 0, 0, 0.5); transition: all 0.3s;">
+                    <!-- Efecto de cuadrícula en el botón -->
+                    <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-image: repeating-linear-gradient(90deg, transparent, transparent 10px, rgba(183, 28, 28, 0.1) 10px, rgba(183, 28, 28, 0.1) 11px), repeating-linear-gradient(0deg, transparent, transparent 10px, rgba(183, 28, 28, 0.1) 10px, rgba(183, 28, 28, 0.1) 11px); pointer-events: none;"></div>
+                    <div style="position: relative; z-index: 1;">
+                        <span style="display: block; font-size: 32px; margin-bottom: 5px;">🔫</span>
+                        TABLA DE ARMAMENTO
+                    </div>
+                </button>
+            </div>
+        </div>
+        
+        <!-- SUBSECCIÓN: COMBATE -->
+        <div id="trr-combat" style="display:none; padding: 20px;">
+            <button class="back-to-home-btn no-print" onclick="backToTRRLanding()" style="position: fixed; top: 20px; left: 20px;">⬅️ VOLVER A TRR</button>
+            
+            <div style="text-align:center; margin: 20px auto; max-width: 1600px; padding: 20px;">
+                <!-- Título Principal -->
+                <h1 style="font-family: Impact, sans-serif; color: #ff8c42; text-transform: uppercase; letter-spacing: 4px; text-shadow: 2px 2px 8px rgba(255, 140, 66, 0.5); font-size: 36px; margin-bottom: 40px; border-bottom: 2px solid #b71c1c; padding-bottom: 15px;">
+                    LOCALIZACIÓN DE IMPACTOS Y CRÍTICOS
+                </h1>
                 
-                <!-- TABLA IZQUIERDA (11-36) -->
-                <div style="background: rgba(26, 26, 26, 0.8); border: 2px solid #b71c1c; padding: 20px; border-radius: 4px; width: 280px; clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);">
-                    <h3 style="color: #b71c1c; font-family: 'Courier New', monospace; font-size: 14px; margin-top: 0; text-align: center; text-transform: uppercase; letter-spacing: 2px;">Tabla 11-36</h3>
+                <!-- Layout de 3 columnas -->
+                <div style="display: grid; grid-template-columns: 380px 1fr 380px; gap: 20px; align-items: start;">
                     
-                    <div id="left-table" style="font-family: 'Courier New', monospace; font-size: 13px;">
-                        <div class="trr-row" data-result="11" style="padding: 8px; margin: 4px 0; background: rgba(183, 28, 28, 0.1); border-left: 3px solid #b71c1c; cursor: pointer; transition: all 0.3s;">
-                            <span style="color: #b71c1c; font-weight: bold;">11</span> <span style="color: #ddd;">Brazo Izquierdo</span>
-                        </div>
-                        <div class="trr-row" data-result="12" style="padding: 8px; margin: 4px 0; background: rgba(183, 28, 28, 0.1); border-left: 3px solid #888; cursor: pointer; transition: all 0.3s;">
-                            <span style="color: #888; font-weight: bold;">12</span> <span style="color: #ddd;">Brazo Izquierdo</span>
-                        </div>
-                        <div class="trr-row" data-result="13" style="padding: 8px; margin: 4px 0; background: rgba(183, 28, 28, 0.1); border-left: 3px solid #888; cursor: pointer; transition: all 0.3s;">
-                            <span style="color: #888; font-weight: bold;">13</span> <span style="color: #ddd;">Brazo Izquierdo</span>
-                        </div>
-                        <div class="trr-row" data-result="14" style="padding: 8px; margin: 4px 0; background: rgba(183, 28, 28, 0.1); border-left: 3px solid #888; cursor: pointer; transition: all 0.3s;">
-                            <span style="color: #888; font-weight: bold;">14</span> <span style="color: #ddd;">Pierna Izquierda</span>
-                        </div>
-                        <div class="trr-row" data-result="15" style="padding: 8px; margin: 4px 0; background: rgba(183, 28, 28, 0.1); border-left: 3px solid #888; cursor: pointer; transition: all 0.3s;">
-                            <span style="color: #888; font-weight: bold;">15</span> <span style="color: #ddd;">Pierna Derecha</span>
-                        </div>
-                        <div class="trr-row" data-result="16" style="padding: 8px; margin: 4px 0; background: rgba(183, 28, 28, 0.1); border-left: 3px solid #888; cursor: pointer; transition: all 0.3s;">
-                            <span style="color: #888; font-weight: bold;">16</span> <span style="color: #ddd;">Pierna Derecha</span>
-                        </div>
-                        <div class="trr-row" data-result="21" style="padding: 8px; margin: 4px 0; background: rgba(183, 28, 28, 0.1); border-left: 3px solid #888; cursor: pointer; transition: all 0.3s;">
-                            <span style="color: #888; font-weight: bold;">21</span> <span style="color: #ddd;">Pierna Derecha</span>
-                        </div>
-                        <div class="trr-row" data-result="22" style="padding: 8px; margin: 4px 0; background: rgba(183, 28, 28, 0.1); border-left: 3px solid #b71c1c; cursor: pointer; transition: all 0.3s;">
-                            <span style="color: #b71c1c; font-weight: bold;">22</span> <span style="color: #ddd;">Pierna Derecha</span>
-                        </div>
-                        <div class="trr-row" data-result="23" style="padding: 8px; margin: 4px 0; background: rgba(183, 28, 28, 0.1); border-left: 3px solid #888; cursor: pointer; transition: all 0.3s;">
-                            <span style="color: #888; font-weight: bold;">23</span> <span style="color: #ddd;">Pierna Derecha</span>
-                        </div>
-                        <div class="trr-row" data-result="24" style="padding: 8px; margin: 4px 0; background: rgba(183, 28, 28, 0.1); border-left: 3px solid #888; cursor: pointer; transition: all 0.3s;">
-                            <span style="color: #888; font-weight: bold;">24</span> <span style="color: #ddd;">Cabeza</span>
-                        </div>
-                        <div class="trr-row" data-result="25" style="padding: 8px; margin: 4px 0; background: rgba(183, 28, 28, 0.1); border-left: 3px solid #888; cursor: pointer; transition: all 0.3s;">
-                            <span style="color: #888; font-weight: bold;">25</span> <span style="color: #ddd;">Cabeza</span>
-                        </div>
-                        <div class="trr-row" data-result="26" style="padding: 8px; margin: 4px 0; background: rgba(183, 28, 28, 0.1); border-left: 3px solid #888; cursor: pointer; transition: all 0.3s;">
-                            <span style="color: #888; font-weight: bold;">26</span> <span style="color: #ddd;">Cabeza</span>
-                        </div>
-                        <div class="trr-row" data-result="31" style="padding: 8px; margin: 4px 0; background: rgba(183, 28, 28, 0.1); border-left: 3px solid #888; cursor: pointer; transition: all 0.3s;">
-                            <span style="color: #888; font-weight: bold;">31</span> <span style="color: #ddd;">Cabeza</span>
-                        </div>
-                        <div class="trr-row" data-result="32" style="padding: 8px; margin: 4px 0; background: rgba(183, 28, 28, 0.1); border-left: 3px solid #888; cursor: pointer; transition: all 0.3s;">
-                            <span style="color: #888; font-weight: bold;">32</span> <span style="color: #ddd;">Brazo Izquierdo</span>
-                        </div>
-                        <div class="trr-row" data-result="33" style="padding: 8px; margin: 4px 0; background: rgba(183, 28, 28, 0.1); border-left: 3px solid #b71c1c; cursor: pointer; transition: all 0.3s;">
-                            <span style="color: #b71c1c; font-weight: bold;">33</span> <span style="color: #ddd;">Torso</span>
-                        </div>
-                        <div class="trr-row" data-result="34" style="padding: 8px; margin: 4px 0; background: rgba(183, 28, 28, 0.1); border-left: 3px solid #888; cursor: pointer; transition: all 0.3s;">
-                            <span style="color: #888; font-weight: bold;">34</span> <span style="color: #ddd;">Torso</span>
-                        </div>
-                        <div class="trr-row" data-result="35" style="padding: 8px; margin: 4px 0; background: rgba(183, 28, 28, 0.1); border-left: 3px solid #888; cursor: pointer; transition: all 0.3s;">
-                            <span style="color: #888; font-weight: bold;">35</span> <span style="color: #ddd;">Torso</span>
-                        </div>
-                        <div class="trr-row" data-result="36" style="padding: 8px; margin: 4px 0; background: rgba(183, 28, 28, 0.1); border-left: 3px solid #888; cursor: pointer; transition: all 0.3s;">
-                            <span style="color: #888; font-weight: bold;">36</span> <span style="color: #ddd;">Torso</span>
+                    <!-- TABLA IZQUIERDA (11-36) -->
+                    <div style="background: linear-gradient(135deg, rgba(26, 26, 26, 0.95) 0%, rgba(10, 10, 10, 0.98) 100%); border: 2px solid #b71c1c; padding: 0; border-radius: 4px; box-shadow: 0 0 20px rgba(183, 28, 28, 0.4), inset 0 0 30px rgba(0, 0, 0, 0.5);">
+                        <h3 style="color: #ff8c42; font-family: 'Courier New', monospace; font-size: 16px; margin: 0; text-align: center; text-transform: uppercase; letter-spacing: 3px; background: rgba(183, 28, 28, 0.3); padding: 12px; border-bottom: 2px solid #b71c1c;">
+                            TABLA D1 (1-3)
+                        </h3>
+                        
+                        <div style="padding: 15px;">
+                            <table style="width: 100%; border-collapse: collapse; font-family: 'Courier New', monospace; font-size: 14px;">
+                                <thead>
+                                    <tr style="background: rgba(183, 28, 28, 0.2); border-bottom: 2px solid #b71c1c;">
+                                        <th style="padding: 10px; text-align: center; color: #ff8c42; border-right: 1px solid #b71c1c;">D1</th>
+                                        <th style="padding: 10px; text-align: center; color: #ff8c42; border-right: 1px solid #b71c1c;">D2</th>
+                                        <th style="padding: 10px; text-align: left; color: #ff8c42;">Localización</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="left-table-body">
+                                    <tr class="trr-row-table" data-result="11" style="cursor: pointer; transition: all 0.3s; background: rgba(183, 28, 28, 0.15); border-bottom: 1px solid rgba(183, 28, 28, 0.3);">
+                                        <td style="padding: 10px; text-align: center; color: #ff8c42; font-weight: bold; border-right: 1px solid rgba(183, 28, 28, 0.3);">1</td>
+                                        <td style="padding: 10px; text-align: center; color: #ff8c42; font-weight: bold; border-right: 1px solid rgba(183, 28, 28, 0.3);">1</td>
+                                        <td style="padding: 10px; text-align: left; color: #ff8c42; font-weight: bold;">Brazo Izquierdo</td>
+                                    </tr>
+                                    <tr class="trr-row-table" data-result="12" style="cursor: pointer; transition: all 0.3s; border-bottom: 1px solid rgba(100, 100, 100, 0.2);">
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">1</td>
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">2</td>
+                                        <td style="padding: 10px; text-align: left; color: #ddd;">Brazo Izquierdo</td>
+                                    </tr>
+                                    <tr class="trr-row-table" data-result="13" style="cursor: pointer; transition: all 0.3s; border-bottom: 1px solid rgba(100, 100, 100, 0.2);">
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">1</td>
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">3</td>
+                                        <td style="padding: 10px; text-align: left; color: #ddd;">Brazo Izquierdo</td>
+                                    </tr>
+                                    <tr class="trr-row-table" data-result="14" style="cursor: pointer; transition: all 0.3s; border-bottom: 1px solid rgba(100, 100, 100, 0.2);">
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">1</td>
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">4</td>
+                                        <td style="padding: 10px; text-align: left; color: #ddd;">Pierna Izquierda</td>
+                                    </tr>
+                                    <tr class="trr-row-table" data-result="15" style="cursor: pointer; transition: all 0.3s; border-bottom: 1px solid rgba(100, 100, 100, 0.2);">
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">1</td>
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">5</td>
+                                        <td style="padding: 10px; text-align: left; color: #ddd;">Pierna Derecha</td>
+                                    </tr>
+                                    <tr class="trr-row-table" data-result="16" style="cursor: pointer; transition: all 0.3s; border-bottom: 1px solid rgba(100, 100, 100, 0.2);">
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">1</td>
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">6</td>
+                                        <td style="padding: 10px; text-align: left; color: #ddd;">Pierna Derecha</td>
+                                    </tr>
+                                    <tr class="trr-row-table" data-result="21" style="cursor: pointer; transition: all 0.3s; border-bottom: 1px solid rgba(100, 100, 100, 0.2);">
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">2</td>
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">1</td>
+                                        <td style="padding: 10px; text-align: left; color: #ddd;">Pierna Derecha</td>
+                                    </tr>
+                                    <tr class="trr-row-table" data-result="22" style="cursor: pointer; transition: all 0.3s; background: rgba(183, 28, 28, 0.15); border-bottom: 1px solid rgba(183, 28, 28, 0.3);">
+                                        <td style="padding: 10px; text-align: center; color: #ff8c42; font-weight: bold; border-right: 1px solid rgba(183, 28, 28, 0.3);">2</td>
+                                        <td style="padding: 10px; text-align: center; color: #ff8c42; font-weight: bold; border-right: 1px solid rgba(183, 28, 28, 0.3);">2</td>
+                                        <td style="padding: 10px; text-align: left; color: #ff8c42; font-weight: bold;">Pierna Derecha</td>
+                                    </tr>
+                                    <tr class="trr-row-table" data-result="23" style="cursor: pointer; transition: all 0.3s; border-bottom: 1px solid rgba(100, 100, 100, 0.2);">
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">2</td>
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">3</td>
+                                        <td style="padding: 10px; text-align: left; color: #ddd;">Pierna Derecha</td>
+                                    </tr>
+                                    <tr class="trr-row-table" data-result="24" style="cursor: pointer; transition: all 0.3s; border-bottom: 1px solid rgba(100, 100, 100, 0.2);">
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">2</td>
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">4</td>
+                                        <td style="padding: 10px; text-align: left; color: #ddd;">Cabeza</td>
+                                    </tr>
+                                    <tr class="trr-row-table" data-result="25" style="cursor: pointer; transition: all 0.3s; border-bottom: 1px solid rgba(100, 100, 100, 0.2);">
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">2</td>
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">5</td>
+                                        <td style="padding: 10px; text-align: left; color: #ddd;">Cabeza</td>
+                                    </tr>
+                                    <tr class="trr-row-table" data-result="26" style="cursor: pointer; transition: all 0.3s; border-bottom: 1px solid rgba(100, 100, 100, 0.2);">
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">2</td>
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">6</td>
+                                        <td style="padding: 10px; text-align: left; color: #ddd;">Cabeza</td>
+                                    </tr>
+                                    <tr class="trr-row-table" data-result="31" style="cursor: pointer; transition: all 0.3s; border-bottom: 1px solid rgba(100, 100, 100, 0.2);">
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">3</td>
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">1</td>
+                                        <td style="padding: 10px; text-align: left; color: #ddd;">Cabeza</td>
+                                    </tr>
+                                    <tr class="trr-row-table" data-result="32" style="cursor: pointer; transition: all 0.3s; border-bottom: 1px solid rgba(100, 100, 100, 0.2);">
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">3</td>
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">2</td>
+                                        <td style="padding: 10px; text-align: left; color: #ddd;">Brazo Izquierdo</td>
+                                    </tr>
+                                    <tr class="trr-row-table" data-result="33" style="cursor: pointer; transition: all 0.3s; background: rgba(183, 28, 28, 0.15); border-bottom: 1px solid rgba(183, 28, 28, 0.3);">
+                                        <td style="padding: 10px; text-align: center; color: #ff8c42; font-weight: bold; border-right: 1px solid rgba(183, 28, 28, 0.3);">3</td>
+                                        <td style="padding: 10px; text-align: center; color: #ff8c42; font-weight: bold; border-right: 1px solid rgba(183, 28, 28, 0.3);">3</td>
+                                        <td style="padding: 10px; text-align: left; color: #ff8c42; font-weight: bold;">Torso</td>
+                                    </tr>
+                                    <tr class="trr-row-table" data-result="34" style="cursor: pointer; transition: all 0.3s; border-bottom: 1px solid rgba(100, 100, 100, 0.2);">
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">3</td>
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">4</td>
+                                        <td style="padding: 10px; text-align: left; color: #ddd;">Torso</td>
+                                    </tr>
+                                    <tr class="trr-row-table" data-result="35" style="cursor: pointer; transition: all 0.3s; border-bottom: 1px solid rgba(100, 100, 100, 0.2);">
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">3</td>
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">5</td>
+                                        <td style="padding: 10px; text-align: left; color: #ddd;">Torso</td>
+                                    </tr>
+                                    <tr class="trr-row-table" data-result="36" style="cursor: pointer; transition: all 0.3s;">
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">3</td>
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">6</td>
+                                        <td style="padding: 10px; text-align: left; color: #ddd;">Torso</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
-                </div>
-                
-                <!-- CENTRO: DADOS -->
-                <div style="background: rgba(26, 26, 26, 0.8); border: 2px solid #b71c1c; padding: 30px; border-radius: 4px; min-width: 300px; clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);">
-                    <h3 style="color: #b71c1c; font-family: 'Courier New', monospace; margin-top: 0; text-align: center; text-transform: uppercase; letter-spacing: 2px;">Tirada de Impacto</h3>
                     
-                    <div style="display: flex; justify-content: center; gap: 30px; margin: 30px 0;">
-                        <!-- Dado 1 -->
-                        <div style="text-align: center;">
-                            <div id="dice1" style="width: 100px; height: 100px; background: #fff; border: 3px solid #b71c1c; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 48px; font-weight: bold; color: #000; box-shadow: 0 4px 8px rgba(183, 28, 28, 0.6);">
-                                ?
+                    <!-- CENTRO: DADOS Y RESULTADO -->
+                    <div style="display: flex; flex-direction: column; gap: 20px;">
+                        <!-- Botón LOCALIZAR IMPACTO -->
+                        <button onclick="rollHitLocation()" style="width: 100%; padding: 20px; background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff; border: 3px solid #ff8c42; border-radius: 8px; font-family: Impact, sans-serif; font-size: 24px; cursor: pointer; text-transform: uppercase; letter-spacing: 3px; transition: all 0.3s; box-shadow: 0 4px 15px rgba(183, 28, 28, 0.6), inset 0 0 20px rgba(255, 140, 66, 0.2); position: relative;">
+                            <span style="display: inline-block; margin-right: 15px; font-size: 32px;">🎲</span>
+                            LOCALIZAR IMPACTO
+                        </button>
+                        
+                        <!-- Área de Dados -->
+                        <div style="background: linear-gradient(135deg, rgba(26, 26, 26, 0.95) 0%, rgba(10, 10, 10, 0.98) 100%); border: 2px solid #b71c1c; padding: 30px; border-radius: 8px; box-shadow: 0 0 20px rgba(183, 28, 28, 0.4), inset 0 0 30px rgba(0, 0, 0, 0.5);">
+                            <div style="display: flex; justify-content: center; gap: 40px; margin-bottom: 30px;">
+                                <div style="text-align: center;">
+                                    <div style="color: #ff8c42; font-family: 'Courier New', monospace; font-size: 14px; margin-bottom: 10px; letter-spacing: 2px;">DADO 1</div>
+                                    <div id="dice1" style="width: 120px; height: 120px; background: linear-gradient(135deg, #fff 0%, #e0e0e0 100%); border: 4px solid #b71c1c; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 64px; font-weight: bold; color: #000; box-shadow: 0 8px 20px rgba(183, 28, 28, 0.8), inset 0 0 15px rgba(255, 255, 255, 0.3);">
+                                        -
+                                    </div>
+                                </div>
+                                
+                                <div style="text-align: center;">
+                                    <div style="color: #ff8c42; font-family: 'Courier New', monospace; font-size: 14px; margin-bottom: 10px; letter-spacing: 2px;">DADO 2</div>
+                                    <div id="dice2" style="width: 120px; height: 120px; background: linear-gradient(135deg, #fff 0%, #e0e0e0 100%); border: 4px solid #b71c1c; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 64px; font-weight: bold; color: #000; box-shadow: 0 8px 20px rgba(183, 28, 28, 0.8), inset 0 0 15px rgba(255, 255, 255, 0.3);">
+                                        -
+                                    </div>
+                                </div>
                             </div>
-                            <div style="color: #888; font-size: 12px; margin-top: 10px; font-family: 'Courier New', monospace;">DADO 1</div>
+                            
+                            <button onclick="clearResults()" style="width: 100%; padding: 12px; background: rgba(42, 42, 42, 0.8); color: #888; border: 1px solid #666; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 14px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; transition: all 0.3s;">
+                                🔄 LIMPIAR
+                            </button>
                         </div>
                         
-                        <!-- Dado 2 -->
-                        <div style="text-align: center;">
-                            <div id="dice2" style="width: 100px; height: 100px; background: #fff; border: 3px solid #b71c1c; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 48px; font-weight: bold; color: #000; box-shadow: 0 4px 8px rgba(183, 28, 28, 0.6);">
-                                ?
+                        <!-- Área de Resultado -->
+                        <div style="background: linear-gradient(135deg, rgba(10, 30, 40, 0.95) 0%, rgba(5, 15, 20, 0.98) 100%); border: 3px solid #4a9eff; padding: 30px; border-radius: 8px; box-shadow: 0 0 30px rgba(74, 158, 255, 0.5), inset 0 0 40px rgba(0, 0, 0, 0.7); position: relative;">
+                            <!-- Efecto CRT -->
+                            <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(74, 158, 255, 0.03) 2px, rgba(74, 158, 255, 0.03) 4px); pointer-events: none; border-radius: 8px;"></div>
+                            
+                            <div style="position: relative; z-index: 1;">
+                                <div style="color: #4a9eff; font-family: 'Courier New', monospace; font-size: 18px; font-weight: bold; margin-bottom: 15px; text-align: center; text-transform: uppercase; letter-spacing: 3px; text-shadow: 0 0 10px rgba(74, 158, 255, 0.8);">
+                                    Localización:
+                                </div>
+                                <div id="hit-location-text" style="color: #fff; font-size: 32px; font-weight: bold; text-align: center; font-family: Impact, sans-serif; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 20px rgba(74, 158, 255, 1), 0 0 40px rgba(74, 158, 255, 0.5); min-height: 50px; display: flex; align-items: center; justify-content: center;">
+                                    -
+                                </div>
                             </div>
-                            <div style="color: #888; font-size: 12px; margin-top: 10px; font-family: 'Courier New', monospace;">DADO 2</div>
+                        </div>
+                        
+                        <!-- Alerta de Crítico -->
+                        <div id="crit-alert" style="display: none; background: linear-gradient(135deg, rgba(139, 0, 0, 0.95) 0%, rgba(70, 0, 0, 0.98) 100%); border: 3px solid #ff8c42; padding: 25px; border-radius: 8px; animation: pulse-red 1.5s ease-in-out infinite; box-shadow: 0 0 30px rgba(255, 140, 66, 0.6), inset 0 0 40px rgba(0, 0, 0, 0.7);">
+                            <div style="color: #ff8c42; font-family: 'Courier New', monospace; font-size: 22px; font-weight: bold; text-align: center; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 3px; text-shadow: 0 0 10px rgba(255, 140, 66, 0.8);">
+                                ⚠️ ¡IMPACTO CRÍTICO! ⚠️
+                            </div>
+                            <div style="color: #ff6666; font-size: 16px; text-align: center; margin-bottom: 20px;">
+                                Localización: <span id="crit-location-type" style="color: #fff; font-weight: bold;">---</span>
+                            </div>
+                            <button onclick="rollCritical()" style="width: 100%; padding: 15px; background: linear-gradient(135deg, #ff8c42 0%, #d67835 100%); color: #000; border: none; border-radius: 4px; font-family: Impact, sans-serif; font-size: 18px; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; box-shadow: 0 4px 15px rgba(255, 140, 66, 0.6);">
+                                🎲 TIRAR CRÍTICO (1D6)
+                            </button>
                         </div>
                     </div>
                     
-                    <button onclick="rollHitLocation()" style="width: 100%; padding: 15px; background: #b71c1c; color: #fff; border: none; border-radius: 4px; font-family: Impact, sans-serif; font-size: 18px; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; transition: all 0.3s; clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);">
-                        ⚔️ LANZAR DADOS
-                    </button>
-                    
-                    <button onclick="clearResults()" style="width: 100%; padding: 12px; background: rgba(42, 42, 42, 0.8); color: #888; border: 1px solid #666; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 14px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; margin-top: 10px; transition: all 0.3s;">
-                        🔄 LIMPIAR
-                    </button>
-                    
-                    <!-- Resultado de Localización -->
-                    <div id="hit-result" style="display: none; margin-top: 30px; padding: 20px; background: rgba(0, 0, 0, 0.5); border: 2px solid #4a5a6a; border-radius: 4px;">
-                        <div style="color: #4a5a6a; font-family: 'Courier New', monospace; font-size: 14px; font-weight: bold; margin-bottom: 10px; text-align: center;">
-                            RESULTADO DE IMPACTO
+                    <!-- TABLA DERECHA (41-66) -->
+                    <div style="background: linear-gradient(135deg, rgba(26, 26, 26, 0.95) 0%, rgba(10, 10, 10, 0.98) 100%); border: 2px solid #b71c1c; padding: 0; border-radius: 4px; box-shadow: 0 0 20px rgba(183, 28, 28, 0.4), inset 0 0 30px rgba(0, 0, 0, 0.5);">
+                        <h3 style="color: #ff8c42; font-family: 'Courier New', monospace; font-size: 16px; margin: 0; text-align: center; text-transform: uppercase; letter-spacing: 3px; background: rgba(183, 28, 28, 0.3); padding: 12px; border-bottom: 2px solid #b71c1c;">
+                            TABLA D1 (4-6)
+                        </h3>
+                        
+                        <div style="padding: 15px;">
+                            <table style="width: 100%; border-collapse: collapse; font-family: 'Courier New', monospace; font-size: 14px;">
+                                <thead>
+                                    <tr style="background: rgba(183, 28, 28, 0.2); border-bottom: 2px solid #b71c1c;">
+                                        <th style="padding: 10px; text-align: center; color: #ff8c42; border-right: 1px solid #b71c1c;">D1</th>
+                                        <th style="padding: 10px; text-align: center; color: #ff8c42; border-right: 1px solid #b71c1c;">D2</th>
+                                        <th style="padding: 10px; text-align: left; color: #ff8c42;">Localización</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="right-table-body">
+                                    <tr class="trr-row-table" data-result="41" style="cursor: pointer; transition: all 0.3s; border-bottom: 1px solid rgba(100, 100, 100, 0.2);">
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">4</td>
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">1</td>
+                                        <td style="padding: 10px; text-align: left; color: #ddd;">Torso</td>
+                                    </tr>
+                                    <tr class="trr-row-table" data-result="42" style="cursor: pointer; transition: all 0.3s; border-bottom: 1px solid rgba(100, 100, 100, 0.2);">
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">4</td>
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">2</td>
+                                        <td style="padding: 10px; text-align: left; color: #ddd;">Torso</td>
+                                    </tr>
+                                    <tr class="trr-row-table" data-result="43" style="cursor: pointer; transition: all 0.3s; border-bottom: 1px solid rgba(100, 100, 100, 0.2);">
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">4</td>
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">3</td>
+                                        <td style="padding: 10px; text-align: left; color: #ddd;">Torso</td>
+                                    </tr>
+                                    <tr class="trr-row-table" data-result="44" style="cursor: pointer; transition: all 0.3s; background: rgba(183, 28, 28, 0.15); border-bottom: 1px solid rgba(183, 28, 28, 0.3);">
+                                        <td style="padding: 10px; text-align: center; color: #ff8c42; font-weight: bold; border-right: 1px solid rgba(183, 28, 28, 0.3);">4</td>
+                                        <td style="padding: 10px; text-align: center; color: #ff8c42; font-weight: bold; border-right: 1px solid rgba(183, 28, 28, 0.3);">4</td>
+                                        <td style="padding: 10px; text-align: left; color: #ff8c42; font-weight: bold;">Torso</td>
+                                    </tr>
+                                    <tr class="trr-row-table" data-result="45" style="cursor: pointer; transition: all 0.3s; border-bottom: 1px solid rgba(100, 100, 100, 0.2);">
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">4</td>
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">5</td>
+                                        <td style="padding: 10px; text-align: left; color: #ddd;">Torso</td>
+                                    </tr>
+                                    <tr class="trr-row-table" data-result="46" style="cursor: pointer; transition: all 0.3s; border-bottom: 1px solid rgba(100, 100, 100, 0.2);">
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">4</td>
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">6</td>
+                                        <td style="padding: 10px; text-align: left; color: #ddd;">Torso</td>
+                                    </tr>
+                                    <tr class="trr-row-table" data-result="51" style="cursor: pointer; transition: all 0.3s; border-bottom: 1px solid rgba(100, 100, 100, 0.2);">
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">5</td>
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">1</td>
+                                        <td style="padding: 10px; text-align: left; color: #ddd;">Torso</td>
+                                    </tr>
+                                    <tr class="trr-row-table" data-result="52" style="cursor: pointer; transition: all 0.3s; border-bottom: 1px solid rgba(100, 100, 100, 0.2);">
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">5</td>
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">2</td>
+                                        <td style="padding: 10px; text-align: left; color: #ddd;">Torso</td>
+                                    </tr>
+                                    <tr class="trr-row-table" data-result="53" style="cursor: pointer; transition: all 0.3s; border-bottom: 1px solid rgba(100, 100, 100, 0.2);">
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">5</td>
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">3</td>
+                                        <td style="padding: 10px; text-align: left; color: #ddd;">Brazo Derecho</td>
+                                    </tr>
+                                    <tr class="trr-row-table" data-result="54" style="cursor: pointer; transition: all 0.3s; border-bottom: 1px solid rgba(100, 100, 100, 0.2);">
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">5</td>
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">4</td>
+                                        <td style="padding: 10px; text-align: left; color: #ddd;">Brazo Derecho</td>
+                                    </tr>
+                                    <tr class="trr-row-table" data-result="55" style="cursor: pointer; transition: all 0.3s; background: rgba(183, 28, 28, 0.15); border-bottom: 1px solid rgba(183, 28, 28, 0.3);">
+                                        <td style="padding: 10px; text-align: center; color: #ff8c42; font-weight: bold; border-right: 1px solid rgba(183, 28, 28, 0.3);">5</td>
+                                        <td style="padding: 10px; text-align: center; color: #ff8c42; font-weight: bold; border-right: 1px solid rgba(183, 28, 28, 0.3);">5</td>
+                                        <td style="padding: 10px; text-align: left; color: #ff8c42; font-weight: bold;">Brazo Derecho</td>
+                                    </tr>
+                                    <tr class="trr-row-table" data-result="56" style="cursor: pointer; transition: all 0.3s; border-bottom: 1px solid rgba(100, 100, 100, 0.2);">
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">5</td>
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">6</td>
+                                        <td style="padding: 10px; text-align: left; color: #ddd;">Brazo Derecho</td>
+                                    </tr>
+                                    <tr class="trr-row-table" data-result="61" style="cursor: pointer; transition: all 0.3s; border-bottom: 1px solid rgba(100, 100, 100, 0.2);">
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">6</td>
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">1</td>
+                                        <td style="padding: 10px; text-align: left; color: #ddd;">Brazo Derecho</td>
+                                    </tr>
+                                    <tr class="trr-row-table" data-result="62" style="cursor: pointer; transition: all 0.3s; border-bottom: 1px solid rgba(100, 100, 100, 0.2);">
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">6</td>
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">2</td>
+                                        <td style="padding: 10px; text-align: left; color: #ddd;">Pierna Izquierda</td>
+                                    </tr>
+                                    <tr class="trr-row-table" data-result="63" style="cursor: pointer; transition: all 0.3s; border-bottom: 1px solid rgba(100, 100, 100, 0.2);">
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">6</td>
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">3</td>
+                                        <td style="padding: 10px; text-align: left; color: #ddd;">Pierna Izquierda</td>
+                                    </tr>
+                                    <tr class="trr-row-table" data-result="64" style="cursor: pointer; transition: all 0.3s; border-bottom: 1px solid rgba(100, 100, 100, 0.2);">
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">6</td>
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">4</td>
+                                        <td style="padding: 10px; text-align: left; color: #ddd;">Pierna Izquierda</td>
+                                    </tr>
+                                    <tr class="trr-row-table" data-result="65" style="cursor: pointer; transition: all 0.3s; border-bottom: 1px solid rgba(100, 100, 100, 0.2);">
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">6</td>
+                                        <td style="padding: 10px; text-align: center; color: #ddd; border-right: 1px solid rgba(100, 100, 100, 0.2);">5</td>
+                                        <td style="padding: 10px; text-align: left; color: #ddd;">Pierna Izquierda</td>
+                                    </tr>
+                                    <tr class="trr-row-table" data-result="66" style="cursor: pointer; transition: all 0.3s; background: rgba(183, 28, 28, 0.15);">
+                                        <td style="padding: 10px; text-align: center; color: #ff8c42; font-weight: bold; border-right: 1px solid rgba(183, 28, 28, 0.3);">6</td>
+                                        <td style="padding: 10px; text-align: center; color: #ff8c42; font-weight: bold; border-right: 1px solid rgba(183, 28, 28, 0.3);">6</td>
+                                        <td style="padding: 10px; text-align: left; color: #ff8c42; font-weight: bold;">Pierna Izquierda</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
-                        <div style="color: #fff; font-size: 24px; font-weight: bold; margin: 15px 0; text-align: center;">
-                            <span id="hit-location-text">---</span>
-                        </div>
-                        <div style="color: #888; font-size: 12px; text-align: center;">
-                            Tirada: <span id="hit-dice-value" style="color: #fff; font-weight: bold;">--</span>
-                        </div>
-                    </div>
-                    
-                    <!-- Alerta de Crítico -->
-                    <div id="crit-alert" style="display: none; margin-top: 20px; padding: 20px; background: rgba(26, 0, 0, 0.8); border: 2px solid #b71c1c; border-radius: 4px; animation: pulse-red 1.5s ease-in-out infinite;">
-                        <div style="color: #b71c1c; font-family: 'Courier New', monospace; font-size: 18px; font-weight: bold; text-align: center; margin-bottom: 15px; text-transform: uppercase;">
-                            ⚠️ ¡IMPACTO CRÍTICO! ⚠️
-                        </div>
-                        <div style="color: #ff6666; font-size: 14px; text-align: center; margin-bottom: 15px;">
-                            Localización: <span id="crit-location-type" style="color: #fff; font-weight: bold;">---</span>
-                        </div>
-                        <button onclick="rollCritical()" style="width: 100%; padding: 12px; background: #b71c1c; color: #fff; border: none; border-radius: 4px; font-family: Impact, sans-serif; font-size: 16px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);">
-                            🎲 TIRAR CRÍTICO (1D6)
-                        </button>
                     </div>
                 </div>
                 
-                <!-- TABLA DERECHA (41-66) -->
-                <div style="background: rgba(26, 26, 26, 0.8); border: 2px solid #b71c1c; padding: 20px; border-radius: 4px; width: 280px; clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);">
-                    <h3 style="color: #b71c1c; font-family: 'Courier New', monospace; font-size: 14px; margin-top: 0; text-align: center; text-transform: uppercase; letter-spacing: 2px;">Tabla 41-66</h3>
+                <!-- Resultado de Crítico (fuera del layout de 3 columnas) -->
+                <div id="crit-result" style="display: none; margin-top: 30px; max-width: 1200px; margin-left: auto; margin-right: auto; padding: 25px; background: linear-gradient(135deg, rgba(26, 26, 26, 0.95) 0%, rgba(10, 10, 10, 0.98) 100%); border: 3px solid #ff8c42; border-radius: 8px; box-shadow: 0 0 30px rgba(255, 140, 66, 0.5), inset 0 0 40px rgba(0, 0, 0, 0.7);">
+                    <div style="color: #ff8c42; font-family: 'Courier New', monospace; font-size: 20px; font-weight: bold; margin-bottom: 20px; text-align: center; text-transform: uppercase; letter-spacing: 3px;">
+                        Lesión Crítica
+                    </div>
+                    <div style="color: #ff8c42; font-size: 28px; font-weight: bold; text-align: center; margin: 20px 0; text-transform: uppercase; font-family: Impact, sans-serif; text-shadow: 0 0 15px rgba(255, 140, 66, 0.8);">
+                        <span id="crit-injury-name">---</span>
+                    </div>
+                    <div style="color: #888; font-size: 14px; text-align: center; margin-bottom: 25px;">
+                        Resultado del dado: <span id="crit-dice-value" style="color: #fff; font-weight: bold; font-size: 18px;">-</span>
+                    </div>
                     
-                    <div id="right-table" style="font-family: 'Courier New', monospace; font-size: 13px;">
-                        <div class="trr-row" data-result="41" style="padding: 8px; margin: 4px 0; background: rgba(183, 28, 28, 0.1); border-left: 3px solid #888; cursor: pointer; transition: all 0.3s;">
-                            <span style="color: #888; font-weight: bold;">41</span> <span style="color: #ddd;">Torso</span>
+                    <!-- Consecuencias -->
+                    <div style="background: rgba(0, 0, 0, 0.6); padding: 20px; border-left: 5px solid #b71c1c; margin-top: 20px; border-radius: 4px;">
+                        <div style="color: #ff8c42; font-size: 16px; font-weight: bold; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 2px;">
+                            Consecuencias:
                         </div>
-                        <div class="trr-row" data-result="42" style="padding: 8px; margin: 4px 0; background: rgba(183, 28, 28, 0.1); border-left: 3px solid #888; cursor: pointer; transition: all 0.3s;">
-                            <span style="color: #888; font-weight: bold;">42</span> <span style="color: #ddd;">Torso</span>
-                        </div>
-                        <div class="trr-row" data-result="43" style="padding: 8px; margin: 4px 0; background: rgba(183, 28, 28, 0.1); border-left: 3px solid #888; cursor: pointer; transition: all 0.3s;">
-                            <span style="color: #888; font-weight: bold;">43</span> <span style="color: #ddd;">Torso</span>
-                        </div>
-                        <div class="trr-row" data-result="44" style="padding: 8px; margin: 4px 0; background: rgba(183, 28, 28, 0.1); border-left: 3px solid #b71c1c; cursor: pointer; transition: all 0.3s;">
-                            <span style="color: #b71c1c; font-weight: bold;">44</span> <span style="color: #ddd;">Torso</span>
-                        </div>
-                        <div class="trr-row" data-result="45" style="padding: 8px; margin: 4px 0; background: rgba(183, 28, 28, 0.1); border-left: 3px solid #888; cursor: pointer; transition: all 0.3s;">
-                            <span style="color: #888; font-weight: bold;">45</span> <span style="color: #ddd;">Torso</span>
-                        </div>
-                        <div class="trr-row" data-result="46" style="padding: 8px; margin: 4px 0; background: rgba(183, 28, 28, 0.1); border-left: 3px solid #888; cursor: pointer; transition: all 0.3s;">
-                            <span style="color: #888; font-weight: bold;">46</span> <span style="color: #ddd;">Torso</span>
-                        </div>
-                        <div class="trr-row" data-result="51" style="padding: 8px; margin: 4px 0; background: rgba(183, 28, 28, 0.1); border-left: 3px solid #888; cursor: pointer; transition: all 0.3s;">
-                            <span style="color: #888; font-weight: bold;">51</span> <span style="color: #ddd;">Torso</span>
-                        </div>
-                        <div class="trr-row" data-result="52" style="padding: 8px; margin: 4px 0; background: rgba(183, 28, 28, 0.1); border-left: 3px solid #888; cursor: pointer; transition: all 0.3s;">
-                            <span style="color: #888; font-weight: bold;">52</span> <span style="color: #ddd;">Torso</span>
-                        </div>
-                        <div class="trr-row" data-result="53" style="padding: 8px; margin: 4px 0; background: rgba(183, 28, 28, 0.1); border-left: 3px solid #888; cursor: pointer; transition: all 0.3s;">
-                            <span style="color: #888; font-weight: bold;">53</span> <span style="color: #ddd;">Brazo Derecho</span>
-                        </div>
-                        <div class="trr-row" data-result="54" style="padding: 8px; margin: 4px 0; background: rgba(183, 28, 28, 0.1); border-left: 3px solid #888; cursor: pointer; transition: all 0.3s;">
-                            <span style="color: #888; font-weight: bold;">54</span> <span style="color: #ddd;">Brazo Derecho</span>
-                        </div>
-                        <div class="trr-row" data-result="55" style="padding: 8px; margin: 4px 0; background: rgba(183, 28, 28, 0.1); border-left: 3px solid #b71c1c; cursor: pointer; transition: all 0.3s;">
-                            <span style="color: #b71c1c; font-weight: bold;">55</span> <span style="color: #ddd;">Brazo Derecho</span>
-                        </div>
-                        <div class="trr-row" data-result="56" style="padding: 8px; margin: 4px 0; background: rgba(183, 28, 28, 0.1); border-left: 3px solid #888; cursor: pointer; transition: all 0.3s;">
-                            <span style="color: #888; font-weight: bold;">56</span> <span style="color: #ddd;">Brazo Derecho</span>
-                        </div>
-                        <div class="trr-row" data-result="61" style="padding: 8px; margin: 4px 0; background: rgba(183, 28, 28, 0.1); border-left: 3px solid #888; cursor: pointer; transition: all 0.3s;">
-                            <span style="color: #888; font-weight: bold;">61</span> <span style="color: #ddd;">Brazo Derecho</span>
-                        </div>
-                        <div class="trr-row" data-result="62" style="padding: 8px; margin: 4px 0; background: rgba(183, 28, 28, 0.1); border-left: 3px solid #888; cursor: pointer; transition: all 0.3s;">
-                            <span style="color: #888; font-weight: bold;">62</span> <span style="color: #ddd;">Pierna Izquierda</span>
-                        </div>
-                        <div class="trr-row" data-result="63" style="padding: 8px; margin: 4px 0; background: rgba(183, 28, 28, 0.1); border-left: 3px solid #888; cursor: pointer; transition: all 0.3s;">
-                            <span style="color: #888; font-weight: bold;">63</span> <span style="color: #ddd;">Pierna Izquierda</span>
-                        </div>
-                        <div class="trr-row" data-result="64" style="padding: 8px; margin: 4px 0; background: rgba(183, 28, 28, 0.1); border-left: 3px solid #888; cursor: pointer; transition: all 0.3s;">
-                            <span style="color: #888; font-weight: bold;">64</span> <span style="color: #ddd;">Pierna Izquierda</span>
-                        </div>
-                        <div class="trr-row" data-result="65" style="padding: 8px; margin: 4px 0; background: rgba(183, 28, 28, 0.1); border-left: 3px solid #888; cursor: pointer; transition: all 0.3s;">
-                            <span style="color: #888; font-weight: bold;">65</span> <span style="color: #ddd;">Pierna Izquierda</span>
-                        </div>
-                        <div class="trr-row" data-result="66" style="padding: 8px; margin: 4px 0; background: rgba(183, 28, 28, 0.1); border-left: 3px solid #b71c1c; cursor: pointer; transition: all 0.3s;">
-                            <span style="color: #b71c1c; font-weight: bold;">66</span> <span style="color: #ddd;">Pierna Izquierda</span>
+                        <div id="crit-consequences" style="color: #ccc; font-size: 14px; line-height: 1.8;">
+                            ---
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
+        
+        <!-- SUBSECCIÓN: TABLA DE ARMAMENTO -->
+        <div id="trr-weapons" style="display:none; padding: 20px;">
+            <button class="back-to-home-btn no-print" onclick="backToTRRLanding()" style="position: fixed; top: 20px; left: 20px;">⬅️ VOLVER A TRR</button>
             
-            <!-- Resultado de Crítico (fuera del layout de 3 columnas) -->
-            <div id="crit-result" style="display: none; margin-top: 30px; max-width: 900px; margin-left: auto; margin-right: auto; padding: 20px; background: rgba(26, 26, 26, 0.8); border: 2px solid #b71c1c; border-radius: 4px; clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);">
-                <div style="color: #b71c1c; font-family: 'Courier New', monospace; font-size: 16px; font-weight: bold; margin-bottom: 15px; text-align: center; text-transform: uppercase;">
-                    Lesión Crítica
-                </div>
-                <div style="color: #b71c1c; font-size: 20px; font-weight: bold; text-align: center; margin: 15px 0; text-transform: uppercase;">
-                    <span id="crit-injury-name">---</span>
-                </div>
-                <div style="color: #888; font-size: 12px; text-align: center; margin-bottom: 20px;">
-                    Resultado del dado: <span id="crit-dice-value" style="color: #fff; font-weight: bold;">-</span>
+            <div style="text-align:center; margin: 20px auto; max-width: 1600px; padding: 20px;">
+                <h1 style="font-family: Impact, sans-serif; color: #b71c1c; text-transform: uppercase; letter-spacing: 3px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">
+                    TABLA DE ARMAMENTO
+                </h1>
+                <p style="color: #888; font-family: 'Courier New', monospace; margin-bottom: 30px;">Arsenal de Infantería - Sistema de Búsqueda</p>
+                
+                <!-- Filtros de Búsqueda -->
+                <div style="background: rgba(26, 26, 26, 0.8); border: 2px solid #b71c1c; padding: 20px; border-radius: 4px; margin-bottom: 20px; clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);">
+                    <h3 style="color: #b71c1c; font-family: 'Courier New', monospace; margin-top: 0; text-transform: uppercase; letter-spacing: 2px;">Filtros de Búsqueda</h3>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 15px;">
+                        <div>
+                            <label style="color: #888; display: block; margin-bottom: 5px; font-family: 'Courier New', monospace; font-size: 12px;">NOMBRE:</label>
+                            <input type="text" id="filter-name" placeholder="Buscar arma..." oninput="filterWeapons()" style="width: 100%; padding: 8px; background: rgba(0, 0, 0, 0.5); color: #fff; border: 1px solid #666; border-radius: 4px; font-family: 'Courier New', monospace;">
+                        </div>
+                        
+                        <div>
+                            <label style="color: #888; display: block; margin-bottom: 5px; font-family: 'Courier New', monospace; font-size: 12px;">TIPO:</label>
+                            <select id="filter-tipo" onchange="filterWeapons()" style="width: 100%; padding: 8px; background: rgba(0, 0, 0, 0.5); color: #fff; border: 1px solid #666; border-radius: 4px; font-family: 'Courier New', monospace;">
+                                <option value="">Todos</option>
+                                <option value="Pistola">Pistola</option>
+                                <option value="Rifle">Rifle</option>
+                                <option value="Arco">Arco</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label style="color: #888; display: block; margin-bottom: 5px; font-family: 'Courier New', monospace; font-size: 12px;">CLASE:</label>
+                            <select id="filter-clase" onchange="filterWeapons()" style="width: 100%; padding: 8px; background: rgba(0, 0, 0, 0.5); color: #fff; border: 1px solid #666; border-radius: 4px; font-family: 'Courier New', monospace;">
+                                <option value="">Todas</option>
+                                <option value="Balistica">Balística</option>
+                                <option value="Laser">Láser</option>
+                                <option value="Gyro">Gyro</option>
+                                <option value="Pulso">Pulso</option>
+                                <option value="Misil">Misil</option>
+                                <option value="Explosivo">Explosivo</option>
+                                <option value="Agujas">Agujas</option>
+                                <option value="Arco">Arco</option>
+                                <option value="Ballesta">Ballesta</option>
+                                <option value="Inflamable">Inflamable</option>
+                                <option value="Sonica">Sónica</option>
+                                <option value="Tranquilizante">Tranquilizante</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label style="color: #888; display: block; margin-bottom: 5px; font-family: 'Courier New', monospace; font-size: 12px;">TAMAÑO:</label>
+                            <select id="filter-size" onchange="filterWeapons()" style="width: 100%; padding: 8px; background: rgba(0, 0, 0, 0.5); color: #fff; border: 1px solid #666; border-radius: 4px; font-family: 'Courier New', monospace;">
+                                <option value="">Todos</option>
+                                <option value="A">A (Micro)</option>
+                                <option value="Pequeño">Pequeño</option>
+                                <option value="Medio">Medio</option>
+                                <option value="Grande">Grande</option>
+                                <option value="Enorme">Enorme</option>
+                            </select>
+                        </div>
+                        
+                        <div style="display: flex; align-items: flex-end;">
+                            <button onclick="clearFilters()" style="width: 100%; padding: 10px; background: rgba(42, 42, 42, 0.8); color: #888; border: 1px solid #666; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 12px; cursor: pointer; text-transform: uppercase;">
+                                🔄 LIMPIAR FILTROS
+                            </button>
+                        </div>
+                    </div>
                 </div>
                 
-                <!-- Consecuencias -->
-                <div style="background: rgba(0, 0, 0, 0.5); padding: 15px; border-left: 4px solid #b71c1c; margin-top: 15px;">
-                    <div style="color: #b71c1c; font-size: 14px; font-weight: bold; margin-bottom: 10px; text-transform: uppercase;">
-                        Consecuencias:
+                <!-- Tabla de Armas -->
+                <div style="background: rgba(26, 26, 26, 0.8); border: 2px solid #b71c1c; padding: 20px; border-radius: 4px; overflow-x: auto; clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);">
+                    <table id="weapons-table" style="width: 100%; border-collapse: collapse; font-family: 'Courier New', monospace; font-size: 12px;">
+                        <thead>
+                            <tr style="background: rgba(183, 28, 28, 0.2); border-bottom: 2px solid #b71c1c;">
+                                <th style="padding: 12px 8px; text-align: left; color: #b71c1c; font-weight: bold; text-transform: uppercase;">Nombre</th>
+                                <th style="padding: 12px 8px; text-align: center; color: #b71c1c; font-weight: bold; text-transform: uppercase;">Daño</th>
+                                <th style="padding: 12px 8px; text-align: center; color: #b71c1c; font-weight: bold; text-transform: uppercase;">S</th>
+                                <th style="padding: 12px 8px; text-align: center; color: #b71c1c; font-weight: bold; text-transform: uppercase;">M</th>
+                                <th style="padding: 12px 8px; text-align: center; color: #b71c1c; font-weight: bold; text-transform: uppercase;">L</th>
+                                <th style="padding: 12px 8px; text-align: center; color: #b71c1c; font-weight: bold; text-transform: uppercase;">Car</th>
+                                <th style="padding: 12px 8px; text-align: center; color: #b71c1c; font-weight: bold; text-transform: uppercase;">Rec</th>
+                                <th style="padding: 12px 8px; text-align: center; color: #b71c1c; font-weight: bold; text-transform: uppercase;">W</th>
+                                <th style="padding: 12px 8px; text-align: center; color: #b71c1c; font-weight: bold; text-transform: uppercase;">Tipo</th>
+                                <th style="padding: 12px 8px; text-align: center; color: #b71c1c; font-weight: bold; text-transform: uppercase;">Clase</th>
+                                <th style="padding: 12px 8px; text-align: center; color: #b71c1c; font-weight: bold; text-transform: uppercase;">Tamaño</th>
+                                <th style="padding: 12px 8px; text-align: left; color: #b71c1c; font-weight: bold; text-transform: uppercase;">Especial</th>
+                            </tr>
+                        </thead>
+                        <tbody id="weapons-tbody">
+                            <!-- Se llenará dinámicamente -->
+                        </tbody>
+                    </table>
+                    
+                    <div id="no-results" style="display: none; text-align: center; padding: 40px; color: #888;">
+                        <p style="font-size: 16px;">⚠️ No se encontraron armas con los filtros seleccionados</p>
                     </div>
-                    <div id="crit-consequences" style="color: #ccc; font-size: 13px; line-height: 1.6;">
-                        ---
-                    </div>
+                </div>
+                
+                <!-- Contador de Resultados -->
+                <div style="text-align: center; margin-top: 15px; color: #888; font-family: 'Courier New', monospace; font-size: 12px;">
+                    Mostrando <span id="results-count" style="color: #b71c1c; font-weight: bold;">0</span> armas
                 </div>
             </div>
         </div>
