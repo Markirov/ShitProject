@@ -233,9 +233,11 @@
             background-color: #0a0a0a;
             background-image:
                 linear-gradient(rgba(15, 20, 25, 0.85), rgba(10, 10, 10, 0.95)),
-                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(74, 90, 106, 0.03) 2px, transparent 4px),
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(74, 90, 106, 0.1) 2px, transparent 4px),
+                repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(183, 28, 28, 0.08) 40px, rgba(183, 28, 28, 0.08) 41px),
+                repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(183, 28, 28, 0.08) 40px, rgba(183, 28, 28, 0.08) 41px),
                 radial-gradient(circle at center, #1a1a1a 0%, #000 100%);
-            background-size: 100% 100%, 100% 4px, 100% 100%;
+            background-size: 100% 100%, 100% 4px, 100% 100%, 100% 100%, 100% 100%;
             z-index: 2000;
             display: flex; 
             flex-direction: column; 
@@ -916,7 +918,7 @@
                 let html = '<table class="skill-table"><thead><tr><th>↑</th><th>Habilidad</th><th>Nivel</th><th>Caract.</th><th>Tirada</th></tr></thead><tbody>';
                 let universalCaract = Math.round((strInt + dexInt + intInt + chaInt) / 4);
                 
-                const squaresHTML = '<div class="q-box-container"><div class="chk-box" onclick="toggleBox(this)"></div><div class="chk-box" onclick="toggleBox(this)"></div><div class="chk-box" onclick="toggleBox(this)"></div><div class="chk-box" onclick="toggleBox(this)"></div></div>';
+                const squaresHTML = '<div class="q-box-container"><div class="chk-box"></div><div class="chk-box"></div><div class="chk-box"></div><div class="chk-box"></div></div>';
                 
                 skills.forEach(s => {
                     let rollCalc = universalCaract - parseInt(s.v);
@@ -2118,7 +2120,7 @@
             const chaInt = parseInt(document.getElementById('attr-cha').innerText) || 0;
             const universalCaract = Math.round((strInt + dexInt + intInt + chaInt) / 4);
             
-            const squaresHTML = '<div class="q-box-container"><div class="chk-box" onclick="toggleBox(this)"></div><div class="chk-box" onclick="toggleBox(this)"></div><div class="chk-box" onclick="toggleBox(this)"></div><div class="chk-box" onclick="toggleBox(this)"></div></div>';
+            const squaresHTML = '<div class="q-box-container"><div class="chk-box"></div><div class="chk-box"></div><div class="chk-box"></div><div class="chk-box"></div></div>';
             
             const newRow = document.createElement('tr');
             newRow.innerHTML = `
@@ -2246,7 +2248,7 @@
                 let strInt = parseInt(vals.str); let dexInt = parseInt(vals.dex); let intInt = parseInt(vals.int); let chaInt = parseInt(vals.cha);
                 let universalCaract = Math.round((strInt + dexInt + intInt + chaInt) / 4);
                 
-                const squaresHTML = '<div class="q-box-container"><div class="chk-box" onclick="toggleBox(this)"></div><div class="chk-box" onclick="toggleBox(this)"></div><div class="chk-box" onclick="toggleBox(this)"></div><div class="chk-box" onclick="toggleBox(this)"></div></div>';
+                const squaresHTML = '<div class="q-box-container"><div class="chk-box"></div><div class="chk-box"></div><div class="chk-box"></div><div class="chk-box"></div></div>';
                 
                 skills.forEach(s => {
                     let rollCalc = universalCaract - parseInt(s.v);
@@ -90973,13 +90975,13 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
         <div class="landing-title">MECHWARRIOR<br><span style="font-size:30px; display:block; text-align:center; margin-top:10px;">DATABASE SYSTEM</span></div>
         <div class="landing-menu">
             <button class="cyber-button" onclick="goToGenerator()">Generador de Personajes</button>
-            <button class="cyber-button" onclick="goToSheetDirectly()">Editor de Personajes</button>
+            <button class="cyber-button disabled">Barracones</button>
             <button class="cyber-button" onclick="goToTRRInfantry()">TRR Infantería</button>
             <button class="cyber-button" onclick="goToTRRUtilities()">TRR Utilidades</button>
             <button class="cyber-button" onclick="goToMechHangar()">Mech Hangar</button>
             <button class="cyber-button" onclick="goToVehicleDepot()">Deposito de Vehiculos</button>
             <button class="cyber-button" onclick="goToGalacticMap()">Galactic Map</button>
-            <button class="cyber-button disabled">Mission Log [WIP]</button>
+            <button class="cyber-button disabled">Registro de Combate</button>
             <button class="cyber-button disabled">Lance Builder [WIP]</button>
             <button class="cyber-button disabled">Database Archive [WIP]</button>
         </div>
@@ -90989,7 +90991,7 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
     <div id="trr-utilities" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #0a0a0a; background-image: linear-gradient(rgba(15, 20, 25, 0.85), rgba(10, 10, 10, 0.95)), repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(74, 90, 106, 0.1) 2px, transparent 4px), repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(183, 28, 28, 0.08) 40px, rgba(183, 28, 28, 0.08) 41px), repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(183, 28, 28, 0.08) 40px, rgba(183, 28, 28, 0.08) 41px), radial-gradient(circle at center, #1a1a1a 0%, #000 100%); background-size: 100% 100%, 100% 4px, 100% 100%, 100% 100%, 100% 100%; z-index: 2000; overflow-y: auto; padding-top: 60px;">
         
         <!-- SUBPORTADA TRR UTILIDADES -->
-        <div id="trr-utilities-landing" style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: calc(100vh - 120px); padding: 20px; position: relative;">
+        <div id="trr-utilities-landing" style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: calc(100vh - 120px); padding: 20px; position: relative; background: transparent;">
             <button class="back-to-home-btn no-print" onclick="goHomeNoConfirm()" style="position: fixed; top: 20px; left: 20px;">⚠️ VOLVER AL MENÚ</button>
             
             <div style="text-align:center; margin-bottom: 60px; position: relative; z-index: 1;">
@@ -91023,7 +91025,7 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
         </div>
         
         <!-- SUBSECCIÓN: TABLA DE CLUSTER -->
-        <div id="cluster-table" style="display:none; padding: 20px;">
+        <div id="cluster-table" style="display:none; padding: 20px; background: transparent;">
             <button class="back-to-home-btn no-print" onclick="backToTRRUtilitiesLanding()" style="position: fixed; top: 20px; left: 20px;">⬅️ VOLVER</button>
             <button class="back-to-home-btn no-print" onclick="goHomeNoConfirm()" style="position: fixed; top: 20px; left: 220px; background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%);">🏠 MENÚ</button>
             
@@ -91036,7 +91038,7 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
         </div>
         
         <!-- SUBSECCIÓN: AGRUPADOR DE DAÑOS -->
-        <div id="damage-grouper" style="display:none; padding: 20px;">
+        <div id="damage-grouper" style="display:none; padding: 20px; background: transparent;">
             <button class="back-to-home-btn no-print" onclick="backToTRRUtilitiesLanding()" style="position: fixed; top: 20px; left: 20px;">⬅️ VOLVER</button>
             <button class="back-to-home-btn no-print" onclick="goHomeNoConfirm()" style="position: fixed; top: 20px; left: 220px; background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%);">🏠 MENÚ</button>
             
@@ -91049,7 +91051,7 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
         </div>
         
         <!-- SUBSECCIÓN: TABLA DE MODIFICADORES -->
-        <div id="modifiers-table" style="display:none; padding: 20px;">
+        <div id="modifiers-table" style="display:none; padding: 20px; background: transparent;">
             <button class="back-to-home-btn no-print" onclick="backToTRRUtilitiesLanding()" style="position: fixed; top: 20px; left: 20px;">⬅️ VOLVER</button>
             <button class="back-to-home-btn no-print" onclick="goHomeNoConfirm()" style="position: fixed; top: 20px; left: 220px; background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%);">🏠 MENÚ</button>
             
@@ -91066,8 +91068,8 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
     <div id="mech-hangar" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #0a0a0a; background-image: linear-gradient(rgba(15, 20, 25, 0.85), rgba(10, 10, 10, 0.95)), repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(74, 90, 106, 0.1) 2px, transparent 4px), repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(183, 28, 28, 0.08) 40px, rgba(183, 28, 28, 0.08) 41px), repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(183, 28, 28, 0.08) 40px, rgba(183, 28, 28, 0.08) 41px), radial-gradient(circle at center, #1a1a1a 0%, #000 100%); background-size: 100% 100%, 100% 4px, 100% 100%, 100% 100%, 100% 100%; z-index: 2000; overflow-y: auto; padding-top: 60px;">
         
         <!-- SUBPORTADA MECH HANGAR -->
-        <div id="mech-hangar-landing" style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: calc(100vh - 120px); padding: 20px; position: relative;">
-            <button class="back-to-home-btn no-print" onclick="goHome()" style="position: fixed; top: 20px; left: 20px;">⚠️ VOLVER AL MENÚ</button>
+        <div id="mech-hangar-landing" style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: calc(100vh - 120px); padding: 20px; position: relative; background: transparent;">
+            <button class="back-to-home-btn no-print" onclick="goHomeNoConfirm()" style="position: fixed; top: 20px; left: 20px;">⚠️ VOLVER AL MENÚ</button>
             
             <div style="text-align:center; margin-bottom: 60px; position: relative; z-index: 1;">
                 <h1 style="font-family: Impact, sans-serif; color: #ff8c42; text-transform: uppercase; letter-spacing: 5px; text-shadow: 0 0 20px rgba(255, 140, 66, 0.8), 0 0 40px rgba(255, 140, 66, 0.4), 2px 2px 8px rgba(0,0,0,0.8); font-size: 56px; margin-bottom: 15px; animation: glow-pulse 2s ease-in-out infinite;">
@@ -91094,7 +91096,7 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
         </div>
         
         <!-- SUBSECCIÓN: MECH LOCALIZACIONES -->
-        <div id="mech-locations" style="display:none; padding: 20px;">
+        <div id="mech-locations" style="display:none; padding: 20px; background: transparent;">
             <button class="back-to-home-btn no-print" onclick="backToMechHangarLanding()" style="position: fixed; top: 20px; left: 20px;">⬅️ VOLVER</button>
             <button class="back-to-home-btn no-print" onclick="goHomeNoConfirm()" style="position: fixed; top: 20px; left: 220px; background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%);">🏠 MENÚ</button>
             
@@ -91107,7 +91109,7 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
         </div>
         
         <!-- SUBSECCIÓN: MECH CRÍTICOS -->
-        <div id="mech-criticals" style="display:none; padding: 20px;">
+        <div id="mech-criticals" style="display:none; padding: 20px; background: transparent;">
             <button class="back-to-home-btn no-print" onclick="backToMechHangarLanding()" style="position: fixed; top: 20px; left: 20px;">⬅️ VOLVER</button>
             <button class="back-to-home-btn no-print" onclick="goHomeNoConfirm()" style="position: fixed; top: 20px; left: 220px; background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%);">🏠 MENÚ</button>
             
@@ -91124,8 +91126,8 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
     <div id="vehicle-depot" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #0a0a0a; background-image: linear-gradient(rgba(15, 20, 25, 0.85), rgba(10, 10, 10, 0.95)), repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(74, 90, 106, 0.1) 2px, transparent 4px), repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(183, 28, 28, 0.08) 40px, rgba(183, 28, 28, 0.08) 41px), repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(183, 28, 28, 0.08) 40px, rgba(183, 28, 28, 0.08) 41px), radial-gradient(circle at center, #1a1a1a 0%, #000 100%); background-size: 100% 100%, 100% 4px, 100% 100%, 100% 100%, 100% 100%; z-index: 2000; overflow-y: auto; padding-top: 60px;">
         
         <!-- SUBPORTADA DEPOSITO DE VEHICULOS -->
-        <div id="vehicle-depot-landing" style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: calc(100vh - 120px); padding: 20px; position: relative;">
-            <button class="back-to-home-btn no-print" onclick="goHome()" style="position: fixed; top: 20px; left: 20px;">⚠️ VOLVER AL MENÚ</button>
+        <div id="vehicle-depot-landing" style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: calc(100vh - 120px); padding: 20px; position: relative; background: transparent;">
+            <button class="back-to-home-btn no-print" onclick="goHomeNoConfirm()" style="position: fixed; top: 20px; left: 20px;">⚠️ VOLVER AL MENÚ</button>
             
             <div style="text-align:center; margin-bottom: 60px; position: relative; z-index: 1;">
                 <h1 style="font-family: Impact, sans-serif; color: #ff8c42; text-transform: uppercase; letter-spacing: 5px; text-shadow: 0 0 20px rgba(255, 140, 66, 0.8), 0 0 40px rgba(255, 140, 66, 0.4), 2px 2px 8px rgba(0,0,0,0.8); font-size: 56px; margin-bottom: 15px; animation: glow-pulse 2s ease-in-out infinite;">
@@ -91152,7 +91154,7 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
         </div>
         
         <!-- SUBSECCIÓN: VEHICLE LOCALIZACIONES -->
-        <div id="vehicle-locations" style="display:none; padding: 20px;">
+        <div id="vehicle-locations" style="display:none; padding: 20px; background: transparent;">
             <button class="back-to-home-btn no-print" onclick="backToVehicleDepotLanding()" style="position: fixed; top: 20px; left: 20px;">⬅️ VOLVER</button>
             <button class="back-to-home-btn no-print" onclick="goHomeNoConfirm()" style="position: fixed; top: 20px; left: 220px; background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%);">🏠 MENÚ</button>
             
@@ -91165,7 +91167,7 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
         </div>
         
         <!-- SUBSECCIÓN: VEHICLE CRÍTICOS -->
-        <div id="vehicle-criticals" style="display:none; padding: 20px;">
+        <div id="vehicle-criticals" style="display:none; padding: 20px; background: transparent;">
             <button class="back-to-home-btn no-print" onclick="backToVehicleDepotLanding()" style="position: fixed; top: 20px; left: 20px;">⬅️ VOLVER</button>
             <button class="back-to-home-btn no-print" onclick="goHomeNoConfirm()" style="position: fixed; top: 20px; left: 220px; background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%);">🏠 MENÚ</button>
             
@@ -91179,7 +91181,7 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
     </div>
 
     <!-- GALACTIC MAP SECTION (SIMPLIFICADO) -->
-    <div id="galactic-map" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #0a0a0a; background-image: linear-gradient(rgba(15, 20, 25, 0.85), rgba(10, 10, 10, 0.95)), repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(74, 90, 106, 0.03) 2px, transparent 4px), radial-gradient(circle at center, #1a1a1a 0%, #000 100%); background-size: 100% 100%, 100% 4px, 100% 100%; z-index: 2000; overflow-y: auto; padding-top: 60px;">
+    <div id="galactic-map" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #0a0a0a; background-image: linear-gradient(rgba(15, 20, 25, 0.85), rgba(10, 10, 10, 0.95)), repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(74, 90, 106, 0.1) 2px, transparent 4px), repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(183, 28, 28, 0.08) 40px, rgba(183, 28, 28, 0.08) 41px), repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(183, 28, 28, 0.08) 40px, rgba(183, 28, 28, 0.08) 41px), radial-gradient(circle at center, #1a1a1a 0%, #000 100%); background-size: 100% 100%, 100% 4px, 100% 100%, 100% 100%, 100% 100%; z-index: 2000; overflow-y: auto; padding-top: 60px;">
         <button class="back-to-home-btn no-print" onclick="goHomeFromTRR()">⚠️ VOLVER AL MENÚ</button>
         
         <div style="text-align:center; margin: 20px auto; max-width: 1400px; padding: 20px;">
@@ -91204,7 +91206,7 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
     <div id="trr-infantry" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #0a0a0a; background-image: linear-gradient(rgba(15, 20, 25, 0.85), rgba(10, 10, 10, 0.95)), repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(74, 90, 106, 0.1) 2px, transparent 4px), repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(183, 28, 28, 0.08) 40px, rgba(183, 28, 28, 0.08) 41px), repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(183, 28, 28, 0.08) 40px, rgba(183, 28, 28, 0.08) 41px), radial-gradient(circle at center, #1a1a1a 0%, #000 100%); background-size: 100% 100%, 100% 4px, 100% 100%, 100% 100%, 100% 100%; z-index: 2000; overflow-y: auto; padding-top: 60px;">
         
         <!-- SUBPORTADA TRR -->
-        <div id="trr-landing" style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: calc(100vh - 120px); padding: 20px; position: relative;">
+        <div id="trr-landing" style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: calc(100vh - 120px); padding: 20px; position: relative; background: transparent;">
             <button class="back-to-home-btn no-print" onclick="goHomeFromTRR()" style="position: fixed; top: 20px; left: 20px;">⚠️ VOLVER AL MENÚ</button>
             
             <div style="text-align:center; margin-bottom: 60px; position: relative; z-index: 1;">
@@ -91232,7 +91234,7 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
         </div>
         
         <!-- SUBSECCIÓN: COMBATE -->
-        <div id="trr-combat" style="display:none; padding: 20px;">
+        <div id="trr-combat" style="display:none; padding: 20px; background: transparent;">
             <button class="back-to-home-btn no-print" onclick="backToTRRLanding()" style="position: fixed; top: 20px; left: 20px;">⬅️ VOLVER A TRR</button>
             <button class="back-to-home-btn no-print" onclick="goHomeFromTRR()" style="position: fixed; top: 20px; left: 220px; background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%);">🏠 VOLVER AL MENÚ</button>
             
@@ -91554,7 +91556,7 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
         </div>
         
         <!-- SUBSECCIÓN: TABLA DE ARMAMENTO -->
-        <div id="trr-weapons" style="display:none; padding: 20px;">
+        <div id="trr-weapons" style="display:none; padding: 20px; background: transparent;">
             <button class="back-to-home-btn no-print" onclick="backToTRRLanding()" style="position: fixed; top: 20px; left: 20px;">⬅️ VOLVER A TRR</button>
             <button class="back-to-home-btn no-print" onclick="goHomeFromTRR()" style="position: fixed; top: 20px; left: 220px; background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%);">🏠 VOLVER AL MENÚ</button>
             
@@ -91753,37 +91755,7 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
         <button class="edit-mode-btn no-print" onclick="volverAEdicion()">⬅ VOLVER A EDICIÓN</button>
         
         <div class="no-print" style="text-align: center; margin: 10px 0 20px 0;">
-            <p style="background:#ffeb3b; padding:5px;"><strong>INSTRUCCIONES:</strong> Todos los campos son editables. Haz clic en los cuadrados para subir nivel/atributo. El sistema recalculará las tiradas automáticamente.</p>
             <button id="print-button" onclick="window.print()">🖨️ Imprimir o Guardar como PDF</button>
-        </div>
-
-        <!-- SECCIÓN DE GESTIÓN (NUBE Y ARCHIVOS) EN EDITOR -->
-        <div class="no-print" style="margin: 20px auto; padding: 15px; background: #e3f2fd; border-radius: 8px; border: 1px solid #90caf9; max-width: 750px;">
-            <h3 style="margin-top:0; border:none; text-align:center;">GESTIÓN DE PERSONAJES</h3>
-
-            <!-- BUSCADOR NUBE -->
-            <div style="display:flex; flex-direction:column; margin-bottom: 15px;">
-                <div style="display:flex; gap:10px; justify-content: center; align-items: center;">
-                    <input type="text" id="search-cloud-name-editor" placeholder="Nombre del Jugador..." style="padding: 8px; font-size: 16px; width: 60%;">
-                    <button id="btn-cloud-search-editor" onclick="buscarEnNube()" class="random-button" style="background-color: #0288d1; font-size: 16px;">🔍 Cargar de Nube</button>
-                </div>
-                <div id="cloud-search-results-editor"></div>
-            </div>
-
-            <hr style="margin: 15px 0; border-top: 1px solid #ccc;">
-
-            <!-- BOTONES ACCIÓN -->
-            <div style="display:flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
-                <button id="btn-cloud-save-editor" onclick="guardarEnNube()" class="random-button" style="background-color: #28a745; font-size: 16px;">☁️ Guardar en Nube</button>
-
-                <span style="border-left: 1px solid #999; margin: 0 10px;"></span>
-
-                <!-- SISTEMA LEGACY (JSON) PARA MIGRACIÓN -->
-                <button onclick="exportarDatos()" class="random-button" style="background-color: #6c757d; font-size: 14px;">💾 Bajar JSON (Respaldo)</button>
-                <input type="file" id="file-input-editor" style="display: none;" onchange="importarDatos(this)">
-                <button onclick="document.getElementById('file-input-editor').click()" class="random-button" style="background-color: #ff9800; font-size: 14px;">📂 Subir JSON (Migrar)</button>
-            </div>
-            <p style="font-size: 11px; color: #666; margin-top: 10px;">* Para migrar: Usa "Subir JSON" y luego dale a "Guardar en Nube".</p>
         </div>
 
         <div class="container">
@@ -91791,52 +91763,52 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
             <div class="section grid-2">
                 <div>
                     <div class="grid-2">
-                        <div><div class="field-label">Nombre del Personaje:</div><input type="text" class="sheet-input" id="nombre-field"></div>
-                        <div><div class="field-label">Jugador:</div><input type="text" class="sheet-input" id="jugador-field"></div>
+                        <div><div class="field-label">Nombre del Personaje:</div><input type="text" readonly class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;" id="nombre-field"></div>
+                        <div><div class="field-label">Jugador:</div><input type="text" readonly class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;" id="jugador-field"></div>
                     </div>
                     <div class="grid-2">
-                        <div><div class="field-label">Lugar de nacimiento:</div><input type="text" class="sheet-input" id="origen-output"></div>
-                        <div><div class="field-label">Formación:</div><input type="text" class="sheet-input" id="estudios-output"></div>
+                        <div><div class="field-label">Lugar de nacimiento:</div><input type="text" readonly class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;" id="origen-output"></div>
+                        <div><div class="field-label">Formación:</div><input type="text" readonly class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;" id="estudios-output"></div>
                     </div>
                     <div class="grid-2">
-                        <div><div class="field-label">Afiliación:</div><input type="text" class="sheet-input" id="faction-output"></div>
-                        <div><div class="field-label">Mech Inicial:</div><input type="text" class="sheet-input" id="mech-output"></div>
+                        <div><div class="field-label">Afiliación:</div><input type="text" readonly class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;" id="faction-output"></div>
+                        <div><div class="field-label">Mech Inicial:</div><input type="text" readonly class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;" id="mech-output"></div>
                     </div>
                     <div class="grid-3">
-                        <div><div class="field-label">Año de nacimiento:</div><input type="text" class="sheet-input" id="edad-field"></div>
-                        <div><div class="field-label">Sexo:</div><input type="text" class="sheet-input" id="sexo-field"></div>
-                        <div><div class="field-label">Altura:</div><input type="text" class="sheet-input" id="altura-field"></div>
-                        <div><div class="field-label">Ojos:</div><input type="text" class="sheet-input" id="ojos-field"></div>
-                        <div><div class="field-label">Pelo:</div><input type="text" class="sheet-input" id="pelo-field"></div>
-                        <div><div class="field-label">Peso:</div><input type="text" class="sheet-input" id="peso-field"></div>
+                        <div><div class="field-label">Año de nacimiento:</div><input type="text" readonly class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;" id="edad-field"></div>
+                        <div><div class="field-label">Sexo:</div><input type="text" readonly class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;" id="sexo-field"></div>
+                        <div><div class="field-label">Altura:</div><input type="text" readonly class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;" id="altura-field"></div>
+                        <div><div class="field-label">Ojos:</div><input type="text" readonly class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;" id="ojos-field"></div>
+                        <div><div class="field-label">Pelo:</div><input type="text" readonly class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;" id="pelo-field"></div>
+                        <div><div class="field-label">Peso:</div><input type="text" readonly class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;" id="peso-field"></div>
                     </div>
                     
                     <h3>ATRIBUTOS</h3>
                     <div class="grid-2"> 
                         <div class="attr-box">
                             <div class="attr-header-wrapper">
-                                <div class="v-box-container"><div class="chk-box" onclick="toggleBox(this)"></div><div class="chk-box" onclick="toggleBox(this)"></div></div>
+                                <div class="v-box-container"><div class="chk-box"></div><div class="chk-box"></div></div>
                                 <div class="attr-label">Fuerza (FUE)</div>
                             </div>
                             <div class="attr-value" id="attr-str"></div>
                         </div>
                         <div class="attr-box">
                              <div class="attr-header-wrapper">
-                                <div class="v-box-container"><div class="chk-box" onclick="toggleBox(this)"></div><div class="chk-box" onclick="toggleBox(this)"></div></div>
+                                <div class="v-box-container"><div class="chk-box"></div><div class="chk-box"></div></div>
                                 <div class="attr-label">Destreza (DES)</div>
                             </div>
                             <div class="attr-value" id="attr-dex"></div>
                         </div>
                         <div class="attr-box">
                             <div class="attr-header-wrapper">
-                                <div class="v-box-container"><div class="chk-box" onclick="toggleBox(this)"></div><div class="chk-box" onclick="toggleBox(this)"></div></div>
+                                <div class="v-box-container"><div class="chk-box"></div><div class="chk-box"></div></div>
                                 <div class="attr-label">Inteligencia (INT)</div>
                             </div>
                             <div class="attr-value" id="attr-int"></div>
                         </div>
                         <div class="attr-box">
                              <div class="attr-header-wrapper">
-                                <div class="v-box-container"><div class="chk-box" onclick="toggleBox(this)"></div><div class="chk-box" onclick="toggleBox(this)"></div></div>
+                                <div class="v-box-container"><div class="chk-box"></div><div class="chk-box"></div></div>
                                 <div class="attr-label">Carisma (CAR)</div>
                             </div>
                             <div class="attr-value" id="attr-cha"></div>
@@ -92025,10 +91997,10 @@ z"/>
                     <h2>FINANZAS Y EQUIPO</h2>
                     <div class="section">
                         <div class="grid-4"> 
-                            <div><div class="field-label">C-Bills:</div><input type="text" id="sheet-cbills" class="sheet-input"></div>
-                            <div><div class="field-label">Salario/Ingresos:</div><input type="text" id="sheet-salary" class="sheet-input"></div>
-                            <div><div class="field-label">PX Totales:</div><input type="text" id="sheet-xp-total" class="sheet-input"></div>
-                            <div><div class="field-label">PX Disp.:</div><input type="text" id="sheet-xp-avail" class="sheet-input"></div>
+                            <div><div class="field-label">C-Bills:</div><input type="text" readonly id="sheet-cbills" class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></div>
+                            <div><div class="field-label">Salario/Ingresos:</div><input type="text" readonly id="sheet-salary" class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></div>
+                            <div><div class="field-label">PX Totales:</div><input type="text" readonly id="sheet-xp-total" class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></div>
+                            <div><div class="field-label">PX Disp.:</div><input type="text" readonly id="sheet-xp-avail" class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></div>
                         </div>
                     </div>
                 </div>
@@ -92052,12 +92024,12 @@ z"/>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr><td><select class="weapon-select" onchange="updateWeaponRow(this)"></select></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td></tr>
-                                <tr><td><select class="weapon-select" onchange="updateWeaponRow(this)"></select></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td></tr>
-                                <tr><td><select class="weapon-select" onchange="updateWeaponRow(this)"></select></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td></tr>
-                                <tr><td><select class="weapon-select" onchange="updateWeaponRow(this)"></select></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td></tr>
-                                <tr><td><select class="weapon-select" onchange="updateWeaponRow(this)"></select></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td></tr>
-                                <tr><td><select class="weapon-select" onchange="updateWeaponRow(this)"></select></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td></tr>
+                                <tr><td><select class="weapon-select" disabled style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></select></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td></tr>
+                                <tr><td><select class="weapon-select" disabled style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></select></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td></tr>
+                                <tr><td><select class="weapon-select" disabled style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></select></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td></tr>
+                                <tr><td><select class="weapon-select" disabled style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></select></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td></tr>
+                                <tr><td><select class="weapon-select" disabled style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></select></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td></tr>
+                                <tr><td><select class="weapon-select" disabled style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></select></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -92069,9 +92041,9 @@ z"/>
                                 <tr><th style="width: 25px;">C</th><th style="width: 25px;">T</th><th style="width: 25px;">B</th><th style="width: 25px;">P</th></tr>
                             </thead>
                             <tbody>
-                                <tr><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td></tr>
-                                <tr><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td></tr>
-                                <tr><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td><td><input type="text"></td></tr>
+                                <tr><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td></tr>
+                                <tr><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td></tr>
+                                <tr><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -92091,8 +92063,8 @@ z"/>
                 </div>
                 <div>
                     <h3 style="text-align: left; border: none; background-color: #eee; margin-top: 0; padding: 0;">Contactos y Notas</h3>
-                    <input type="text" class="sheet-input"><input type="text" class="sheet-input"><input type="text" class="sheet-input"><input type="text" class="sheet-input">
-                    <input type="text" class="sheet-input"><input type="text" class="sheet-input">
+                    <input type="text" readonly class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"><input type="text" readonly class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"><input type="text" readonly class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"><input type="text" readonly class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;">
+                    <input type="text" readonly class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"><input type="text" readonly class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;">
                 </div>
             </div>
         </div>
