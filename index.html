@@ -850,7 +850,236 @@
             if(fichaVisible) {
                 rellenarCamposFichaDesdeGenerador();
             }
+            
+            // Rellenar campos de Barracones si existen
+            rellenarBarraconesDesdeGenerador(datos);
         }
+
+        /**
+         * Rellena los campos de Barracones con datos del generador
+         * y genera el estado físico basándose en FUE
+         * @param {Object} datos - Datos del personaje
+         */
+        function rellenarBarraconesDesdeGenerador(datos) {
+            // Verificar que los elementos de Barracones existen
+            const barrFue = document.getElementById('barr-fue');
+            const barrDes = document.getElementById('barr-des');
+            const barrInt = document.getElementById('barr-int');
+            const barrCar = document.getElementById('barr-car');
+            
+            if (!barrFue || !barrDes || !barrInt || !barrCar) {
+                // Los elementos no existen todavía, salir silenciosamente
+                return;
+            }
+            
+            // Rellenar atributos base
+            const fue = parseInt(datos.str) || 0;
+            const des = parseInt(datos.dex) || 0;
+            const int = parseInt(datos.int) || 0;
+            const car = parseInt(datos.cha) || 0;
+            
+            barrFue.value = fue;
+            barrDes.value = des;
+            barrInt.value = int;
+            barrCar.value = car;
+            
+            // Calcular MOV e INIT
+            const barrMov = document.getElementById('barr-mov');
+            const barrInit = document.getElementById('barr-init');
+            
+            if (barrMov && barrInit) {
+                barrMov.value = des; // MOV = DES
+                barrInit.value = des; // INIT = DES
+            }
+            
+            // Generar estado físico basándose en FUE
+            if (fue > 0) {
+                generarEstadoFisicoBarracones(fue);
+            }
+            
+            // Generar habilidades dinámicamente desde extraSkills
+            if (datos.extraSkills && Array.isArray(datos.extraSkills)) {
+                generarHabilidadesBarracones(datos.extraSkills);
+            }
+            
+            // Calcular TIR para todas las habilidades
+            calcularTIRBarracones();
+        }
+        
+        /**
+         * Genera dinámicamente la tabla de habilidades desde extraSkills
+         * @param {Array} extraSkills - Array de {name, level} del generador
+         */
+        function generarHabilidadesBarracones(extraSkills) {
+            const table = document.getElementById('barr-skills-table');
+            if (!table) return;
+            
+            // Limpiar tabla (mantener solo header)
+            while (table.rows.length > 1) {
+                table.deleteRow(1);
+            }
+            
+            // Filtrar habilidades válidas (que tienen nombre y nivel)
+            const validSkills = extraSkills.filter(skill => skill.name && skill.level);
+            
+            // Generar fila por cada habilidad
+            validSkills.forEach((skill, index) => {
+                const row = table.insertRow(-1);
+                
+                // Columna 1: Nombre de habilidad
+                const cellName = row.insertCell(0);
+                cellName.textContent = skill.name;
+                
+                // Columna 2: Nivel (editable)
+                const cellNv = row.insertCell(1);
+                const inputNv = document.createElement('input');
+                inputNv.type = 'number';
+                inputNv.id = 'barr-skill-' + index + '-nv';
+                inputNv.value = skill.level || 0;
+                inputNv.onchange = calcularTIRBarracones;
+                cellNv.appendChild(inputNv);
+                
+                // Columna 3: TIR (readonly, calculado)
+                const cellTir = row.insertCell(2);
+                const inputTir = document.createElement('input');
+                inputTir.type = 'number';
+                inputTir.id = 'barr-skill-' + index + '-tir';
+                inputTir.readOnly = true;
+                inputTir.style.background = 'transparent';
+                inputTir.style.color = '#00ff41';
+                cellTir.appendChild(inputTir);
+            });
+        }
+        
+        /**
+         * Calcula TIR para todas las habilidades
+         * TIR = ((FUE + DES + INT + CAR) / 4) - Nivel de habilidad
+         */
+        function calcularTIRBarracones() {
+            // Obtener atributos base
+            const fue = parseInt(document.getElementById('barr-fue')?.value) || 0;
+            const des = parseInt(document.getElementById('barr-des')?.value) || 0;
+            const int = parseInt(document.getElementById('barr-int')?.value) || 0;
+            const car = parseInt(document.getElementById('barr-car')?.value) || 0;
+            
+            // Calcular promedio de atributos
+            const promedioAtributos = (fue + des + int + car) / 4;
+            
+            // Buscar todos los inputs de nivel y TIR
+            const table = document.getElementById('barr-skills-table');
+            if (!table) return;
+            
+            // Iterar sobre todas las filas (excepto el header)
+            for (let i = 1; i < table.rows.length; i++) {
+                const nvInput = document.getElementById('barr-skill-' + (i-1) + '-nv');
+                const tirInput = document.getElementById('barr-skill-' + (i-1) + '-tir');
+                
+                if (nvInput && tirInput) {
+                    const nivel = parseInt(nvInput.value) || 0;
+                    const tir = Math.round(promedioAtributos - nivel);
+                    tirInput.value = tir;
+                }
+            }
+        }
+        
+        /**
+         * Genera el estado físico (cuadrados de HP) basándose en FUE
+         * @param {number} fue - Valor de FUE del personaje
+         * 
+         * LÓGICA:
+         * - Cabeza = FUE
+         * - Torso = FUE x3
+         * - Brazos = FUE x2 (redondeo a la baja)
+         * - Piernas = FUE x2 (redondeo a la alta)
+         */
+        function generarEstadoFisicoBarracones(fue) {
+            // Calcular HP por localización
+            const hpCabeza = fue;
+            const hpTorso = fue * 3;
+            const hpBrazos = Math.floor(fue * 2); // Redondeo a la baja
+            const hpPiernas = Math.ceil(fue * 2);  // Redondeo a la alta
+            
+            // Encontrar contenedores de localizaciones
+            const localizaciones = document.querySelectorAll('.barracones-loc-box');
+            
+            localizaciones.forEach(loc => {
+                const nombre = loc.querySelector('.barracones-loc-name').textContent.trim();
+                let hp = 0;
+                
+                // Determinar HP según localización
+                switch(nombre) {
+                    case 'CABEZA':
+                        hp = hpCabeza;
+                        break;
+                    case 'TORSO':
+                        hp = hpTorso;
+                        break;
+                    case 'B.IZQ':
+                    case 'B.DER':
+                        hp = hpBrazos;
+                        break;
+                    case 'P.IZQ':
+                    case 'P.DER':
+                        hp = hpPiernas;
+                        break;
+                }
+                
+                // Buscar el contenedor de HP
+                const contenedor = loc.querySelector('div:not(.barracones-loc-name)');
+                if (!contenedor) return;
+                
+                // Limpiar contenedor
+                contenedor.innerHTML = '';
+                
+                // Generar cuadrados según tipo de localización
+                if (nombre === 'CABEZA') {
+                    // CABEZA: Grid horizontal compacto (2 columnas max)
+                    for (let i = 0; i < hp; i++) {
+                        const segment = document.createElement('span');
+                        segment.className = 'barracones-hp-segment';
+                        segment.onclick = toggleHPSegment;
+                        contenedor.appendChild(segment);
+                    }
+                } else if (nombre === 'TORSO') {
+                    // TORSO: Grid de 3 columnas
+                    for (let i = 0; i < hp; i++) {
+                        const segment = document.createElement('span');
+                        segment.className = 'barracones-hp-segment';
+                        segment.onclick = toggleHPSegment;
+                        contenedor.appendChild(segment);
+                    }
+                } else {
+                    // BRAZOS Y PIERNAS: Grid de 2 columnas
+                    for (let i = 0; i < hp; i++) {
+                        const segment = document.createElement('span');
+                        segment.className = 'barracones-hp-segment-vertical';
+                        segment.onclick = toggleHPSegment;
+                        contenedor.appendChild(segment);
+                    }
+                }
+            });
+        }
+        
+        /**
+         * Toggle del estado de un cuadrado de HP (sano/dañado)
+         */
+        function toggleHPSegment(event) {
+            const segment = event.target;
+            segment.classList.toggle('damaged');
+        }
+        
+        /**
+         * Actualiza los valores de MOV e INIT basándose en DES
+         */
+        function actualizarMovInitBarracones() {
+            const des = parseInt(document.getElementById('barr-des').value) || 0;
+            const barrMov = document.getElementById('barr-mov');
+            const barrInit = document.getElementById('barr-init');
+            
+            if (barrMov) barrMov.value = des;
+            if (barrInit) barrInit.value = des;
+        }
+
 
         function rellenarCamposFichaDesdeGenerador() {
             // Calcular año final
@@ -1342,12 +1571,14 @@
         function poblarDesplegablesArmasBarracones() {
             const select1 = document.getElementById('barr-arma1-select');
             const select2 = document.getElementById('barr-arma2-select');
+            const select3 = document.getElementById('barr-arma3-select');
             
-            if (!select1 || !select2) return;
+            if (!select1 || !select2 || !select3) return;
             
             // Limpiar y añadir opción por defecto
             select1.innerHTML = '<option value="">-- Seleccionar Arma Principal --</option>';
             select2.innerHTML = '<option value="">-- Secundaria --</option>';
+            select3.innerHTML = '<option value="">-- Terciaria --</option>';
             
             // Añadir todas las armas de la tabla
             INFANTRY_WEAPON_TABLE.forEach((arma, index) => {
@@ -1360,6 +1591,11 @@
                 option2.value = index;
                 option2.textContent = arma.name;
                 select2.appendChild(option2);
+                
+                const option3 = document.createElement('option');
+                option3.value = index;
+                option3.textContent = arma.name;
+                select3.appendChild(option3);
             });
         }
         
@@ -1399,9 +1635,31 @@
             munMaxSpan.textContent = munMax;
             munActualInput.max = munMax;
             
-            // Si no hay munición actual establecida, poner la máxima
-            if (!munActualInput.value) {
+            // SIEMPRE poner munición actual al máximo al cambiar de arma
+            munActualInput.value = munMax;
+        }
+        
+        /**
+         * Valida que la munición actual no exceda la munición máxima
+         * @param {number} slotNum - Número de slot (1, 2 o 3)
+         */
+        function validarMunicionBarracones(slotNum) {
+            const munActualInput = document.getElementById(`barr-arma${slotNum}-mun-actual`);
+            const munMaxSpan = document.getElementById(`barr-arma${slotNum}-mun-max`);
+            
+            if (!munActualInput || !munMaxSpan) return;
+            
+            const munActual = parseInt(munActualInput.value) || 0;
+            const munMax = parseInt(munMaxSpan.textContent) || 0;
+            
+            // Si la munición actual es mayor que la máxima, ajustar al máximo
+            if (munActual > munMax) {
                 munActualInput.value = munMax;
+            }
+            
+            // No permitir valores negativos
+            if (munActual < 0) {
+                munActualInput.value = 0;
             }
         }
         
@@ -92279,31 +92537,31 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                 .barracones-title {
                     font-family: 'Black Ops One', Impact, sans-serif;
                     color: #ffae00;
-                    font-size: 2em; /* Antes 3em, reducido 33% */
+                    font-size: 3em;
                     text-align: center;
                     text-shadow: 2px 2px 0 #000, 0 0 20px #ffae00;
-                    margin-bottom: 13px; /* Antes 20px, reducido 33% */
-                    letter-spacing: 2px; /* Antes 3px, reducido 33% */
+                    margin-bottom: 20px;
+                    letter-spacing: 3px;
                 }
                 
                 .barracones-subtitle {
                     text-align: center;
                     color: #5c4200;
                     font-family: 'Share Tech Mono', 'Courier New', monospace;
-                    font-size: 0.6em; /* Antes 0.9em, reducido 33% */
-                    letter-spacing: 1.3px; /* Antes 2px, reducido 33% */
-                    margin-bottom: 27px; /* Antes 40px, reducido 33% */
+                    font-size: 0.9em;
+                    letter-spacing: 2px;
+                    margin-bottom: 40px;
                     border-bottom: 1px solid #5c4200;
-                    padding-bottom: 7px; /* Antes 10px, reducido 33% */
+                    padding-bottom: 10px;
                 }
                 
                 .hazard-bar {
-                    height: 7px; /* Antes 10px, reducido 33% */
+                    height: 10px;
                     width: 100%;
                     background: repeating-linear-gradient(45deg, #000, #000 10px, #f1c40f 10px, #f1c40f 20px);
                     opacity: 0.9;
                     border-bottom: 1px solid #000;
-                    margin-bottom: 13px; /* Antes 20px, reducido 33% */
+                    margin-bottom: 20px;
                 }
                 
                 #barracones input::-webkit-outer-spin-button,
@@ -92323,15 +92581,15 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                     z-index: 2;
                     display: grid;
                     grid-template-columns: 32% 38% 28%;
-                    gap: 10px; /* Antes 15px, reducido 33% */
-                    padding-bottom: 140px; /* Espacio para la barra de herramientas fija */
+                    gap: 15px;
+                    padding-bottom: 80px; /* Reducido de 140px para toolbar más pequeña */
                 }
                 
                 .barracones-panel {
                     background: #000000;
                     border-left: 2px solid #5c4200;
-                    padding: 7px; /* Antes 10px, reducido 33% */
-                    margin-bottom: 7px; /* Antes 10px, reducido 33% */
+                    padding: 10px;
+                    margin-bottom: 10px;
                     clip-path: polygon(0 0, 100% 0, 100% 98%, 92% 100%, 0 100%);
                     position: relative;
                     box-shadow: 0 0 15px rgba(255, 174, 0, 0.05);
@@ -92339,10 +92597,10 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                 
                 .barracones-panel-title {
                     color: #00ff41;
-                    font-size: 0.53em; /* Antes 0.8em, reducido 33% */
-                    letter-spacing: 0.7px; /* Antes 1px, reducido 33% */
+                    font-size: 0.8em;
+                    letter-spacing: 1px;
                     border-bottom: 1px solid #5c4200;
-                    margin-bottom: 5px; /* Antes 8px, reducido 33% */
+                    margin-bottom: 8px;
                     display: block;
                     font-family: 'Share Tech Mono', monospace;
                 }
@@ -92355,8 +92613,8 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                     font-family: 'Share Tech Mono', 'Courier New', monospace;
                     width: 100%;
                     transition: 0.3s;
-                    font-size: 0.6em; /* Antes 0.9em, reducido 33% */
-                    padding: 2px; /* Antes 3px, reducido 33% */
+                    font-size: 0.9em;
+                    padding: 3px;
                 }
                 
                 .barracones-input:focus {
@@ -92368,26 +92626,26 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                 .barracones-stat-grid {
                     display: grid;
                     grid-template-columns: 1fr 1fr;
-                    gap: 5px; /* Antes 8px, reducido 33% */
+                    gap: 8px;
                 }
                 
                 .barracones-big-stat {
                     background: rgba(20, 10, 0, 0.5);
-                    padding: 3px; /* Antes 5px, reducido 33% */
+                    padding: 5px;
                     text-align: center;
                     border: 1px solid #332200;
                 }
                 
                 .barracones-big-stat label {
                     display: block;
-                    font-size: 0.47em; /* Antes 0.7em, reducido 33% */
+                    font-size: 0.7em;
                     color: #5c4200;
                     font-weight: bold;
                 }
                 
                 .barracones-big-stat input {
                     text-align: center;
-                    font-size: 0.87em; /* Antes 1.3em, reducido 33% */
+                    font-size: 1.3em;
                     color: #ffae00;
                     border: none;
                     background: transparent;
@@ -92395,24 +92653,24 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                 }
                 
                 .barracones-weapon-row {
-                    margin-bottom: 10px; /* Antes 15px, reducido 33% */
+                    margin-bottom: 15px;
                     border-bottom: 1px dashed #3a2a0a;
-                    padding-bottom: 3px; /* Antes 5px, reducido 33% */
+                    padding-bottom: 5px;
                 }
                 
                 .barracones-weapon-stat {
                     display: flex;
-                    gap: 7px; /* Antes 10px, reducido 33% */
-                    font-size: 0.53em; /* Antes 0.8em, reducido 33% */
+                    gap: 10px;
+                    font-size: 0.8em;
                     color: #8e7e6e;
-                    margin-top: 3px; /* Antes 5px, reducido 33% */
+                    margin-top: 5px;
                 }
                 
                 .barracones-armor-grid {
                     display: grid;
                     grid-template-columns: 1fr 40px;
-                    gap: 3px; /* Antes 5px, reducido 33% */
-                    font-size: 0.53em; /* Antes 0.8em, reducido 33% */
+                    gap: 5px;
+                    font-size: 0.8em;
                     align-items: center;
                 }
                 
@@ -92420,32 +92678,73 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                     text-align: center;
                     border: 1px solid #5c4200;
                     background: #0a0a0a;
-                    padding: 1px; /* Antes 2px, reducido 33% */
+                    padding: 2px;
                     color: #00ff41;
                 }
                 
                 .barracones-hp-segment {
-                    width: 7px; /* Antes 10px, reducido 33% */
-                    height: 5px; /* Antes 8px, reducido 33% */
+                    width: 10px;
+                    height: 8px;
                     background: #110a00;
                     border: 1px solid #443300;
                     display: inline-block;
                     margin: 1px;
                     cursor: pointer;
+                    transition: all 0.2s;
                 }
                 
                 .barracones-hp-segment:hover {
-                    background: #00ff41;
+                    background: #ffae00;
                     border-color: #ffae00;
+                    box-shadow: 0 0 4px #ffae00;
+                }
+                
+                .barracones-hp-segment.damaged {
+                    background: #ff0000;
+                    border-color: #cc0000;
+                }
+                
+                .barracones-hp-segment.damaged:hover {
+                    background: #cc0000;
+                    border-color: #990000;
+                    box-shadow: 0 0 4px #ff0000;
+                }
+                
+                .barracones-hp-segment-vertical {
+                    width: 14px;
+                    height: 10px;
+                    background: #110a00;
+                    border: 1px solid #443300;
+                    display: block;
+                    margin: 1px auto;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                
+                .barracones-hp-segment-vertical:hover {
+                    background: #ffae00;
+                    border-color: #ffae00;
+                    box-shadow: 0 0 4px #ffae00;
+                }
+                
+                .barracones-hp-segment-vertical.damaged {
+                    background: #ff0000;
+                    border-color: #cc0000;
+                }
+                
+                .barracones-hp-segment-vertical.damaged:hover {
+                    background: #cc0000;
+                    border-color: #990000;
+                    box-shadow: 0 0 4px #ff0000;
                 }
                 
                 .barracones-loc-box {
                     text-align: center;
-                    margin-bottom: 3px; /* Antes 5px, reducido 33% */
+                    margin-bottom: 5px;
                 }
                 
                 .barracones-loc-name {
-                    font-size: 0.4em; /* Antes 0.6em, reducido 33% */
+                    font-size: 0.6em;
                     color: #ffae00;
                     display: block;
                 }
@@ -92453,18 +92752,18 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                 .barracones-tech-table {
                     width: 100%;
                     border-collapse: collapse;
-                    font-size: 0.53em; /* Antes 0.8em, reducido 33% */
+                    font-size: 0.8em;
                 }
                 
                 .barracones-tech-table th {
                     text-align: left;
                     color: #7a6a5a;
-                    font-size: 0.47em; /* Antes 0.7em, reducido 33% */
+                    font-size: 0.7em;
                     border-bottom: 1px solid #5c4200;
                 }
                 
                 .barracones-tech-table td {
-                    padding: 2px 0; /* Antes 3px 0, reducido 33% */
+                    padding: 3px 0;
                     border-bottom: 1px solid #2a1a0a;
                 }
                 
@@ -92499,10 +92798,10 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                     <div class="barracones-panel">
                         <span class="barracones-panel-title">02 // ATRIBUTOS BASE</span>
                         <div class="barracones-stat-grid">
-                            <div class="barracones-big-stat"><label>FUE</label><input type="number" id="barr-fue" value="0"></div>
-                            <div class="barracones-big-stat"><label>DES</label><input type="number" id="barr-des" value="0"></div>
-                            <div class="barracones-big-stat"><label>INT</label><input type="number" id="barr-int" value="0"></div>
-                            <div class="barracones-big-stat"><label>CAR</label><input type="number" id="barr-car" value="0"></div>
+                            <div class="barracones-big-stat"><label>FUE</label><input type="number" id="barr-fue" value="0" onchange="generarEstadoFisicoBarracones(parseInt(this.value) || 0); calcularTIRBarracones();"></div>
+                            <div class="barracones-big-stat"><label>DES</label><input type="number" id="barr-des" value="0" onchange="actualizarMovInitBarracones(); calcularTIRBarracones();"></div>
+                            <div class="barracones-big-stat"><label>INT</label><input type="number" id="barr-int" value="0" onchange="calcularTIRBarracones()"></div>
+                            <div class="barracones-big-stat"><label>CAR</label><input type="number" id="barr-car" value="0" onchange="calcularTIRBarracones()"></div>
                         </div>
                         <div style="margin-top:10px; font-size:0.7em; display:flex; justify-content:space-between; border-top:1px dashed #5c4200; padding-top:5px; color: #ffeebb;">
                             <span>MOV (m): <input type="number" id="barr-mov" style="width:25px; display:inline; background: transparent; border: none; color: #ffae00;" placeholder="0" readonly></span>
@@ -92518,9 +92817,9 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                                 <option value="">-- Seleccionar Arma Principal --</option>
                             </select>
                             <div class="barracones-weapon-stat">
-                                <span>DAÑO: <input type="text" class="barracones-input" style="width:30px; border:none; background-color: #1a1200;" placeholder="-" id="barr-arma1-dmg" readonly></span>
-                                <span>AL: <input type="text" class="barracones-input" style="width:50px; border:none; background-color: #1a1200;" placeholder="-/-/-" id="barr-arma1-al" readonly></span>
-                                <span>MUN: <input type="number" class="barracones-input" style="width:20px; border:none;" placeholder="0" id="barr-arma1-mun-actual" min="0">/<span id="barr-arma1-mun-max" style="color:#00ff41;">0</span></span>
+                                <span>DAÑO: <input type="text" class="barracones-input" style="width:55px; border:none; background:transparent; color:#00ff41;" placeholder="-" id="barr-arma1-dmg" readonly></span>
+                                <span>AL: <input type="text" class="barracones-input" style="width:50px; border:none; background:transparent; color:#00ff41;" placeholder="-/-/-" id="barr-arma1-al" readonly></span>
+                                <span>MUN: <input type="number" style="width:35px; border:none; background-color:#1a1200; font-family:'Share Tech Mono','Courier New',monospace; font-size:0.9em; padding:3px; color:#ffae00;" placeholder="0" id="barr-arma1-mun-actual" min="0" oninput="validarMunicionBarracones(1)">/<span id="barr-arma1-mun-max" style="color:#00ff41;">0</span></span>
                             </div>
                         </div>
                         
@@ -92529,9 +92828,42 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                                 <option value="">-- Secundaria --</option>
                             </select>
                             <div class="barracones-weapon-stat">
-                                <span>DAÑO: <input type="text" class="barracones-input" style="width:30px; border:none; background-color: #1a1200;" placeholder="-" id="barr-arma2-dmg" readonly></span>
-                                <span>AL: <input type="text" class="barracones-input" style="width:50px; border:none; background-color: #1a1200;" placeholder="-/-/-" id="barr-arma2-al" readonly></span>
-                                <span>MUN: <input type="number" class="barracones-input" style="width:20px; border:none;" placeholder="0" id="barr-arma2-mun-actual" min="0">/<span id="barr-arma2-mun-max" style="color:#00ff41;">0</span></span>
+                                <span>DAÑO: <input type="text" class="barracones-input" style="width:55px; border:none; background:transparent; color:#00ff41;" placeholder="-" id="barr-arma2-dmg" readonly></span>
+                                <span>AL: <input type="text" class="barracones-input" style="width:50px; border:none; background:transparent; color:#00ff41;" placeholder="-/-/-" id="barr-arma2-al" readonly></span>
+                                <span>MUN: <input type="number" style="width:35px; border:none; background-color:#1a1200; font-family:'Share Tech Mono','Courier New',monospace; font-size:0.9em; padding:3px; color:#ffae00;" placeholder="0" id="barr-arma2-mun-actual" min="0" oninput="validarMunicionBarracones(2)">/<span id="barr-arma2-mun-max" style="color:#00ff41;">0</span></span>
+                            </div>
+                        </div>
+                        
+                        <div class="barracones-weapon-row">
+                            <select class="barracones-input" style="cursor:pointer;" id="barr-arma3-select" onchange="cargarArmaBarracones(3)">
+                                <option value="">-- Terciaria --</option>
+                            </select>
+                            <div class="barracones-weapon-stat">
+                                <span>DAÑO: <input type="text" class="barracones-input" style="width:55px; border:none; background:transparent; color:#00ff41;" placeholder="-" id="barr-arma3-dmg" readonly></span>
+                                <span>AL: <input type="text" class="barracones-input" style="width:50px; border:none; background:transparent; color:#00ff41;" placeholder="-/-/-" id="barr-arma3-al" readonly></span>
+                                <span>MUN: <input type="number" style="width:35px; border:none; background-color:#1a1200; font-family:'Share Tech Mono','Courier New',monospace; font-size:0.9em; padding:3px; color:#ffae00;" placeholder="0" id="barr-arma3-mun-actual" min="0" oninput="validarMunicionBarracones(3)">/<span id="barr-arma3-mun-max" style="color:#00ff41;">0</span></span>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top:15px; margin-bottom:8px; padding-top:8px; border-top:1px solid #5c4200;">
+                            <span style="font-size:0.75em; letter-spacing:1px; color:#ffae00; font-weight:bold;">▸ ARMAS CUERPO A CUERPO</span>
+                        </div>
+                        
+                        <div class="barracones-weapon-row">
+                            <select class="barracones-input" style="cursor:pointer;" id="barr-melee1-select">
+                                <option value="">-- Melee 1 --</option>
+                            </select>
+                            <div class="barracones-weapon-stat">
+                                <span>DAÑO: <input type="text" class="barracones-input" style="width:55px; border:none; background:transparent; color:#00ff41;" placeholder="-" id="barr-melee1-dmg" readonly></span>
+                            </div>
+                        </div>
+                        
+                        <div class="barracones-weapon-row">
+                            <select class="barracones-input" style="cursor:pointer;" id="barr-melee2-select">
+                                <option value="">-- Melee 2 --</option>
+                            </select>
+                            <div class="barracones-weapon-stat">
+                                <span>DAÑO: <input type="text" class="barracones-input" style="width:55px; border:none; background:transparent; color:#00ff41;" placeholder="-" id="barr-melee2-dmg" readonly></span>
                             </div>
                         </div>
                         
@@ -92547,38 +92879,70 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                         <span class="barracones-panel-title">04 // ESTADO FÍSICO</span>
                         
                         <div style="text-align: center; margin-bottom: 10px;">
-                            <div style="padding: 10px; border: 1px solid #5c4200; background: rgba(0,0,0,0.8); margin-bottom: 10px; position: relative; width: 80%; margin: 0 auto;">
-                                <div style="display:flex; gap:5px; justify-content:center; margin-bottom:5px;">
-                                    <div class="barracones-loc-box">
-                                        <span class="barracones-loc-name">B.IZQ</span>
-                                        <div><span class="barracones-hp-segment"></span><span class="barracones-hp-segment"></span></div>
-                                    </div>
+                            <div style="padding: 15px; border: 1px solid #5c4200; background: rgba(0,0,0,0.8); margin-bottom: 10px; position: relative; width: 95%; margin: 0 auto;">
+                                
+                                <!-- CABEZA - Arriba del todo, centrada -->
+                                <div style="display:flex; justify-content:center; margin-bottom:12px;">
                                     <div class="barracones-loc-box">
                                         <span class="barracones-loc-name">CABEZA</span>
-                                        <div><span class="barracones-hp-segment"></span></div>
-                                    </div>
-                                    <div class="barracones-loc-box">
-                                        <span class="barracones-loc-name">B.DER</span>
-                                        <div><span class="barracones-hp-segment"></span><span class="barracones-hp-segment"></span></div>
+                                        <div style="display:flex; flex-wrap:wrap; justify-content:center; max-width:50px; margin:3px auto 0;">
+                                            <span class="barracones-hp-segment"></span>
+                                        </div>
                                     </div>
                                 </div>
                                 
-                                <div style="display:flex; gap:5px; justify-content:center;">
-                                    <div class="barracones-loc-box">
+                                <!-- BRAZOS Y TORSO - Fila principal -->
+                                <div style="display:flex; gap:12px; justify-content:center; align-items:flex-start; margin-bottom:12px;">
+                                    <!-- BRAZO IZQUIERDO -->
+                                    <div class="barracones-loc-box" style="flex:0 0 auto;">
+                                        <span class="barracones-loc-name">B.IZQ</span>
+                                        <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:1px; margin-top:3px; max-width:32px;">
+                                            <span class="barracones-hp-segment-vertical"></span>
+                                            <span class="barracones-hp-segment-vertical"></span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- TORSO -->
+                                    <div class="barracones-loc-box" style="flex:0 0 auto;">
                                         <span class="barracones-loc-name">TORSO</span>
-                                        <div><span class="barracones-hp-segment"></span><span class="barracones-hp-segment"></span><span class="barracones-hp-segment"></span></div>
-                                        <div style="margin-top:2px;"><span class="barracones-hp-segment"></span><span class="barracones-hp-segment"></span><span class="barracones-hp-segment"></span></div>
+                                        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:1px; margin-top:3px; max-width:48px; margin-left:auto; margin-right:auto;">
+                                            <span class="barracones-hp-segment"></span>
+                                            <span class="barracones-hp-segment"></span>
+                                            <span class="barracones-hp-segment"></span>
+                                            <span class="barracones-hp-segment"></span>
+                                            <span class="barracones-hp-segment"></span>
+                                            <span class="barracones-hp-segment"></span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- BRAZO DERECHO -->
+                                    <div class="barracones-loc-box" style="flex:0 0 auto;">
+                                        <span class="barracones-loc-name">B.DER</span>
+                                        <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:1px; margin-top:3px; max-width:32px;">
+                                            <span class="barracones-hp-segment-vertical"></span>
+                                            <span class="barracones-hp-segment-vertical"></span>
+                                        </div>
                                     </div>
                                 </div>
                                 
-                                <div style="display:flex; gap:5px; justify-content:center; margin-top:5px;">
-                                    <div class="barracones-loc-box">
+                                <!-- PIERNAS - Fila inferior -->
+                                <div style="display:flex; gap:20px; justify-content:center;">
+                                    <!-- PIERNA IZQUIERDA -->
+                                    <div class="barracones-loc-box" style="flex:0 0 auto;">
                                         <span class="barracones-loc-name">P.IZQ</span>
-                                        <div><span class="barracones-hp-segment"></span><span class="barracones-hp-segment"></span></div>
+                                        <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:1px; margin-top:3px; max-width:32px;">
+                                            <span class="barracones-hp-segment-vertical"></span>
+                                            <span class="barracones-hp-segment-vertical"></span>
+                                        </div>
                                     </div>
-                                    <div class="barracones-loc-box">
+                                    
+                                    <!-- PIERNA DERECHA -->
+                                    <div class="barracones-loc-box" style="flex:0 0 auto;">
                                         <span class="barracones-loc-name">P.DER</span>
-                                        <div><span class="barracones-hp-segment"></span><span class="barracones-hp-segment"></span></div>
+                                        <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:1px; margin-top:3px; max-width:32px;">
+                                            <span class="barracones-hp-segment-vertical"></span>
+                                            <span class="barracones-hp-segment-vertical"></span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -92607,18 +92971,9 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                 <div>
                     <div class="barracones-panel">
                         <span class="barracones-panel-title">05 // HABILIDADES</span>
-                        <table class="barracones-tech-table">
-                            <tr><th>HABILIDAD</th> <th style="width:25px;">NV</th> <th style="width:25px;">BON</th></tr>
-                            <tr><td>Armas Mech</td> <td><input type="number" id="barr-skill1-nv"></td> <td><input type="number" id="barr-skill1-bon"></td></tr>
-                            <tr><td>Pilotar Mech</td> <td><input type="number" id="barr-skill2-nv"></td> <td><input type="number" id="barr-skill2-bon"></td></tr>
-                            <tr><td>Armas Ligeras</td> <td><input type="number" id="barr-skill3-nv"></td> <td><input type="number" id="barr-skill3-bon"></td></tr>
-                            <tr><td>Cuerpo a Cuerpo</td> <td><input type="number" id="barr-skill4-nv"></td> <td><input type="number" id="barr-skill4-bon"></td></tr>
-                            <tr><td>Liderazgo</td> <td><input type="number" id="barr-skill5-nv"></td> <td><input type="number" id="barr-skill5-bon"></td></tr>
-                            <tr><td colspan="3" style="border:none; height:5px;"></td></tr>
-                            <tr><th>TÉCNICAS</th> <th></th> <th></th></tr>
-                            <tr><td>Técnico Mech</td> <td><input type="number" id="barr-tech1-nv"></td> <td><input type="number" id="barr-tech1-bon"></td></tr>
-                            <tr><td>Médico</td> <td><input type="number" id="barr-tech2-nv"></td> <td><input type="number" id="barr-tech2-bon"></td></tr>
-                            <tr><td>Navegación</td> <td><input type="number" id="barr-tech3-nv"></td> <td><input type="number" id="barr-tech3-bon"></td></tr>
+                        <table class="barracones-tech-table" id="barr-skills-table">
+                            <tr><th>HABILIDAD</th> <th style="width:25px;">NV</th> <th style="width:25px;">TIR</th></tr>
+                            <!-- Las habilidades se generan dinámicamente desde extraSkills -->
                         </table>
                     </div>
                     
@@ -94437,27 +94792,27 @@ z"/>
 
     <!-- BARRA DE HERRAMIENTAS FIJA - GESTIÓN DE DATOS BARRACONES -->
     <!-- Esta barra se muestra/oculta junto con Barracones -->
-    <div id="barracones-toolbar" style="display:none; position: fixed; bottom: 0; left: 0; width: 100%; background: linear-gradient(180deg, rgba(0, 0, 0, 0.95) 0%, #000000 100%); border-top: 2px solid #5c4200; box-shadow: 0 -5px 20px rgba(255, 174, 0, 0.2); z-index: 3000; padding: 15px 20px;">
+    <div id="barracones-toolbar" style="display:none; position: fixed; bottom: 0; left: 0; width: 100%; background: linear-gradient(180deg, rgba(0, 0, 0, 0.95) 0%, #000000 100%); border-top: 2px solid #5c4200; box-shadow: 0 -5px 20px rgba(255, 174, 0, 0.2); z-index: 3000; padding: 10px 13px;">
         <div style="max-width: 1400px; margin: 0 auto;">
             <!-- TÍTULO DE LA BARRA -->
-            <div style="text-align: center; color: #ffae00; font-family: 'Share Tech Mono', monospace; font-size: 0.85em; letter-spacing: 2px; margin-bottom: 12px; text-shadow: 0 0 10px rgba(255, 174, 0, 0.5);">
+            <div style="text-align: center; color: #ffae00; font-family: 'Share Tech Mono', monospace; font-size: 0.57em; letter-spacing: 1.3px; margin-bottom: 8px; text-shadow: 0 0 10px rgba(255, 174, 0, 0.5);">
                 [ SISTEMA DE GESTIÓN DE DATOS - BARRACONES ]
             </div>
             
             <!-- CONTENEDOR PRINCIPAL -->
-            <div style="display: flex; gap: 20px; align-items: center; justify-content: center; flex-wrap: wrap;">
+            <div style="display: flex; gap: 13px; align-items: center; justify-content: center; flex-wrap: wrap;">
                 
                 <!-- SECCIÓN BÚSQUEDA EN NUBE -->
-                <div style="display: flex; gap: 10px; align-items: center; background: rgba(92, 66, 0, 0.2); padding: 10px 15px; border: 1px solid #5c4200; clip-path: polygon(0 0, 100% 0, 98% 100%, 0 100%);">
-                    <span style="color: #00ff41; font-family: 'Share Tech Mono', monospace; font-size: 0.9em; text-shadow: 0 0 8px rgba(0, 255, 65, 0.5);">🔍</span>
+                <div style="display: flex; gap: 7px; align-items: center; background: rgba(92, 66, 0, 0.2); padding: 7px 10px; border: 1px solid #5c4200; clip-path: polygon(0 0, 100% 0, 98% 100%, 0 100%);">
+                    <span style="color: #00ff41; font-family: 'Share Tech Mono', monospace; font-size: 0.6em; text-shadow: 0 0 8px rgba(0, 255, 65, 0.5);">🔍</span>
                     <input 
                         type="text" 
                         id="search-cloud-name-barracones" 
                         placeholder="Nombre del Jugador..." 
                         style="
-                            padding: 8px 12px; 
-                            font-size: 14px; 
-                            width: 250px; 
+                            padding: 5px 8px; 
+                            font-size: 9px; 
+                            width: 167px; 
                             background: rgba(0, 0, 0, 0.7); 
                             border: 1px solid #5c4200; 
                             color: #ffae00; 
@@ -94470,12 +94825,12 @@ z"/>
                     <button 
                         onclick="buscarEnNubeBarracones()" 
                         style="
-                            padding: 8px 16px; 
+                            padding: 5px 11px; 
                             background: linear-gradient(135deg, #ff8c42 0%, #d67635 100%); 
                             border: 1px solid #00ff41; 
                             color: #ffffff; 
                             font-weight: bold; 
-                            font-size: 13px; 
+                            font-size: 9px; 
                             cursor: pointer; 
                             font-family: 'Share Tech Mono', monospace;
                             clip-path: polygon(5% 0, 100% 0, 100% 70%, 95% 100%, 0 100%, 0 30%);
@@ -94491,18 +94846,18 @@ z"/>
                 </div>
                 
                 <!-- SEPARADOR VERTICAL -->
-                <div style="width: 2px; height: 40px; background: linear-gradient(180deg, transparent, #5c4200, transparent);"></div>
+                <div style="width: 2px; height: 27px; background: linear-gradient(180deg, transparent, #5c4200, transparent);"></div>
                 
                 <!-- SECCIÓN GUARDAR -->
                 <button 
                     onclick="guardarEnNube()" 
                     style="
-                        padding: 10px 20px; 
+                        padding: 7px 13px; 
                         background: linear-gradient(135deg, #ff8c42 0%, #d67635 100%); 
                         border: 1px solid #00ff41; 
                         color: #ffffff; 
                         font-weight: bold; 
-                        font-size: 14px; 
+                        font-size: 9px; 
                         cursor: pointer; 
                         font-family: 'Share Tech Mono', monospace;
                         clip-path: polygon(5% 0, 100% 0, 100% 70%, 95% 100%, 0 100%, 0 30%);
@@ -94517,19 +94872,19 @@ z"/>
                 </button>
                 
                 <!-- SEPARADOR VERTICAL -->
-                <div style="width: 2px; height: 40px; background: linear-gradient(180deg, transparent, #5c4200, transparent);"></div>
+                <div style="width: 2px; height: 27px; background: linear-gradient(180deg, transparent, #5c4200, transparent);"></div>
                 
                 <!-- SECCIÓN JSON -->
-                <div style="display: flex; gap: 10px;">
+                <div style="display: flex; gap: 7px;">
                     <button 
                         onclick="exportarDatos()" 
                         style="
-                            padding: 8px 16px; 
+                            padding: 5px 11px; 
                             background: linear-gradient(135deg, #6c757d 0%, #495057 100%); 
                             border: 1px solid #00ff41; 
                             color: #ffffff; 
                             font-weight: bold; 
-                            font-size: 12px; 
+                            font-size: 8px; 
                             cursor: pointer; 
                             font-family: 'Share Tech Mono', monospace;
                             clip-path: polygon(5% 0, 100% 0, 100% 70%, 95% 100%, 0 100%, 0 30%);
@@ -94547,12 +94902,12 @@ z"/>
                     <button 
                         onclick="document.getElementById('file-input-barracones').click()" 
                         style="
-                            padding: 8px 16px; 
+                            padding: 5px 11px; 
                             background: linear-gradient(135deg, #6c757d 0%, #495057 100%); 
                             border: 1px solid #00ff41; 
                             color: #ffffff; 
                             font-weight: bold; 
-                            font-size: 12px; 
+                            font-size: 8px; 
                             cursor: pointer; 
                             font-family: 'Share Tech Mono', monospace;
                             clip-path: polygon(5% 0, 100% 0, 100% 70%, 95% 100%, 0 100%, 0 30%);
@@ -94569,10 +94924,10 @@ z"/>
             </div>
             
             <!-- ÁREA DE RESULTADOS DE BÚSQUEDA -->
-            <div id="cloud-search-results-barracones" style="margin-top: 10px;"></div>
+            <div id="cloud-search-results-barracones" style="margin-top: 7px;"></div>
             
             <!-- NOTA INFORMATIVA -->
-            <div style="text-align: center; color: #5c4200; font-family: 'Share Tech Mono', monospace; font-size: 0.7em; margin-top: 8px; letter-spacing: 1px;">
+            <div style="text-align: center; color: #5c4200; font-family: 'Share Tech Mono', monospace; font-size: 0.47em; margin-top: 5px; letter-spacing: 0.7px;">
                 * Para migrar datos antiguos: Subir JSON → Guardar en Nube
             </div>
         </div>
