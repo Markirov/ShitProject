@@ -1133,6 +1133,180 @@
             });
         }
 
+        /**
+         * Busca personajes en la nube desde la barra de herramientas de Barracones
+         * Funcionalidad idéntica a buscarEnNube() pero usa los elementos DOM de Barracones
+         * 
+         * @returns {void}
+         * 
+         * ELEMENTOS DOM ESPECÍFICOS DE BARRACONES:
+         * - #search-cloud-name-barracones: Input de búsqueda
+         * - #cloud-search-results-barracones: Contenedor de resultados
+         * 
+         * PROCESO:
+         * 1. Validar configuración de Google Script
+         * 2. Leer nombre del jugador del input
+         * 3. Realizar fetch a Google Sheets
+         * 4. Mostrar resultados:
+         *    - 1 personaje: Cargar automáticamente
+         *    - Múltiples: Mostrar lista para seleccionar
+         * 5. Navegar al generador si carga exitosa
+         * 
+         * VALIDACIONES:
+         * - Verifica GOOGLE_SCRIPT_URL configurado
+         * - Verifica que se ingrese nombre de jugador
+         * - Maneja errores de conexión
+         * 
+         * DEPENDENCIAS:
+         * - GOOGLE_SCRIPT_URL (constante global)
+         * - rellenarUIConDatos() para cargar datos
+         * - cargarPersonajeDesdeCache() para selección múltiple
+         * - goToGenerator() para navegación
+         */
+        function buscarEnNubeBarracones() {
+            // VALIDACIÓN: Verificar que Google Script está configurado
+            if (GOOGLE_SCRIPT_URL.includes("YOUR_GOOGLE_SCRIPT")) {
+                alert("¡Error! Debes configurar la variable GOOGLE_SCRIPT_URL en el código HTML primero.");
+                return;
+            }
+            
+            // ELEMENTOS DOM: Usar IDs específicos de Barracones
+            const searchInput = 'search-cloud-name-barracones';
+            const resultsDiv = 'cloud-search-results-barracones';
+            
+            // VALIDACIÓN: Verificar que se ingresó nombre
+            const nombreJugador = document.getElementById(searchInput).value;
+            if (!nombreJugador) { 
+                alert("Escribe el nombre del JUGADOR para buscar."); 
+                return; 
+            }
+
+            // ELEMENTOS DOM: Referencias al botón (creado dinámicamente, usar querySelector)
+            const btn = document.querySelector('#barracones-toolbar button[onclick*="buscarEnNubeBarracones"]');
+            const resultsContainer = document.getElementById(resultsDiv);
+            
+            if (!btn || !resultsContainer) {
+                console.error('buscarEnNubeBarracones: Elementos DOM no encontrados');
+                return;
+            }
+
+            // UI: Indicar estado de carga
+            const originalBtnText = btn.innerText;
+            btn.disabled = true; 
+            btn.innerText = "BUSCANDO...";
+            resultsContainer.style.display = 'none';
+            resultsContainer.innerHTML = '';
+
+            // FETCH: Consultar Google Sheets
+            fetch(`${GOOGLE_SCRIPT_URL}?jugador=${encodeURIComponent(nombreJugador)}`)
+            .then(response => response.json())
+            .then(data => {
+                // UI: Restaurar botón
+                btn.disabled = false; 
+                btn.innerText = originalBtnText;
+                
+                if (data.result === "success") {
+                    const personajes = data.personajes;
+
+                    // VALIDACIÓN: Verificar que hay resultados
+                    if (!personajes || personajes.length === 0) {
+                        alert("No se encontraron personajes para ese jugador.");
+                        return;
+                    }
+
+                    // CASO 1: Un solo personaje encontrado
+                    if (personajes.length === 1) {
+                        rellenarUIConDatos(personajes[0]);
+                        alert(`Personaje '${personajes[0].nombre}' cargado exitosamente.\nXP Total: ${personajes[0].xpTotal}`);
+                        // Navegar al generador si estamos en landing
+                        const fichaVisible = document.getElementById('ficha-container').style.display !== 'none';
+                        if(!fichaVisible) goToGenerator();
+                    } 
+                    // CASO 2: Múltiples personajes encontrados
+                    else {
+                        // Cachear resultados para cargar después
+                        personajesEncontradosCache = personajes;
+                        resultsContainer.style.display = 'block';
+                        
+                        // Construir HTML de resultados con estilo Barracones
+                        let html = `
+                            <div style="
+                                background: rgba(92, 66, 0, 0.3); 
+                                border: 1px solid #5c4200; 
+                                padding: 15px; 
+                                margin-top: 15px;
+                                font-family: 'Share Tech Mono', monospace;
+                            ">
+                                <div style="
+                                    font-weight: bold; 
+                                    margin-bottom: 10px; 
+                                    color: #ffae00;
+                                    text-align: center;
+                                    letter-spacing: 2px;
+                                ">
+                                    [ ${personajes.length} PERSONAJES ENCONTRADOS ]
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: 8px;">
+                        `;
+
+                        personajes.forEach((p, index) => {
+                            html += `
+                                <div 
+                                    onclick="cargarPersonajeDesdeCache(${index})" 
+                                    style="
+                                        display: flex; 
+                                        justify-content: space-between; 
+                                        align-items: center; 
+                                        background: rgba(0, 0, 0, 0.6); 
+                                        border: 1px solid #5c4200; 
+                                        padding: 10px; 
+                                        cursor: pointer;
+                                        transition: all 0.3s;
+                                        clip-path: polygon(0 0, 98% 0, 100% 100%, 0 100%);
+                                    "
+                                    onmouseover="this.style.background='rgba(255, 174, 0, 0.2)'; this.style.borderColor='#ffae00'"
+                                    onmouseout="this.style.background='rgba(0, 0, 0, 0.6)'; this.style.borderColor='#5c4200'"
+                                >
+                                    <div>
+                                        <strong style="color: #ffae00;">${p.nombre}</strong> 
+                                        <span style="font-size: 11px; color: #00ff41;">(${p.campaign})</span>
+                                    </div>
+                                    <button style="
+                                        padding: 5px 12px; 
+                                        background: linear-gradient(135deg, #0288d1 0%, #01579b 100%); 
+                                        border: 1px solid #00ff41; 
+                                        color: #ffffff; 
+                                        font-weight: bold; 
+                                        font-size: 11px; 
+                                        cursor: pointer;
+                                        font-family: 'Share Tech Mono', monospace;
+                                    ">
+                                        CARGAR
+                                    </button>
+                                </div>
+                            `;
+                        });
+                        
+                        html += `
+                                </div>
+                            </div>
+                        `;
+                        
+                        resultsContainer.innerHTML = html;
+                    }
+                } else {
+                    alert("Error: " + (data.msg || "Error desconocido al buscar."));
+                }
+            })
+            .catch(error => {
+                // ERROR HANDLING: Restaurar UI y mostrar error
+                btn.disabled = false; 
+                btn.innerText = originalBtnText;
+                console.error("Error en buscarEnNubeBarracones:", error);
+                alert("Error de conexión con la nube: " + error);
+            });
+        }
+
         // --- FUNCIONES DE ARMAS ---
         function populateWeaponSelects() {
             const selects = document.querySelectorAll('.weapon-select');
@@ -1160,6 +1334,79 @@
                 inputs.forEach(input => input.value = "");
             }
         }
+
+        /**
+         * Pobla los desplegables de armas en Barracones con las armas de INFANTRY_WEAPON_TABLE
+         * Se ejecuta al cargar la página
+         */
+        function poblarDesplegablesArmasBarracones() {
+            const select1 = document.getElementById('barr-arma1-select');
+            const select2 = document.getElementById('barr-arma2-select');
+            
+            if (!select1 || !select2) return;
+            
+            // Limpiar y añadir opción por defecto
+            select1.innerHTML = '<option value="">-- Seleccionar Arma Principal --</option>';
+            select2.innerHTML = '<option value="">-- Secundaria --</option>';
+            
+            // Añadir todas las armas de la tabla
+            INFANTRY_WEAPON_TABLE.forEach((arma, index) => {
+                const option1 = document.createElement('option');
+                option1.value = index;
+                option1.textContent = arma.name;
+                select1.appendChild(option1);
+                
+                const option2 = document.createElement('option');
+                option2.value = index;
+                option2.textContent = arma.name;
+                select2.appendChild(option2);
+            });
+        }
+        
+        /**
+         * Carga los datos de un arma seleccionada en Barracones
+         * @param {number} slotNum - Número de slot (1 o 2)
+         */
+        function cargarArmaBarracones(slotNum) {
+            const select = document.getElementById(`barr-arma${slotNum}-select`);
+            const dmgInput = document.getElementById(`barr-arma${slotNum}-dmg`);
+            const alInput = document.getElementById(`barr-arma${slotNum}-al`);
+            const munActualInput = document.getElementById(`barr-arma${slotNum}-mun-actual`);
+            const munMaxSpan = document.getElementById(`barr-arma${slotNum}-mun-max`);
+            
+            if (!select || !dmgInput || !alInput || !munActualInput || !munMaxSpan) return;
+            
+            const index = parseInt(select.value);
+            
+            if (isNaN(index) || index < 0 || index >= INFANTRY_WEAPON_TABLE.length) {
+                // Limpiar campos si no hay selección válida
+                dmgInput.value = '';
+                alInput.value = '';
+                munActualInput.value = '';
+                munMaxSpan.textContent = '0';
+                munActualInput.max = '';
+                return;
+            }
+            
+            const arma = INFANTRY_WEAPON_TABLE[index];
+            
+            // Cargar datos del arma
+            dmgInput.value = arma.dmg || '';
+            alInput.value = `${arma.s}/${arma.m}/${arma.l}` || '';
+            
+            // Munición máxima (fija)
+            const munMax = parseInt(arma.car) || 0;
+            munMaxSpan.textContent = munMax;
+            munActualInput.max = munMax;
+            
+            // Si no hay munición actual establecida, poner la máxima
+            if (!munActualInput.value) {
+                munActualInput.value = munMax;
+            }
+        }
+        
+        // Poblar desplegables cuando la página carga
+        document.addEventListener('DOMContentLoaded', poblarDesplegablesArmasBarracones);
 
         // --- FUNCIONES DE INTERACTIVIDAD ---
         function toggleBox(element) {
@@ -1591,6 +1838,9 @@
             document.getElementById('vehicle-depot').style.display = 'none';
             document.getElementById('barracones').style.display = 'none';
             document.getElementById('points-counter').style.display = 'none';
+            // Ocultar barra de herramientas de Barracones
+            const toolbar = document.getElementById('barracones-toolbar');
+            if (toolbar) toolbar.style.display = 'none';
         }
 
         function goHomeFromTRR() {
@@ -1901,33 +2151,252 @@
             document.getElementById('points-counter').style.display = 'none';
         }
 
+        /**
+         * Navega a la sección de Tabla de Clúster de Misiles
+         * Oculta todas las demás secciones de TRR Utilities y genera la tabla dinámicamente
+         * 
+         * @returns {void}
+         * 
+         * ELEMENTOS DOM MODIFICADOS:
+         * - #trr-utilities-landing: Landing page de TRR Utilities (oculto)
+         * - #cluster-table: Sección de tabla de clúster (visible)
+         * - #damage-grouper: Sección de agrupador de daños (oculto)
+         * - #modifiers-table: Sección de tabla de modificadores (oculto)
+         * 
+         * VALIDACIONES:
+         * - Verifica que todos los elementos DOM existan antes de modificarlos
+         * - Si falta algún elemento, registra warning en consola pero continúa
+         * 
+         * EFECTOS SECUNDARIOS:
+         * - Llama a generateClusterTableHTML() para construir la tabla
+         * - Si la tabla ya existe, la regenera (previene contenido obsoleto)
+         * 
+         * LLAMADO POR:
+         * - Botón "🎯 TABLA DE CLUSTER" en TRR Utilities Landing
+         * 
+         * NOTAS DE MANTENIMIENTO:
+         * - Para añadir nuevas secciones, añadir línea display='none'
+         * - Mantener generateClusterTableHTML() al final
+         */
         function goToClusterTable() {
-            document.getElementById('trr-utilities-landing').style.display = 'none';
-            document.getElementById('cluster-table').style.display = 'block';
-            document.getElementById('damage-grouper').style.display = 'none';
-            document.getElementById('modifiers-table').style.display = 'none';
-            generateClusterTableHTML();
+            // VALIDACIÓN: Verificar existencia de elementos críticos
+            const landingElement = document.getElementById('trr-utilities-landing');
+            const clusterElement = document.getElementById('cluster-table');
+            const grouperElement = document.getElementById('damage-grouper');
+            const modifiersElement = document.getElementById('modifiers-table');
+            
+            // Verificar landing (crítico)
+            if (!landingElement) {
+                console.error('goToClusterTable: Elemento trr-utilities-landing no encontrado');
+                return;
+            }
+            
+            // Verificar cluster table (crítico)
+            if (!clusterElement) {
+                console.error('goToClusterTable: Elemento cluster-table no encontrado');
+                return;
+            }
+            
+            // Verificar elementos opcionales (solo warnings)
+            if (!grouperElement) {
+                console.warn('goToClusterTable: Elemento damage-grouper no encontrado');
+            }
+            if (!modifiersElement) {
+                console.warn('goToClusterTable: Elemento modifiers-table no encontrado');
+            }
+            
+            // NAVEGACIÓN: Ocultar todas las secciones
+            landingElement.style.display = 'none';
+            if (grouperElement) grouperElement.style.display = 'none';
+            if (modifiersElement) modifiersElement.style.display = 'none';
+            
+            // Mostrar sección de cluster
+            clusterElement.style.display = 'block';
+            
+            // GENERACIÓN: Construir tabla HTML dinámicamente
+            // Esto se hace cada vez para asegurar contenido actualizado
+            try {
+                generateClusterTableHTML();
+            } catch (error) {
+                console.error('goToClusterTable: Error al generar tabla de clúster:', error);
+            }
         }
-
+        
+        /**
+         * Navega a la sección de Agrupador de Daños de Misiles
+         * Oculta todas las demás secciones de TRR Utilities
+         * 
+         * @returns {void}
+         * 
+         * ELEMENTOS DOM MODIFICADOS:
+         * - #trr-utilities-landing: Landing page de TRR Utilities (oculto)
+         * - #cluster-table: Sección de tabla de clúster (oculto)
+         * - #damage-grouper: Sección de agrupador de daños (visible)
+         * - #modifiers-table: Sección de tabla de modificadores (oculto)
+         * 
+         * VALIDACIONES:
+         * - Verifica que todos los elementos DOM existan antes de modificarlos
+         * - Si falta algún elemento crítico, aborta la operación
+         * 
+         * LLAMADO POR:
+         * - Botón "💥 AGRUPADOR DE DAÑOS" en TRR Utilities Landing
+         * 
+         * NOTAS:
+         * - No requiere generación dinámica (contenido estático)
+         * - Los resultados se generan al usar procesarMisiles()
+         */
         function goToDamageGrouper() {
-            document.getElementById('trr-utilities-landing').style.display = 'none';
-            document.getElementById('cluster-table').style.display = 'none';
-            document.getElementById('damage-grouper').style.display = 'block';
-            document.getElementById('modifiers-table').style.display = 'none';
+            // VALIDACIÓN: Verificar existencia de elementos críticos
+            const landingElement = document.getElementById('trr-utilities-landing');
+            const clusterElement = document.getElementById('cluster-table');
+            const grouperElement = document.getElementById('damage-grouper');
+            const modifiersElement = document.getElementById('modifiers-table');
+            
+            // Verificar landing (crítico)
+            if (!landingElement) {
+                console.error('goToDamageGrouper: Elemento trr-utilities-landing no encontrado');
+                return;
+            }
+            
+            // Verificar damage grouper (crítico)
+            if (!grouperElement) {
+                console.error('goToDamageGrouper: Elemento damage-grouper no encontrado');
+                return;
+            }
+            
+            // Verificar elementos opcionales (solo warnings)
+            if (!clusterElement) {
+                console.warn('goToDamageGrouper: Elemento cluster-table no encontrado');
+            }
+            if (!modifiersElement) {
+                console.warn('goToDamageGrouper: Elemento modifiers-table no encontrado');
+            }
+            
+            // NAVEGACIÓN: Ocultar todas las secciones
+            landingElement.style.display = 'none';
+            if (clusterElement) clusterElement.style.display = 'none';
+            if (modifiersElement) modifiersElement.style.display = 'none';
+            
+            // Mostrar sección de agrupador
+            grouperElement.style.display = 'block';
         }
-
+        
+        /**
+         * Navega a la sección de Tabla de Modificadores
+         * Oculta todas las demás secciones de TRR Utilities
+         * 
+         * @returns {void}
+         * 
+         * ELEMENTOS DOM MODIFICADOS:
+         * - #trr-utilities-landing: Landing page de TRR Utilities (oculto)
+         * - #cluster-table: Sección de tabla de clúster (oculto)
+         * - #damage-grouper: Sección de agrupador de daños (oculto)
+         * - #modifiers-table: Sección de tabla de modificadores (visible)
+         * 
+         * VALIDACIONES:
+         * - Verifica que todos los elementos DOM existan antes de modificarlos
+         * - Si falta algún elemento crítico, aborta la operación
+         * 
+         * LLAMADO POR:
+         * - Botón "📊 TABLA DE MODIFICADORES" en TRR Utilities Landing
+         * 
+         * NOTAS:
+         * - Tabla de modificadores es contenido estático
+         * - No requiere generación dinámica
+         */
         function goToModifiersTable() {
-            document.getElementById('trr-utilities-landing').style.display = 'none';
-            document.getElementById('cluster-table').style.display = 'none';
-            document.getElementById('damage-grouper').style.display = 'none';
-            document.getElementById('modifiers-table').style.display = 'block';
+            // VALIDACIÓN: Verificar existencia de elementos críticos
+            const landingElement = document.getElementById('trr-utilities-landing');
+            const clusterElement = document.getElementById('cluster-table');
+            const grouperElement = document.getElementById('damage-grouper');
+            const modifiersElement = document.getElementById('modifiers-table');
+            
+            // Verificar landing (crítico)
+            if (!landingElement) {
+                console.error('goToModifiersTable: Elemento trr-utilities-landing no encontrado');
+                return;
+            }
+            
+            // Verificar modifiers table (crítico)
+            if (!modifiersElement) {
+                console.error('goToModifiersTable: Elemento modifiers-table no encontrado');
+                return;
+            }
+            
+            // Verificar elementos opcionales (solo warnings)
+            if (!clusterElement) {
+                console.warn('goToModifiersTable: Elemento cluster-table no encontrado');
+            }
+            if (!grouperElement) {
+                console.warn('goToModifiersTable: Elemento damage-grouper no encontrado');
+            }
+            
+            // NAVEGACIÓN: Ocultar todas las secciones
+            landingElement.style.display = 'none';
+            if (clusterElement) clusterElement.style.display = 'none';
+            if (grouperElement) grouperElement.style.display = 'none';
+            
+            // Mostrar sección de modificadores
+            modifiersElement.style.display = 'block';
         }
-
+        
+        /**
+         * Regresa al landing page de TRR Utilities
+         * Oculta todas las subsecciones y muestra el menú principal
+         * 
+         * @returns {void}
+         * 
+         * ELEMENTOS DOM MODIFICADOS:
+         * - #trr-utilities-landing: Landing page de TRR Utilities (visible con display: flex)
+         * - #cluster-table: Sección de tabla de clúster (oculto)
+         * - #damage-grouper: Sección de agrupador de daños (oculto)
+         * - #modifiers-table: Sección de tabla de modificadores (oculto)
+         * 
+         * VALIDACIONES:
+         * - Verifica que el elemento landing exista (crítico)
+         * - Verifica existencia de subsecciones (opcional, solo warnings)
+         * 
+         * DISPLAY MODE:
+         * - Landing usa display: flex (no block) para centrado vertical
+         * - Subsecciones usan display: none
+         * 
+         * LLAMADO POR:
+         * - Botón "⬅️ VOLVER" en cada subsección de TRR Utilities
+         * 
+         * NOTAS:
+         * - Esta función es el "home" de TRR Utilities
+         * - No confundir con goHomeNoConfirm() que va al menú principal global
+         */
         function backToTRRUtilitiesLanding() {
-            document.getElementById('trr-utilities-landing').style.display = 'flex';
-            document.getElementById('cluster-table').style.display = 'none';
-            document.getElementById('damage-grouper').style.display = 'none';
-            document.getElementById('modifiers-table').style.display = 'none';
+            // VALIDACIÓN: Verificar existencia de landing (crítico)
+            const landingElement = document.getElementById('trr-utilities-landing');
+            if (!landingElement) {
+                console.error('backToTRRUtilitiesLanding: Elemento trr-utilities-landing no encontrado');
+                return;
+            }
+            
+            // Verificar existencia de subsecciones (opcional)
+            const clusterElement = document.getElementById('cluster-table');
+            const grouperElement = document.getElementById('damage-grouper');
+            const modifiersElement = document.getElementById('modifiers-table');
+            
+            if (!clusterElement) {
+                console.warn('backToTRRUtilitiesLanding: Elemento cluster-table no encontrado');
+            }
+            if (!grouperElement) {
+                console.warn('backToTRRUtilitiesLanding: Elemento damage-grouper no encontrado');
+            }
+            if (!modifiersElement) {
+                console.warn('backToTRRUtilitiesLanding: Elemento modifiers-table no encontrado');
+            }
+            
+            // NAVEGACIÓN: Mostrar landing con display flex (para centrado)
+            landingElement.style.display = 'flex';
+            
+            // Ocultar todas las subsecciones
+            if (clusterElement) clusterElement.style.display = 'none';
+            if (grouperElement) grouperElement.style.display = 'none';
+            if (modifiersElement) modifiersElement.style.display = 'none';
         }
 
         // NAVEGACIÓN MECH HANGAR
@@ -2010,11 +2479,23 @@
         
         // NAVEGACIÓN BARRACONES
         function goToBarracones() {
+            console.log('🎯 goToBarracones() llamada');
             document.getElementById('landing-page').style.display = 'none';
             document.getElementById('barracones').style.display = 'block';
             document.getElementById('pre-generacion').style.display = 'none';
             document.getElementById('ficha-container').style.display = 'none';
             document.getElementById('points-counter').style.display = 'none';
+            // Mostrar barra de herramientas de Barracones
+            const toolbar = document.getElementById('barracones-toolbar');
+            console.log('🔍 Toolbar element:', toolbar);
+            if (toolbar) {
+                toolbar.style.display = 'block';
+                console.log('✅ Toolbar display set to block');
+                console.log('📊 Toolbar computed style:', window.getComputedStyle(toolbar).display);
+                console.log('📊 Toolbar z-index:', window.getComputedStyle(toolbar).zIndex);
+            } else {
+                console.error('❌ Toolbar element not found!');
+            }
         }
 
         // TABLA DE ARMAS DE INFANTERÍA
@@ -2401,7 +2882,15 @@
             });
         }
 
-        // ======================== TABLA DE CLÚSTER DE MISILES ========================
+        // ========================================================================================
+        // TABLA DE CLÚSTER DE MISILES - BATTLETECH
+        // ========================================================================================
+        // Tabla de referencia para calcular impactos de misiles según tirada de 2D6
+        // Filas: Resultado de 2D6 (2-12)
+        // Columnas: Tamaño del lanzador (2, 4, 5, 6, 10, 15, 20)
+        // Valores: Número de misiles que impactan
+        // ========================================================================================
+        
         const CLUSTER_TABLE = {
             2: {2:1, 4:1, 5:1, 6:2, 10:3, 12:4, 15:5, 20:6},
             3: {2:1, 4:2, 5:2, 6:2, 10:3, 12:4, 15:5, 20:6},
@@ -2415,152 +2904,634 @@
             11: {2:2, 4:4, 5:5, 6:6, 10:10, 12:12, 15:15, 20:20},
             12: {2:2, 4:4, 5:5, 6:6, 10:10, 12:12, 15:15, 20:20}
         };
-
+        
+        /**
+         * Genera dinámicamente la tabla HTML de referencia de clúster de misiles
+         * 
+         * @returns {void}
+         * 
+         * COMPORTAMIENTO:
+         * - Busca el contenedor 'cluster-table-container' en el DOM
+         * - Si no existe, termina silenciosamente (fail-safe)
+         * - Genera tabla con headers sticky para scroll vertical
+         * - Aplica estilos inline para independencia de CSS externo
+         * - Usa IDs únicos para cada celda para highlights posteriores
+         * 
+         * ESTRUCTURA HTML GENERADA:
+         * <table id="missile-cluster-table">
+         *   <thead>
+         *     <tr>
+         *       <th>2D6</th>
+         *       <th>2</th><th>4</th>...<th>20</th>
+         *     </tr>
+         *   </thead>
+         *   <tbody>
+         *     <tr>
+         *       <td id="row-missile-2">2</td>
+         *       <td id="cell-missile-2-2">1</td>...
+         *     </tr>
+         *     ...
+         *   </tbody>
+         * </table>
+         * 
+         * DEPENDENCIAS:
+         * - CLUSTER_TABLE (constante global)
+         * - Elemento DOM: #cluster-table-container
+         * 
+         * LLAMADO POR:
+         * - goToClusterTable() al navegar a la sección
+         * 
+         * NOTAS DE MANTENIMIENTO:
+         * - Para cambiar colores, modificar los valores rgba() en estilos inline
+         * - Para añadir/quitar columnas, modificar array 'cols'
+         * - Headers sticky requieren position: sticky y z-index > 1
+         */
         function generateClusterTableHTML() {
+            // VALIDACIÓN: Verificar que el contenedor existe en el DOM
             const container = document.getElementById('cluster-table-container');
-            if (!container) return;
-            let html = '<table id="missile-cluster-table" style="width: 100%; border-collapse: collapse; min-width: 900px; font-size: 10pt;"><thead><tr><th style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff; padding: 8px; border: 1px solid #b71c1c; position: sticky; top: 0; z-index: 2; width: 60px;">2D6</th>';
-            const cols = [2, 4, 5, 6, 10, 15, 20]; 
-            cols.forEach(c => html += `<th style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff; padding: 12px; border: 1px solid #b71c1c; position: sticky; top: 0; z-index: 2;">${c}</th>`);
+            if (!container) {
+                console.warn('generateClusterTableHTML: Contenedor cluster-table-container no encontrado');
+                return;
+            }
+            
+            // CONFIGURACIÓN: Definir columnas visibles (tamaños de lanzadores)
+            const cols = [2, 4, 5, 6, 10, 15, 20];
+            
+            // CONSTRUCCIÓN: Iniciar tabla con header 2D6
+            let html = '<table id="missile-cluster-table" style="width: 100%; border-collapse: collapse; font-size: 9pt;">';
+            html += '<thead><tr>';
+            html += '<th style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff; padding: 6px; border: 1px solid #b71c1c; position: sticky; top: 0; z-index: 2; width: 50px;">2D6</th>';
+            
+            // HEADERS: Generar encabezados para cada tamaño de lanzador
+            cols.forEach(c => {
+                html += `<th style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff; padding: 8px; border: 1px solid #b71c1c; position: sticky; top: 0; z-index: 2;">${c}</th>`;
+            });
             html += '</tr></thead><tbody>';
-
+            
+            // FILAS: Generar una fila por cada resultado posible de 2D6 (2-12)
             for (let roll = 2; roll <= 12; roll++) {
+                // Alternar colores de fondo para mejor legibilidad
                 const rowBg = roll % 2 === 0 ? 'rgba(26, 26, 26, 0.7)' : 'rgba(10, 10, 10, 0.7)';
-                html += `<tr><td id="row-missile-${roll}" style="background: ${rowBg}; color: #ff8c42; font-weight: bold; padding: 8px; border: 1px solid #b71c1c; text-align: center; width: 60px;"><strong>${roll}</strong></td>`;
+                
+                // Celda de resultado de tirada (primera columna)
+                html += `<tr><td id="row-missile-${roll}" style="background: ${rowBg}; color: #ff8c42; font-weight: bold; padding: 6px; border: 1px solid #b71c1c; text-align: center; width: 50px;"><strong>${roll}</strong></td>`;
+                
+                // Celdas de impactos para cada tamaño de lanzador
                 cols.forEach(c => {
-                    const cellValue = CLUSTER_TABLE[roll][c] !== undefined ? CLUSTER_TABLE[roll][c] : '-'; 
-                    html += `<td id="cell-missile-${roll}-${c}" style="background: ${rowBg}; color: #e0e0e0; padding: 10px; border: 1px solid #b71c1c; text-align: center;">${cellValue}</td>`;
+                    // VALIDACIÓN: Verificar que el valor existe en CLUSTER_TABLE
+                    const cellValue = CLUSTER_TABLE[roll] && CLUSTER_TABLE[roll][c] !== undefined 
+                        ? CLUSTER_TABLE[roll][c] 
+                        : '-';
+                    
+                    // ID único para permitir highlight individual
+                    html += `<td id="cell-missile-${roll}-${c}" style="background: ${rowBg}; color: #e0e0e0; padding: 6px; border: 1px solid #b71c1c; text-align: center;">${cellValue}</td>`;
                 });
                 html += '</tr>';
             }
+            
             html += '</tbody></table>';
+            
+            // INSERCIÓN: Reemplazar contenido del contenedor con la tabla generada
             container.innerHTML = html;
         }
-
+        
+        /**
+         * Ejecuta una tirada de 2D6 y calcula los impactos de misiles según CLUSTER_TABLE
+         * Actualiza el display de resultados y aplica highlight visual a la tabla
+         * 
+         * @returns {void}
+         * 
+         * PROCESO:
+         * 1. Lee el tamaño del lanzador seleccionado
+         * 2. Valida que sea un número válido
+         * 3. Tira 2D6 (aleatorio entre 2-12)
+         * 4. Consulta CLUSTER_TABLE[roll][launcherSize]
+         * 5. Muestra resultado en #missile-result-display
+         * 6. Limpia highlights previos
+         * 7. Aplica highlight a la fila y celda correspondientes
+         * 
+         * ELEMENTOS DOM REQUERIDOS:
+         * - #launcher-select: select con value = tamaño del lanzador
+         * - #missile-result-display: div para mostrar resultados
+         * - #row-missile-{roll}: td de la fila de la tirada
+         * - #cell-missile-{roll}-{size}: td específica del resultado
+         * 
+         * VALIDACIONES:
+         * - Verifica que launcherSize sea un número válido
+         * - Verifica que el resultado exista en CLUSTER_TABLE
+         * - Verifica que los elementos DOM existan antes de modificarlos
+         * 
+         * EFECTOS VISUALES:
+         * - Background rojo (rgba(183,28,28,0.8)) en fila/celda activa
+         * - Color verde (#00ff41) en texto resaltado
+         * - Font-size aumentado (14pt) en celda específica
+         * 
+         * DEPENDENCIAS:
+         * - CLUSTER_TABLE (constante global)
+         * - generateClusterTableHTML debe haber sido llamada previamente
+         * 
+         * NOTAS DE MANTENIMIENTO:
+         * - Para cambiar colores de highlight, modificar rgba() y hex colors
+         * - Clase .cell-highlight se añade para posibles estilos CSS adicionales
+         * - Limpieza de highlights previene acumulación de estilos
+         */
         function rollCluster() {
-            const launcherSize = parseInt(document.getElementById('launcher-select').value);
-            if (isNaN(launcherSize)) return;
-
+            // VALIDACIÓN 1: Verificar que el selector existe y obtener valor
+            const selectElement = document.getElementById('launcher-select');
+            if (!selectElement) {
+                console.error('rollCluster: Elemento launcher-select no encontrado');
+                return;
+            }
+            
+            const launcherSize = parseInt(selectElement.value);
+            
+            // VALIDACIÓN 2: Verificar que el valor es un número válido
+            if (isNaN(launcherSize)) {
+                console.warn('rollCluster: Tamaño de lanzador no válido:', selectElement.value);
+                return;
+            }
+            
+            // VALIDACIÓN 3: Verificar que el tamaño existe en CLUSTER_TABLE
+            // Verificamos con la primera fila de la tabla
+            if (!CLUSTER_TABLE[2] || CLUSTER_TABLE[2][launcherSize] === undefined) {
+                console.warn('rollCluster: Tamaño de lanzador no soportado:', launcherSize);
+                return;
+            }
+            
+            // TIRADA: Generar resultado aleatorio 2D6 (rango: 2-12)
+            // Math.random() genera [0,1), * 11 = [0,11), floor = [0,10], +2 = [2,12]
             const roll = Math.floor(Math.random() * 11) + 2;
-            const hits = CLUSTER_TABLE[roll][launcherSize] !== undefined ? CLUSTER_TABLE[roll][launcherSize] : 0;
-
-            document.getElementById('missile-result-display').innerHTML = `<div style="font-size: 24px; color: #00ff41; text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);">Tirada: <strong style="color: #ff8c42;">${roll}</strong></div><div style="font-size: 28px; margin-top: 10px;">Impactos: <strong style="color: #ff8c42; text-shadow: 0 0 15px rgba(255, 140, 66, 0.8);">${hits}</strong></div>`;
-
+            
+            // CONSULTA: Obtener número de impactos de la tabla
+            const hits = CLUSTER_TABLE[roll][launcherSize] !== undefined 
+                ? CLUSTER_TABLE[roll][launcherSize] 
+                : 0;
+            
+            // DISPLAY: Actualizar el elemento de resultados
+            const resultDisplay = document.getElementById('missile-result-display');
+            if (!resultDisplay) {
+                console.error('rollCluster: Elemento missile-result-display no encontrado');
+                return;
+            }
+            
+            resultDisplay.innerHTML = `
+                <div style="font-size: 20px; color: #00ff41; text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);">
+                    Tirada: <strong style="color: #ff8c42;">${roll}</strong>
+                </div>
+                <div style="font-size: 24px; margin-top: 10px;">
+                    Impactos: <strong style="color: #ff8c42; text-shadow: 0 0 15px rgba(255, 140, 66, 0.8);">${hits}</strong>
+                </div>
+            `;
+            
+            // LIMPIEZA: Remover todos los highlights previos
+            // Esto previene acumulación de estilos en tiradas múltiples
             document.querySelectorAll('.cell-highlight').forEach(el => {
                 el.classList.remove('cell-highlight');
-                el.style.background = '';
+                el.style.background = '';  // Resetear a estilo por defecto
                 el.style.color = '';
+                el.style.fontWeight = '';
+                el.style.fontSize = '';
             });
             
+            // HIGHLIGHT 1: Resaltar toda la fila de la tirada
             const row = document.getElementById(`row-missile-${roll}`);
-            const cell = document.getElementById(`cell-missile-${roll}-${launcherSize}`);
             if (row) {
                 row.classList.add('cell-highlight');
-                row.style.background = 'rgba(183, 28, 28, 0.8)';
-                row.style.color = '#00ff41';
+                row.style.background = 'rgba(183, 28, 28, 0.8)';  // Rojo BattleTech
+                row.style.color = '#00ff41';  // Verde terminal
+            } else {
+                console.warn(`rollCluster: Fila row-missile-${roll} no encontrada`);
             }
+            
+            // HIGHLIGHT 2: Resaltar la celda específica del resultado
+            const cell = document.getElementById(`cell-missile-${roll}-${launcherSize}`);
             if (cell) {
                 cell.classList.add('cell-highlight');
                 cell.style.background = 'rgba(183, 28, 28, 0.8)';
                 cell.style.color = '#00ff41';
                 cell.style.fontWeight = 'bold';
-                cell.style.fontSize = '14pt';
+                cell.style.fontSize = '14pt';  // Aumentar tamaño para énfasis
+            } else {
+                console.warn(`rollCluster: Celda cell-missile-${roll}-${launcherSize} no encontrada`);
             }
         }
-
-        // ======================== AGRUPADOR DE DAÑOS ========================
+        
+        // ========================================================================================
+        // AGRUPADOR DE DAÑOS DE MISILES
+        // ========================================================================================
+        // Sistema para procesar impactos de misiles y asignar automáticamente localizaciones
+        // de daño en un Mech según tiradas de 2D6
+        // ========================================================================================
+        
+        /**
+         * Genera un resultado aleatorio de tirada de 2D6 (rango: 2-12)
+         * 
+         * @returns {number} Resultado de la tirada (2-12)
+         * 
+         * DISTRIBUCIÓN PROBABILÍSTICA:
+         * - 2 o 12: 2.78% cada uno (1/36)
+         * - 3 o 11: 5.56% cada uno (2/36)
+         * - 4 o 10: 8.33% cada uno (3/36)
+         * - 5 o 9:  11.11% cada uno (4/36)
+         * - 6 o 8:  13.89% cada uno (5/36)
+         * - 7:      16.67% (6/36) - más probable
+         * 
+         * USO:
+         * Esta función simula tirar dos dados de 6 caras y sumar los resultados.
+         * Se usa para determinar la localización del daño en Mechs según reglas BattleTech.
+         */
         function roll2D6() {
-            return Math.floor(Math.random() * 11) + 2; 
+            // Math.random() * 11 genera [0, 11)
+            // Math.floor lo convierte a [0, 10]
+            // +2 desplaza el rango a [2, 12]
+            return Math.floor(Math.random() * 11) + 2;
         }
-
+        
+        /**
+         * Convierte un resultado de 2D6 a una localización de daño en un Mech
+         * 
+         * @param {number} roll - Resultado de 2D6 (debe estar entre 2-12)
+         * @returns {string} Nombre de la localización (ej: "Torso Central (CT)")
+         * 
+         * TABLA DE LOCALIZACIONES (según reglas BattleTech):
+         * 2:       Cabeza (Head)
+         * 3:       Brazo Derecho (RA - Right Arm)
+         * 4:       Pierna Derecha (RL - Right Leg)
+         * 5:       Torso Derecho (RT - Right Torso)
+         * 6,7,12:  Torso Central (CT - Center Torso) - localización más común
+         * 8:       Torso Izquierdo (LT - Left Torso)
+         * 9:       Pierna Izquierda (LL - Left Leg)
+         * 10:      Brazo Izquierdo (LA - Left Arm)
+         * 11:      Cabeza (Head)
+         * 
+         * VALIDACIÓN:
+         * - Si el roll está fuera del rango [2,12], devuelve "Desconocido"
+         * - Incluye warning en consola para debugging
+         * 
+         * NOTAS:
+         * - El Torso Central (6,7,12) es la localización más probable (27.78%)
+         * - La Cabeza (2,11) es la más difícil de impactar (8.33%)
+         * - Los nombres incluyen abreviatura en inglés para compatibilidad con hojas de registro
+         */
         function getLocation(roll) {
             switch (roll) {
-                case 2: return "Cabeza (Head)";
-                case 3: return "Brazo Derecho (RA)";
-                case 4: return "Pierna Derecha (RL)";
-                case 5: return "Torso Derecho (RT)";
-                case 6: return "Torso Central (CT)";
-                case 7: return "Torso Central (CT)";
-                case 8: return "Torso Izquierdo (LT)";
-                case 9: return "Pierna Izquierda (LL)";
-                case 10: return "Brazo Izquierdo (LA)";
-                case 11: return "Cabeza (Head)";
-                case 12: return "Torso Central (CT)";
-                default: return "Error de Tirada";
+                case 2:
+                    return "Cabeza (Head)";
+                case 3:
+                    return "Brazo Derecho (RA)";
+                case 4:
+                    return "Pierna Derecha (RL)";
+                case 5:
+                    return "Torso Derecho (RT)";
+                case 6:
+                case 7:
+                case 12:
+                    return "Torso Central (CT)";
+                case 8:
+                    return "Torso Izquierdo (LT)";
+                case 9:
+                    return "Pierna Izquierda (LL)";
+                case 10:
+                    return "Brazo Izquierdo (LA)";
+                case 11:
+                    return "Cabeza (Head)";
+                default:
+                    console.warn(`getLocation: Valor de roll inválido: ${roll}`);
+                    return "Desconocido";
             }
         }
-
+        
+        /**
+         * Procesa un ataque de misiles y calcula automáticamente la distribución de daño
+         * por localización según reglas de agrupamiento de BattleTech
+         * 
+         * @returns {void}
+         * 
+         * REGLAS DE AGRUPAMIENTO:
+         * - LRM (Long Range Missiles): Se agrupan en bloques de 5 daño
+         *   Cada grupo de 5 misiles causa 5 puntos de daño en una localización
+         *   Cada misil causa 1 punto de daño
+         * 
+         * - SRM (Short Range Missiles): Se agrupan en bloques de 2 daño
+         *   Cada grupo de 2 misiles causa 4 puntos de daño en una localización
+         *   Cada misil causa 2 puntos de daño
+         * 
+         * PROCESO:
+         * 1. Leer tipo de misil (LRM/SRM) del selector
+         * 2. Leer cantidad de misiles que impactaron
+         * 3. Validar inputs
+         * 4. Calcular grupos completos (divisiones exactas)
+         * 5. Calcular misiles residuales (resto de la división)
+         * 6. Para cada grupo:
+         *    - Tirar 2D6 para determinar localización
+         *    - Acumular daño en esa localización
+         *    - Registrar en tabla de detalle
+         * 7. Procesar grupo residual (si existe)
+         * 8. Generar tabla resumen ordenada por daño total
+         * 9. Mostrar resultados en #resultados
+         * 
+         * ELEMENTOS DOM REQUERIDOS:
+         * - #tipoMisil: select con options "LRM" o "SRM"
+         * - #cantidadHits: input type="number" con cantidad de impactos
+         * - #resultados: div contenedor para mostrar tablas de resultados
+         * 
+         * VALIDACIONES:
+         * - Verifica que los elementos DOM existan
+         * - Verifica que cantidadHits sea un número válido
+         * - Verifica que cantidadHits > 0
+         * - Maneja inputs inválidos con mensajes de error apropiados
+         * 
+         * ESTRUCTURA DE DATOS:
+         * damageByLocation = {
+         *   "Torso Central (CT)": 15,
+         *   "Brazo Derecho (RA)": 10,
+         *   ...
+         * }
+         * 
+         * SALIDA VISUAL:
+         * - Tabla RESUMEN: Localizaciones ordenadas por daño (mayor a menor)
+         * - Tabla DETALLE: Registro completo de cada tirada y asignación
+         * - Grupo residual marcado visualmente con color diferente
+         * 
+         * DEPENDENCIAS:
+         * - roll2D6(): Para generar tiradas
+         * - getLocation(): Para convertir tiradas a localizaciones
+         * 
+         * NOTAS DE MANTENIMIENTO:
+         * - Para cambiar reglas de agrupamiento, modificar damageGrouping
+         * - Para cambiar daño por misil, modificar damageUnit
+         * - Los estilos están inline para independencia de CSS externo
+         */
         function procesarMisiles() {
-            const tipoMisil = document.getElementById('tipoMisil').value;
-            let cantidadHits = parseInt(document.getElementById('cantidadHits').value);
-            const resultadosDiv = document.getElementById('resultados');
-
-            if (isNaN(cantidadHits) || cantidadHits <= 0) {
-                resultadosDiv.innerHTML = '<h3 style="color: #ff8c42;">Error:</h3><p style="color: #e0e0e0;">Por favor, introduce una cantidad de impactos válida (mayor que 0).</p>';
+            // ============================================================
+            // FASE 1: VALIDACIÓN Y LECTURA DE INPUTS
+            // ============================================================
+            
+            // Verificar que los elementos DOM existen
+            const tipoMisilElement = document.getElementById('tipoMisil');
+            const cantidadHitsElement = document.getElementById('cantidadHits');
+            const resultadosElement = document.getElementById('resultados');
+            
+            if (!tipoMisilElement || !cantidadHitsElement || !resultadosElement) {
+                console.error('procesarMisiles: Elementos DOM requeridos no encontrados');
+                if (resultadosElement) {
+                    resultadosElement.innerHTML = '<p style="color: #ff8c42;">❌ Error: Elementos del formulario no encontrados</p>';
+                }
                 return;
             }
-
-            const damageUnit = tipoMisil === 'LRM' ? 1 : 2;
-            const damageGrouping = tipoMisil === 'LRM' ? 5 : 2;
             
-            let totalDamage = 0;
-            let damageByLocation = {};
-            let tableBody = '';
-
+            // Leer valores de los inputs
+            const tipoMisil = tipoMisilElement.value;
+            const cantidadHits = parseInt(cantidadHitsElement.value);
+            
+            // VALIDACIÓN 1: Verificar que cantidadHits es un número
+            if (isNaN(cantidadHits)) {
+                resultadosElement.innerHTML = '<h3 style="color: #ff8c42;">Resultados:</h3><p style="color: #ff8c42;">❌ Por favor, introduce un número válido de misiles.</p>';
+                return;
+            }
+            
+            // VALIDACIÓN 2: Verificar que cantidadHits es positivo
+            if (cantidadHits <= 0) {
+                resultadosElement.innerHTML = '<h3 style="color: #ff8c42;">Resultados:</h3><p style="color: #ff8c42;">❌ La cantidad de misiles debe ser mayor que 0.</p>';
+                return;
+            }
+            
+            // ============================================================
+            // FASE 2: CONFIGURACIÓN SEGÚN TIPO DE MISIL
+            // ============================================================
+            
+            let damageUnit;       // Daño que causa cada misil individual
+            let damageGrouping;   // Cuántos misiles se agrupan juntos
+            
+            if (tipoMisil === "LRM") {
+                damageUnit = 1;       // Cada LRM causa 1 punto de daño
+                damageGrouping = 5;   // Los LRMs se agrupan de 5 en 5
+            } else if (tipoMisil === "SRM") {
+                damageUnit = 2;       // Cada SRM causa 2 puntos de daño
+                damageGrouping = 2;   // Los SRMs se agrupan de 2 en 2
+            } else {
+                // Tipo de misil no reconocido
+                resultadosElement.innerHTML = '<h3 style="color: #ff8c42;">Resultados:</h3><p style="color: #ff8c42;">❌ Tipo de misil no válido. Selecciona LRM o SRM.</p>';
+                return;
+            }
+            
+            // ============================================================
+            // FASE 3: CÁLCULO DE GRUPOS
+            // ============================================================
+            
+            // Calcular cuántos grupos completos hay
+            // Ej: 12 LRMs = 2 grupos completos de 5 + 2 residuales
             const numFullGroups = Math.floor(cantidadHits / damageGrouping);
-            let remainingHits = cantidadHits % damageGrouping;
-
+            
+            // Calcular misiles restantes que no forman un grupo completo
+            const remainingHits = cantidadHits % damageGrouping;
+            
+            // ============================================================
+            // FASE 4: PROCESAMIENTO DE GRUPOS Y ACUMULACIÓN DE DAÑO
+            // ============================================================
+            
+            // Objeto para acumular daño total por localización
+            // Estructura: { "Torso Central (CT)": 15, "Brazo Derecho (RA)": 10, ... }
+            const damageByLocation = {};
+            
+            // Array para registrar cada grupo procesado (para tabla de detalle)
+            const detailRows = [];
+            
+            // PROCESAR GRUPOS COMPLETOS
             for (let i = 0; i < numFullGroups; i++) {
+                // Tirar 2D6 para determinar localización
                 const roll = roll2D6();
                 const location = getLocation(roll);
-                const damageThisGroup = damageGrouping * damageUnit;
                 
-                totalDamage += damageThisGroup;
-                damageByLocation[location] = (damageByLocation[location] || 0) + damageThisGroup;
+                // Calcular daño de este grupo
+                const groupDamage = damageGrouping * damageUnit;
                 
-                const hitsInGroup = damageGrouping;
-                const rowBg = i % 2 === 0 ? 'rgba(26, 26, 26, 0.7)' : 'rgba(10, 10, 10, 0.7)';
-                tableBody += `<tr style="background: ${rowBg};">
-                                <td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Grupo ${i + 1} (${hitsInGroup} hits)</td>
-                                <td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">${roll}</td>
-                                <td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">${location}</td>
-                                <td style="padding: 10px; border: 1px solid #b71c1c; color: #00ff41; font-weight: bold; text-align: center;">${damageThisGroup}</td>
-                              </tr>`;
+                // Acumular daño en la localización
+                if (!damageByLocation[location]) {
+                    damageByLocation[location] = 0;
+                }
+                damageByLocation[location] += groupDamage;
+                
+                // Registrar para tabla de detalle
+                // Background alternado para mejor legibilidad
+                const rowBg = i % 2 === 0 ? 'rgba(26,26,26,0.7)' : 'rgba(10,10,10,0.7)';
+                detailRows.push({
+                    groupNum: i + 1,
+                    roll: roll,
+                    location: location,
+                    damage: groupDamage,
+                    background: rowBg,
+                    isResidual: false
+                });
             }
-
+            
+            // PROCESAR GRUPO RESIDUAL (si existe)
             if (remainingHits > 0) {
                 const roll = roll2D6();
                 const location = getLocation(roll);
-                const damageThisGroup = remainingHits * damageUnit;
+                const residualDamage = remainingHits * damageUnit;
                 
-                totalDamage += damageThisGroup;
-                damageByLocation[location] = (damageByLocation[location] || 0) + damageThisGroup;
-
-                tableBody += `<tr style="background: rgba(183, 28, 28, 0.3); font-style: italic;">
-                                <td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42;">Grupo Final (${remainingHits} hits)</td>
-                                <td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">${roll}</td>
-                                <td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42;">${location}</td>
-                                <td style="padding: 10px; border: 1px solid #b71c1c; color: #00ff41; font-weight: bold; text-align: center;">${damageThisGroup}</td>
-                              </tr>`;
+                // Acumular daño residual
+                if (!damageByLocation[location]) {
+                    damageByLocation[location] = 0;
+                }
+                damageByLocation[location] += residualDamage;
+                
+                // Registrar grupo residual con estilo especial
+                detailRows.push({
+                    groupNum: numFullGroups + 1,
+                    roll: roll,
+                    location: location,
+                    damage: residualDamage,
+                    background: 'rgba(183,28,28,0.3)',  // Fondo rojizo para destacar
+                    isResidual: true
+                });
             }
-
-            const sortedLocations = Object.keys(damageByLocation).sort((a, b) => damageByLocation[b] - damageByLocation[a]);
-
-            let summaryTable = '<h3 style="color: #ff8c42; border-bottom: 2px solid #b71c1c; padding-bottom: 10px; margin-top: 30px;">Resumen de Daño por Localización:</h3><table style="width: 100%; border-collapse: collapse; margin-top: 20px;"><thead><tr><th style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff; padding: 12px; border: 1px solid #b71c1c;">Localización</th><th style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff; padding: 12px; border: 1px solid #b71c1c;">Daño Total</th></tr></thead><tbody>';
-            let rowIndex = 0;
-            for (const loc of sortedLocations) {
-                const rowBg = rowIndex % 2 === 0 ? 'rgba(26, 26, 26, 0.7)' : 'rgba(10, 10, 10, 0.7)';
-                summaryTable += `<tr style="background: ${rowBg};"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">${loc}</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #00ff41; font-weight: bold; text-align: center; font-size: 16pt;">${damageByLocation[loc]}</td></tr>`;
-                rowIndex++;
-            }
-            summaryTable += `</tbody></table><p style="text-align: right; margin-top: 20px; font-size: 24px; color: #ff8c42; text-shadow: 0 0 10px rgba(255, 140, 66, 0.5);">Daño Total: <strong style="color: #00ff41; text-shadow: 0 0 15px rgba(0, 255, 65, 0.8);">${totalDamage}</strong></p>`;
-
-            let detailTable = '<h3 style="color: #ff8c42; border-bottom: 2px solid #b71c1c; padding-bottom: 10px; margin-top: 30px;">Detalle de Tiradas (1 Tirada por Grupo de Daño):</h3><div style="max-height: 500px; overflow-y: auto; background-color: rgba(10, 10, 10, 0.8); padding: 15px; margin-top: 20px; border: 2px solid #b71c1c; border-radius: 5px;"><table style="width: 100%; border-collapse: collapse; font-size: 10pt;">';
-            detailTable += '<thead><tr><th style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff; padding: 10px; border: 1px solid #b71c1c; position: sticky; top: 0; z-index: 1;">Grupo</th><th style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff; padding: 10px; border: 1px solid #b71c1c; position: sticky; top: 0; z-index: 1;">2D6</th><th style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff; padding: 10px; border: 1px solid #b71c1c; position: sticky; top: 0; z-index: 1;">Localización</th><th style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff; padding: 10px; border: 1px solid #b71c1c; position: sticky; top: 0; z-index: 1;">Daño Aplicado</th></tr></thead><tbody>';
-            detailTable += tableBody;
-            detailTable += '</tbody></table></div>';
-
-            resultadosDiv.innerHTML = summaryTable + detailTable;
+            
+            // ============================================================
+            // FASE 5: GENERACIÓN DE TABLA RESUMEN
+            // ============================================================
+            
+            // Convertir objeto a array y ordenar por daño (mayor a menor)
+            const sortedLocations = Object.entries(damageByLocation)
+                .sort((a, b) => b[1] - a[1]);  // b[1] - a[1] = orden descendente
+            
+            // Calcular daño total para mostrar en pie de tabla
+            const totalDamage = sortedLocations.reduce((sum, [loc, dmg]) => sum + dmg, 0);
+            
+            // Construir HTML de tabla resumen
+            let summaryHTML = `
+                <div style="margin-bottom: 30px;">
+                    <h3 style="color: #00ff41; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 2px;">
+                        📊 RESUMEN POR LOCALIZACIÓN
+                    </h3>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 10pt;">
+                        <thead>
+                            <tr>
+                                <th style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff; padding: 10px; border: 1px solid #b71c1c; text-align: left;">
+                                    Localización
+                                </th>
+                                <th style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff; padding: 10px; border: 1px solid #b71c1c; text-align: center;">
+                                    Daño Total
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            // Añadir fila por cada localización con daño
+            sortedLocations.forEach(([location, damage], index) => {
+                const rowBg = index % 2 === 0 ? 'rgba(26,26,26,0.7)' : 'rgba(10,10,10,0.7)';
+                summaryHTML += `
+                    <tr>
+                        <td style="background: ${rowBg}; color: #e0e0e0; padding: 10px; border: 1px solid #b71c1c;">
+                            ${location}
+                        </td>
+                        <td style="background: ${rowBg}; color: #00ff41; padding: 10px; border: 1px solid #b71c1c; text-align: center; font-weight: bold; font-size: 16pt;">
+                            ${damage}
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            // Añadir fila de total
+            summaryHTML += `
+                            <tr>
+                                <td style="background: rgba(183,28,28,0.5); color: #ff8c42; padding: 10px; border: 1px solid #b71c1c; text-align: right; font-weight: bold; font-size: 12pt;">
+                                    TOTAL:
+                                </td>
+                                <td style="background: rgba(183,28,28,0.5); color: #ff8c42; padding: 10px; border: 1px solid #b71c1c; text-align: center; font-weight: bold; font-size: 24px; text-shadow: 0 0 15px rgba(255, 140, 66, 0.8);">
+                                    ${totalDamage}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            // ============================================================
+            // FASE 6: GENERACIÓN DE TABLA DE DETALLE
+            // ============================================================
+            
+            let detailHTML = `
+                <div style="margin-top: 30px;">
+                    <h3 style="color: #00ff41; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 2px;">
+                        📋 DETALLE DE GRUPOS
+                    </h3>
+                    <div style="max-height: 500px; overflow-y: auto; background: rgba(10,10,10,0.8); border: 2px solid #b71c1c; border-radius: 5px;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 10pt;">
+                            <thead>
+                                <tr>
+                                    <th style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff; padding: 10px; border: 1px solid #b71c1c; position: sticky; top: 0; z-index: 1;">
+                                        Grupo
+                                    </th>
+                                    <th style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff; padding: 10px; border: 1px solid #b71c1c; position: sticky; top: 0; z-index: 1;">
+                                        2D6
+                                    </th>
+                                    <th style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff; padding: 10px; border: 1px solid #b71c1c; position: sticky; top: 0; z-index: 1;">
+                                        Localización
+                                    </th>
+                                    <th style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff; padding: 10px; border: 1px solid #b71c1c; position: sticky; top: 0; z-index: 1;">
+                                        Daño Aplicado
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+            `;
+            
+            // Añadir fila por cada grupo procesado
+            detailRows.forEach(row => {
+                // Estilo especial para grupo residual
+                const textStyle = row.isResidual 
+                    ? 'color: #ff8c42; font-style: italic;' 
+                    : 'color: #e0e0e0;';
+                
+                const groupLabel = row.isResidual 
+                    ? `${row.groupNum} (Residual)` 
+                    : row.groupNum;
+                
+                detailHTML += `
+                    <tr>
+                        <td style="background: ${row.background}; ${textStyle} padding: 8px; border: 1px solid #b71c1c; text-align: center;">
+                            ${groupLabel}
+                        </td>
+                        <td style="background: ${row.background}; ${textStyle} padding: 8px; border: 1px solid #b71c1c; text-align: center;">
+                            ${row.roll}
+                        </td>
+                        <td style="background: ${row.background}; ${textStyle} padding: 8px; border: 1px solid #b71c1c;">
+                            ${row.location}
+                        </td>
+                        <td style="background: ${row.background}; ${textStyle} padding: 8px; border: 1px solid #b71c1c; text-align: center; font-weight: bold;">
+                            ${row.damage}
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            detailHTML += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            
+            // ============================================================
+            // FASE 7: INSERCIÓN DE RESULTADOS EN EL DOM
+            // ============================================================
+            
+            resultadosElement.innerHTML = `
+                <h3 style="color: #ff8c42; border-bottom: 2px solid #ff8c42; padding-bottom: 10px; margin-bottom: 20px;">
+                    ⚡ RESULTADOS DEL ATAQUE ⚡
+                </h3>
+                <p style="color: #e0e0e0; margin-bottom: 20px;">
+                    <strong>Tipo:</strong> ${tipoMisil} | 
+                    <strong>Impactos:</strong> ${cantidadHits} | 
+                    <strong>Grupos completos:</strong> ${numFullGroups} | 
+                    <strong>Residuales:</strong> ${remainingHits}
+                </p>
+                ${summaryHTML}
+                ${detailHTML}
+            `;
         }
 
         // SISTEMA DE ROTACIÓN DE DATOS DE MECHS
@@ -91295,7 +92266,7 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
         
         <div style="max-width: 1200px; margin: 0 auto; padding: 20px;">
             <!-- Scanner Effect -->
-            <div style="position: fixed; top: 0; left: 0; width: 100%; height: 2px; background: #ffae00; box-shadow: 0 0 10px #ffae00, 0 0 20px #5c4200; opacity: 0.8; animation: scanner-sweep 30s linear infinite alternate; z-index: 0;"></div>
+            <div style="position: fixed; top: 0; left: 0; width: 100%; height: 2px; background: linear-gradient(90deg, transparent, rgba(255, 140, 66, 0.5), transparent); animation: scanner-sweep 30s linear infinite alternate; z-index: 0;"></div>
             
             <style>
                 @keyframes scanner-sweep {
@@ -91308,31 +92279,31 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                 .barracones-title {
                     font-family: 'Black Ops One', Impact, sans-serif;
                     color: #ffae00;
-                    font-size: 3em;
+                    font-size: 2em; /* Antes 3em, reducido 33% */
                     text-align: center;
                     text-shadow: 2px 2px 0 #000, 0 0 20px #ffae00;
-                    margin-bottom: 20px;
-                    letter-spacing: 3px;
+                    margin-bottom: 13px; /* Antes 20px, reducido 33% */
+                    letter-spacing: 2px; /* Antes 3px, reducido 33% */
                 }
                 
                 .barracones-subtitle {
                     text-align: center;
                     color: #5c4200;
                     font-family: 'Share Tech Mono', 'Courier New', monospace;
-                    font-size: 0.9em;
-                    letter-spacing: 2px;
-                    margin-bottom: 40px;
+                    font-size: 0.6em; /* Antes 0.9em, reducido 33% */
+                    letter-spacing: 1.3px; /* Antes 2px, reducido 33% */
+                    margin-bottom: 27px; /* Antes 40px, reducido 33% */
                     border-bottom: 1px solid #5c4200;
-                    padding-bottom: 10px;
+                    padding-bottom: 7px; /* Antes 10px, reducido 33% */
                 }
                 
                 .hazard-bar {
-                    height: 10px;
+                    height: 7px; /* Antes 10px, reducido 33% */
                     width: 100%;
                     background: repeating-linear-gradient(45deg, #000, #000 10px, #f1c40f 10px, #f1c40f 20px);
                     opacity: 0.9;
                     border-bottom: 1px solid #000;
-                    margin-bottom: 20px;
+                    margin-bottom: 13px; /* Antes 20px, reducido 33% */
                 }
                 
                 #barracones input::-webkit-outer-spin-button,
@@ -91352,15 +92323,15 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                     z-index: 2;
                     display: grid;
                     grid-template-columns: 32% 38% 28%;
-                    gap: 15px;
-                    padding-bottom: 50px;
+                    gap: 10px; /* Antes 15px, reducido 33% */
+                    padding-bottom: 140px; /* Espacio para la barra de herramientas fija */
                 }
                 
                 .barracones-panel {
                     background: #000000;
                     border-left: 2px solid #5c4200;
-                    padding: 10px;
-                    margin-bottom: 10px;
+                    padding: 7px; /* Antes 10px, reducido 33% */
+                    margin-bottom: 7px; /* Antes 10px, reducido 33% */
                     clip-path: polygon(0 0, 100% 0, 100% 98%, 92% 100%, 0 100%);
                     position: relative;
                     box-shadow: 0 0 15px rgba(255, 174, 0, 0.05);
@@ -91368,10 +92339,10 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                 
                 .barracones-panel-title {
                     color: #00ff41;
-                    font-size: 0.8em;
-                    letter-spacing: 1px;
+                    font-size: 0.53em; /* Antes 0.8em, reducido 33% */
+                    letter-spacing: 0.7px; /* Antes 1px, reducido 33% */
                     border-bottom: 1px solid #5c4200;
-                    margin-bottom: 8px;
+                    margin-bottom: 5px; /* Antes 8px, reducido 33% */
                     display: block;
                     font-family: 'Share Tech Mono', monospace;
                 }
@@ -91384,8 +92355,8 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                     font-family: 'Share Tech Mono', 'Courier New', monospace;
                     width: 100%;
                     transition: 0.3s;
-                    font-size: 0.9em;
-                    padding: 3px;
+                    font-size: 0.6em; /* Antes 0.9em, reducido 33% */
+                    padding: 2px; /* Antes 3px, reducido 33% */
                 }
                 
                 .barracones-input:focus {
@@ -91397,26 +92368,26 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                 .barracones-stat-grid {
                     display: grid;
                     grid-template-columns: 1fr 1fr;
-                    gap: 8px;
+                    gap: 5px; /* Antes 8px, reducido 33% */
                 }
                 
                 .barracones-big-stat {
                     background: rgba(20, 10, 0, 0.5);
-                    padding: 5px;
+                    padding: 3px; /* Antes 5px, reducido 33% */
                     text-align: center;
                     border: 1px solid #332200;
                 }
                 
                 .barracones-big-stat label {
                     display: block;
-                    font-size: 0.7em;
+                    font-size: 0.47em; /* Antes 0.7em, reducido 33% */
                     color: #5c4200;
                     font-weight: bold;
                 }
                 
                 .barracones-big-stat input {
                     text-align: center;
-                    font-size: 1.3em;
+                    font-size: 0.87em; /* Antes 1.3em, reducido 33% */
                     color: #ffae00;
                     border: none;
                     background: transparent;
@@ -91424,24 +92395,24 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                 }
                 
                 .barracones-weapon-row {
-                    margin-bottom: 15px;
+                    margin-bottom: 10px; /* Antes 15px, reducido 33% */
                     border-bottom: 1px dashed #3a2a0a;
-                    padding-bottom: 5px;
+                    padding-bottom: 3px; /* Antes 5px, reducido 33% */
                 }
                 
                 .barracones-weapon-stat {
                     display: flex;
-                    gap: 10px;
-                    font-size: 0.8em;
+                    gap: 7px; /* Antes 10px, reducido 33% */
+                    font-size: 0.53em; /* Antes 0.8em, reducido 33% */
                     color: #8e7e6e;
-                    margin-top: 5px;
+                    margin-top: 3px; /* Antes 5px, reducido 33% */
                 }
                 
                 .barracones-armor-grid {
                     display: grid;
                     grid-template-columns: 1fr 40px;
-                    gap: 5px;
-                    font-size: 0.8em;
+                    gap: 3px; /* Antes 5px, reducido 33% */
+                    font-size: 0.53em; /* Antes 0.8em, reducido 33% */
                     align-items: center;
                 }
                 
@@ -91449,13 +92420,13 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                     text-align: center;
                     border: 1px solid #5c4200;
                     background: #0a0a0a;
-                    padding: 2px;
+                    padding: 1px; /* Antes 2px, reducido 33% */
                     color: #00ff41;
                 }
                 
                 .barracones-hp-segment {
-                    width: 10px;
-                    height: 8px;
+                    width: 7px; /* Antes 10px, reducido 33% */
+                    height: 5px; /* Antes 8px, reducido 33% */
                     background: #110a00;
                     border: 1px solid #443300;
                     display: inline-block;
@@ -91470,11 +92441,11 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                 
                 .barracones-loc-box {
                     text-align: center;
-                    margin-bottom: 5px;
+                    margin-bottom: 3px; /* Antes 5px, reducido 33% */
                 }
                 
                 .barracones-loc-name {
-                    font-size: 0.6em;
+                    font-size: 0.4em; /* Antes 0.6em, reducido 33% */
                     color: #ffae00;
                     display: block;
                 }
@@ -91482,18 +92453,18 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                 .barracones-tech-table {
                     width: 100%;
                     border-collapse: collapse;
-                    font-size: 0.8em;
+                    font-size: 0.53em; /* Antes 0.8em, reducido 33% */
                 }
                 
                 .barracones-tech-table th {
                     text-align: left;
                     color: #7a6a5a;
-                    font-size: 0.7em;
+                    font-size: 0.47em; /* Antes 0.7em, reducido 33% */
                     border-bottom: 1px solid #5c4200;
                 }
                 
                 .barracones-tech-table td {
-                    padding: 3px 0;
+                    padding: 2px 0; /* Antes 3px 0, reducido 33% */
                     border-bottom: 1px solid #2a1a0a;
                 }
                 
@@ -91543,20 +92514,24 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                         <span class="barracones-panel-title">03 // ARMAMENTO PERSONAL</span>
                         
                         <div class="barracones-weapon-row">
-                            <input type="text" class="barracones-input" placeholder="Arma Principal" style="font-weight:bold;" id="barr-arma1">
+                            <select class="barracones-input" style="font-weight:bold; cursor:pointer;" id="barr-arma1-select" onchange="cargarArmaBarracones(1)">
+                                <option value="">-- Seleccionar Arma Principal --</option>
+                            </select>
                             <div class="barracones-weapon-stat">
-                                <span>DAÑO: <input type="text" class="barracones-input" style="width:30px; border:none;" placeholder="2d6" id="barr-arma1-dmg"></span>
-                                <span>AL: <input type="text" class="barracones-input" style="width:30px; border:none;" placeholder="50m" id="barr-arma1-al"></span>
-                                <span>MUN: <input type="text" class="barracones-input" style="width:30px; border:none;" placeholder="30" id="barr-arma1-mun"></span>
+                                <span>DAÑO: <input type="text" class="barracones-input" style="width:30px; border:none; background-color: #1a1200;" placeholder="-" id="barr-arma1-dmg" readonly></span>
+                                <span>AL: <input type="text" class="barracones-input" style="width:50px; border:none; background-color: #1a1200;" placeholder="-/-/-" id="barr-arma1-al" readonly></span>
+                                <span>MUN: <input type="number" class="barracones-input" style="width:20px; border:none;" placeholder="0" id="barr-arma1-mun-actual" min="0">/<span id="barr-arma1-mun-max" style="color:#00ff41;">0</span></span>
                             </div>
                         </div>
                         
                         <div class="barracones-weapon-row">
-                            <input type="text" class="barracones-input" placeholder="Secundaria" id="barr-arma2">
+                            <select class="barracones-input" style="cursor:pointer;" id="barr-arma2-select" onchange="cargarArmaBarracones(2)">
+                                <option value="">-- Secundaria --</option>
+                            </select>
                             <div class="barracones-weapon-stat">
-                                <span>DAÑO: <input type="text" class="barracones-input" style="width:30px; border:none;" placeholder="1d6" id="barr-arma2-dmg"></span>
-                                <span>AL: <input type="text" class="barracones-input" style="width:30px; border:none;" placeholder="30m" id="barr-arma2-al"></span>
-                                <span>MUN: <input type="text" class="barracones-input" style="width:30px; border:none;" placeholder="15" id="barr-arma2-mun"></span>
+                                <span>DAÑO: <input type="text" class="barracones-input" style="width:30px; border:none; background-color: #1a1200;" placeholder="-" id="barr-arma2-dmg" readonly></span>
+                                <span>AL: <input type="text" class="barracones-input" style="width:50px; border:none; background-color: #1a1200;" placeholder="-/-/-" id="barr-arma2-al" readonly></span>
+                                <span>MUN: <input type="number" class="barracones-input" style="width:20px; border:none;" placeholder="0" id="barr-arma2-mun-actual" min="0">/<span id="barr-arma2-mun-max" style="color:#00ff41;">0</span></span>
                             </div>
                         </div>
                         
@@ -91710,13 +92685,13 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                     TABLA DE CLUSTER DE MISILES
                 </h1>
                 
-                <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 40px; align-items: start; max-width: 1400px; margin: 0 auto;">
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px; align-items: start; max-width: 1300px; margin: 0 auto;">
                     <!-- TABLA DE CLUSTER -->
-                    <div id="cluster-table-container" style="background: rgba(10, 10, 10, 0.8); padding: 20px; border: 2px solid #b71c1c; border-radius: 5px; overflow-x: auto;"></div>
+                    <div id="cluster-table-container" style="background: rgba(10, 10, 10, 0.8); padding: 15px; border: 2px solid #b71c1c; border-radius: 5px; overflow-x: auto;"></div>
                     
                     <!-- CALCULADORA DE IMPACTOS -->
-                    <div style="background: rgba(26, 26, 26, 0.9); padding: 30px; border: 2px solid #b71c1c; border-radius: 10px; box-shadow: 0 0 30px rgba(183, 28, 28, 0.3);">
-                        <h3 style="color: #ff8c42; margin-top: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 2px; border-bottom: 2px solid #ff8c42; padding-bottom: 10px;">🎲 CALCULADORA DE IMPACTOS</h3>
+                    <div style="background: rgba(26, 26, 26, 0.9); padding: 20px; border: 2px solid #b71c1c; border-radius: 10px; box-shadow: 0 0 30px rgba(183, 28, 28, 0.3);">
+                        <h3 style="color: #ff8c42; margin-top: 0; font-size: 20px; text-transform: uppercase; letter-spacing: 2px; border-bottom: 2px solid #ff8c42; padding-bottom: 10px;">🎲 CALCULADORA DE IMPACTOS</h3>
                         
                         <label style="color: #e0e0e0; display: block; margin: 20px 0 10px 0; font-weight: bold; font-size: 14px;">Tamaño del Lanzador:</label>
                         <select id="launcher-select" style="width: 100%; padding: 12px; font-size: 16px; background-color: #0a0a0a; color: #ff8c42; border: 2px solid #b71c1c; border-radius: 5px; cursor: pointer;">
@@ -91729,11 +92704,11 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                             <option value="20">LRM-20</option>
                         </select>
                         
-                        <button onclick="rollCluster()" style="width: 100%; margin-top: 30px; background: linear-gradient(135deg, #00ff41 0%, #00cc33 100%); color: #000; font-family: Impact, sans-serif; font-size: 24px; padding: 20px; border: none; border-radius: 10px; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; box-shadow: 0 6px 0 #006600, 0 0 30px rgba(0, 255, 65, 0.5); transition: all 0.2s; font-weight: bold;" onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 0 #006600, 0 0 40px rgba(0, 255, 65, 0.8)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 6px 0 #006600, 0 0 30px rgba(0, 255, 65, 0.5)'" onmousedown="this.style.transform='translateY(6px)'; this.style.boxShadow='none'" onmouseup="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 0 #006600, 0 0 40px rgba(0, 255, 65, 0.8)'">
+                        <button onclick="rollCluster()" style="width: 100%; margin-top: 20px; background: linear-gradient(135deg, #00ff41 0%, #00cc33 100%); color: #000; font-family: Impact, sans-serif; font-size: 20px; padding: 15px; border: none; border-radius: 10px; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; box-shadow: 0 6px 0 #006600, 0 0 30px rgba(0, 255, 65, 0.5); transition: all 0.2s; font-weight: bold;" onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 0 #006600, 0 0 40px rgba(0, 255, 65, 0.8)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 6px 0 #006600, 0 0 30px rgba(0, 255, 65, 0.5)'" onmousedown="this.style.transform='translateY(6px)'; this.style.boxShadow='none'" onmouseup="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 0 #006600, 0 0 40px rgba(0, 255, 65, 0.8)'">
                             🎲 TIRAR 2D6
                         </button>
                         
-                        <div id="missile-result-display" style="margin-top: 30px; padding: 25px; background: rgba(0, 0, 0, 0.6); border: 2px solid #00ff41; border-radius: 8px; text-align: center; font-size: 20px; color: #00ff41; text-shadow: 0 0 10px rgba(0, 255, 65, 0.5); min-height: 100px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                        <div id="missile-result-display" style="margin-top: 20px; padding: 20px; background: rgba(0, 0, 0, 0.6); border: 2px solid #00ff41; border-radius: 8px; text-align: center; font-size: 18px; color: #00ff41; text-shadow: 0 0 10px rgba(0, 255, 65, 0.5); min-height: 80px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
                             Selecciona tamaño y tira
                         </div>
                     </div>
@@ -93459,5 +94434,149 @@ z"/>
             </div>
         </div>
     </div>
+
+    <!-- BARRA DE HERRAMIENTAS FIJA - GESTIÓN DE DATOS BARRACONES -->
+    <!-- Esta barra se muestra/oculta junto con Barracones -->
+    <div id="barracones-toolbar" style="display:none; position: fixed; bottom: 0; left: 0; width: 100%; background: linear-gradient(180deg, rgba(0, 0, 0, 0.95) 0%, #000000 100%); border-top: 2px solid #5c4200; box-shadow: 0 -5px 20px rgba(255, 174, 0, 0.2); z-index: 3000; padding: 15px 20px;">
+        <div style="max-width: 1400px; margin: 0 auto;">
+            <!-- TÍTULO DE LA BARRA -->
+            <div style="text-align: center; color: #ffae00; font-family: 'Share Tech Mono', monospace; font-size: 0.85em; letter-spacing: 2px; margin-bottom: 12px; text-shadow: 0 0 10px rgba(255, 174, 0, 0.5);">
+                [ SISTEMA DE GESTIÓN DE DATOS - BARRACONES ]
+            </div>
+            
+            <!-- CONTENEDOR PRINCIPAL -->
+            <div style="display: flex; gap: 20px; align-items: center; justify-content: center; flex-wrap: wrap;">
+                
+                <!-- SECCIÓN BÚSQUEDA EN NUBE -->
+                <div style="display: flex; gap: 10px; align-items: center; background: rgba(92, 66, 0, 0.2); padding: 10px 15px; border: 1px solid #5c4200; clip-path: polygon(0 0, 100% 0, 98% 100%, 0 100%);">
+                    <span style="color: #00ff41; font-family: 'Share Tech Mono', monospace; font-size: 0.9em; text-shadow: 0 0 8px rgba(0, 255, 65, 0.5);">🔍</span>
+                    <input 
+                        type="text" 
+                        id="search-cloud-name-barracones" 
+                        placeholder="Nombre del Jugador..." 
+                        style="
+                            padding: 8px 12px; 
+                            font-size: 14px; 
+                            width: 250px; 
+                            background: rgba(0, 0, 0, 0.7); 
+                            border: 1px solid #5c4200; 
+                            color: #ffae00; 
+                            font-family: 'Share Tech Mono', monospace;
+                            transition: all 0.3s;
+                        "
+                        onfocus="this.style.borderColor='#ffae00'; this.style.boxShadow='0 0 10px rgba(255, 174, 0, 0.5)'"
+                        onblur="this.style.borderColor='#5c4200'; this.style.boxShadow='none'"
+                    >
+                    <button 
+                        onclick="buscarEnNubeBarracones()" 
+                        style="
+                            padding: 8px 16px; 
+                            background: linear-gradient(135deg, #ff8c42 0%, #d67635 100%); 
+                            border: 1px solid #00ff41; 
+                            color: #ffffff; 
+                            font-weight: bold; 
+                            font-size: 13px; 
+                            cursor: pointer; 
+                            font-family: 'Share Tech Mono', monospace;
+                            clip-path: polygon(5% 0, 100% 0, 100% 70%, 95% 100%, 0 100%, 0 30%);
+                            transition: all 0.3s;
+                            text-shadow: 0 0 5px rgba(255, 140, 66, 0.5);
+                            box-shadow: 0 0 10px rgba(255, 140, 66, 0.4);
+                        " 
+                        onmouseover="this.style.boxShadow='0 0 20px rgba(0, 255, 65, 0.8)'; this.style.transform='scale(1.05)'" 
+                        onmouseout="this.style.boxShadow='0 0 10px rgba(255, 140, 66, 0.4)'; this.style.transform='scale(1)'"
+                    >
+                        CARGAR NUBE
+                    </button>
+                </div>
+                
+                <!-- SEPARADOR VERTICAL -->
+                <div style="width: 2px; height: 40px; background: linear-gradient(180deg, transparent, #5c4200, transparent);"></div>
+                
+                <!-- SECCIÓN GUARDAR -->
+                <button 
+                    onclick="guardarEnNube()" 
+                    style="
+                        padding: 10px 20px; 
+                        background: linear-gradient(135deg, #ff8c42 0%, #d67635 100%); 
+                        border: 1px solid #00ff41; 
+                        color: #ffffff; 
+                        font-weight: bold; 
+                        font-size: 14px; 
+                        cursor: pointer; 
+                        font-family: 'Share Tech Mono', monospace;
+                        clip-path: polygon(5% 0, 100% 0, 100% 70%, 95% 100%, 0 100%, 0 30%);
+                        transition: all 0.3s;
+                        text-shadow: 0 0 5px rgba(255, 140, 66, 0.5);
+                        box-shadow: 0 0 10px rgba(255, 140, 66, 0.4);
+                    " 
+                    onmouseover="this.style.boxShadow='0 0 20px rgba(0, 255, 65, 0.8)'; this.style.transform='scale(1.05)'" 
+                    onmouseout="this.style.boxShadow='0 0 10px rgba(255, 140, 66, 0.4)'; this.style.transform='scale(1)'"
+                >
+                    ☁️ GUARDAR NUBE
+                </button>
+                
+                <!-- SEPARADOR VERTICAL -->
+                <div style="width: 2px; height: 40px; background: linear-gradient(180deg, transparent, #5c4200, transparent);"></div>
+                
+                <!-- SECCIÓN JSON -->
+                <div style="display: flex; gap: 10px;">
+                    <button 
+                        onclick="exportarDatos()" 
+                        style="
+                            padding: 8px 16px; 
+                            background: linear-gradient(135deg, #6c757d 0%, #495057 100%); 
+                            border: 1px solid #00ff41; 
+                            color: #ffffff; 
+                            font-weight: bold; 
+                            font-size: 12px; 
+                            cursor: pointer; 
+                            font-family: 'Share Tech Mono', monospace;
+                            clip-path: polygon(5% 0, 100% 0, 100% 70%, 95% 100%, 0 100%, 0 30%);
+                            transition: all 0.3s;
+                            text-shadow: 0 0 5px rgba(0, 255, 65, 0.5);
+                            box-shadow: 0 0 10px rgba(108, 117, 125, 0.4);
+                        " 
+                        onmouseover="this.style.boxShadow='0 0 20px rgba(0, 255, 65, 0.8)'; this.style.transform='scale(1.05)'" 
+                        onmouseout="this.style.boxShadow='0 0 10px rgba(108, 117, 125, 0.4)'; this.style.transform='scale(1)'"
+                    >
+                        💾 BAJAR JSON
+                    </button>
+                    
+                    <input type="file" id="file-input-barracones" style="display: none;" onchange="importarDatos(this)">
+                    <button 
+                        onclick="document.getElementById('file-input-barracones').click()" 
+                        style="
+                            padding: 8px 16px; 
+                            background: linear-gradient(135deg, #6c757d 0%, #495057 100%); 
+                            border: 1px solid #00ff41; 
+                            color: #ffffff; 
+                            font-weight: bold; 
+                            font-size: 12px; 
+                            cursor: pointer; 
+                            font-family: 'Share Tech Mono', monospace;
+                            clip-path: polygon(5% 0, 100% 0, 100% 70%, 95% 100%, 0 100%, 0 30%);
+                            transition: all 0.3s;
+                            text-shadow: 0 0 5px rgba(0, 255, 65, 0.5);
+                            box-shadow: 0 0 10px rgba(108, 117, 125, 0.4);
+                        " 
+                        onmouseover="this.style.boxShadow='0 0 20px rgba(0, 255, 65, 0.8)'; this.style.transform='scale(1.05)'" 
+                        onmouseout="this.style.boxShadow='0 0 10px rgba(108, 117, 125, 0.4)'; this.style.transform='scale(1)'"
+                    >
+                        📂 SUBIR JSON
+                    </button>
+                </div>
+            </div>
+            
+            <!-- ÁREA DE RESULTADOS DE BÚSQUEDA -->
+            <div id="cloud-search-results-barracones" style="margin-top: 10px;"></div>
+            
+            <!-- NOTA INFORMATIVA -->
+            <div style="text-align: center; color: #5c4200; font-family: 'Share Tech Mono', monospace; font-size: 0.7em; margin-top: 8px; letter-spacing: 1px;">
+                * Para migrar datos antiguos: Subir JSON → Guardar en Nube
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
