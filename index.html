@@ -1571,7 +1571,16 @@
             }
         }
 
+        // Función para limpiar información de críticos al navegar
+        function clearCriticalInfoDisplays() {
+            const vehicleInfo = document.getElementById('critical-info-display');
+            const mechInfo = document.getElementById('mech-critical-info-display');
+            if (vehicleInfo) vehicleInfo.style.display = 'none';
+            if (mechInfo) mechInfo.style.display = 'none';
+        }
+
         function goHomeNoConfirm() {
+            clearCriticalInfoDisplays();
             document.getElementById('landing-page').style.display = 'flex';
             document.getElementById('pre-generacion').style.display = 'none';
             document.getElementById('ficha-container').style.display = 'none';
@@ -1944,6 +1953,7 @@
         }
 
         function backToMechHangarLanding() {
+            clearCriticalInfoDisplays();
             document.getElementById('mech-hangar-landing').style.display = 'flex';
             document.getElementById('mech-locations').style.display = 'none';
             document.getElementById('mech-criticals').style.display = 'none';
@@ -1951,32 +1961,49 @@
 
         // NAVEGACIÓN DEPOSITO DE VEHICULOS
         function goToVehicleDepot() {
+            clearCriticalInfoDisplays();
             document.getElementById('landing-page').style.display = 'none';
             document.getElementById('vehicle-depot').style.display = 'block';
             document.getElementById('vehicle-depot-landing').style.display = 'flex';
             document.getElementById('vehicle-locations').style.display = 'none';
             document.getElementById('vehicle-criticals').style.display = 'none';
+            document.getElementById('vehicle-motive').style.display = 'none';
             document.getElementById('pre-generacion').style.display = 'none';
             document.getElementById('ficha-container').style.display = 'none';
             document.getElementById('points-counter').style.display = 'none';
         }
 
         function goToVehicleLocations() {
+            clearCriticalInfoDisplays();
             document.getElementById('vehicle-depot-landing').style.display = 'none';
             document.getElementById('vehicle-locations').style.display = 'block';
             document.getElementById('vehicle-criticals').style.display = 'none';
+            document.getElementById('vehicle-motive').style.display = 'none';
         }
 
         function goToVehicleCriticals() {
+            clearCriticalInfoDisplays();
             document.getElementById('vehicle-depot-landing').style.display = 'none';
             document.getElementById('vehicle-locations').style.display = 'none';
             document.getElementById('vehicle-criticals').style.display = 'block';
+            document.getElementById('vehicle-motive').style.display = 'none';
+        }
+
+        function goToVehicleMotive() {
+            clearCriticalInfoDisplays();
+            document.getElementById('vehicle-depot-landing').style.display = 'none';
+            document.getElementById('vehicle-locations').style.display = 'none';
+            document.getElementById('vehicle-criticals').style.display = 'none';
+            document.getElementById('vehicle-motive').style.display = 'block';
+            window.scrollTo(0, 0);
         }
 
         function backToVehicleDepotLanding() {
+            clearCriticalInfoDisplays();
             document.getElementById('vehicle-depot-landing').style.display = 'flex';
             document.getElementById('vehicle-locations').style.display = 'none';
             document.getElementById('vehicle-criticals').style.display = 'none';
+            document.getElementById('vehicle-motive').style.display = 'none';
         }
 
         // TABLA DE ARMAS DE INFANTERÍA
@@ -91588,66 +91615,7 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
 
                 <!-- INFORMACIÓN DEL CRÍTICO -->
                 <div id="mech-critical-info-display" style="display: none; margin-top: 40px; padding: 20px; background: rgba(183, 28, 28, 0.1); border: 2px solid #b71c1c; border-radius: 5px;">
-                    <p id="mech-critical-text-display" style="color: #e0e0e0; font-size: 18px; line-height: 1.6; margin-bottom: 30px;"></p>
-                    
-                    <!-- TABLAS ADICIONALES -->
-                    <div style="display: flex; gap: 30px; justify-content: center; flex-wrap: wrap;">
-                        <!-- TABLA CRÍTICOS DE MOVIMIENTO -->
-                        <div>
-                            <h3 style="color: #ff8c42; font-size: 22px; margin-bottom: 15px;">Críticos de Movimiento</h3>
-                            <table style="border-collapse: collapse; background: rgba(26, 26, 26, 0.9); border: 2px solid #b71c1c;">
-                                <thead>
-                                    <tr style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff;">
-                                        <th style="padding: 10px; border: 1px solid #b71c1c;">2D6</th>
-                                        <th style="padding: 10px; border: 1px solid #b71c1c;">Efecto</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">2</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Sin Críticos</td></tr>
-                                    <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">3</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Sin Críticos</td></tr>
-                                    <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">4</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Sin Críticos</td></tr>
-                                    <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">5</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Sin Críticos</td></tr>
-                                    <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">6</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">+1 Pilotaje</td></tr>
-                                    <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">7</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">+1 Pilotaje</td></tr>
-                                    <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">8</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">-1 PM, +2 Pilotaje</td></tr>
-                                    <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">9</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">-1 PM, +2 Pilotaje</td></tr>
-                                    <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">10</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">/2 PM, +3 Pilotaje</td></tr>
-                                    <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">11</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">/2 PM, +3 Pilotaje</td></tr>
-                                    <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">12</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Inmovilizado</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <!-- TABLA MODIFICADORES -->
-                        <div>
-                            <h3 style="color: #ff8c42; font-size: 22px; margin-bottom: 15px;">Modificadores</h3>
-                            <table style="border-collapse: collapse; background: rgba(26, 26, 26, 0.9); border: 2px solid #b71c1c; margin-bottom: 20px;">
-                                <thead>
-                                    <tr style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff;">
-                                        <th colspan="2" style="padding: 10px; border: 1px solid #b71c1c;">Dirección</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Trasero</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">+1</td></tr>
-                                    <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Lateral</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">+2</td></tr>
-                                </tbody>
-                            </table>
-                            
-                            <table style="border-collapse: collapse; background: rgba(26, 26, 26, 0.9); border: 2px solid #b71c1c;">
-                                <thead>
-                                    <tr style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff;">
-                                        <th colspan="2" style="padding: 10px; border: 1px solid #b71c1c;">Tipo de vehículo</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Cadenas/Naval</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">0</td></tr>
-                                    <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Ruedas</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">+2</td></tr>
-                                    <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Hover</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">+3</td></tr>
-                                    <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">WIGE</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">+4</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                    <p id="mech-critical-text-display" style="color: #e0e0e0; font-size: 18px; line-height: 1.6;"></p>
                 </div>
             </div>
         </div>
@@ -91679,6 +91647,12 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                     <div style="position: relative; z-index: 1;">
                         <span style="display: block; font-size: 32px; margin-bottom: 5px;">⚠️</span>
                         CRITICOS
+                    </div>
+                </button>
+                <button class="cyber-button" onclick="goToVehicleMotive()" style="width: 320px; height: 100px; font-size: 22px; position: relative; overflow: hidden; background: linear-gradient(135deg, rgba(26, 26, 26, 0.9) 0%, rgba(10, 10, 10, 0.95) 100%); border: 3px solid #b71c1c; box-shadow: 0 0 30px rgba(183, 28, 28, 0.5), inset 0 0 30px rgba(0, 0, 0, 0.5); transition: all 0.3s;">
+                    <div style="position: relative; z-index: 1;">
+                        <span style="display: block; font-size: 32px; margin-bottom: 5px;">🔧</span>
+                        MOTIVE
                     </div>
                 </button>
             </div>
@@ -91773,10 +91747,14 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                     </tbody>
                 </table>
                 
-                <p style="color: #ff8c42; font-size: 16px; margin-top: 20px; text-align: left; max-width: 800px; margin-left: auto; margin-right: auto;">
-                    <strong>* Crítico</strong><br>
-                    <strong>+ Motive</strong>
-                </p>
+                <div style="color: #ff8c42; font-size: 16px; margin-top: 30px; text-align: center; max-width: 800px; margin-left: auto; margin-right: auto; display: flex; gap: 20px; justify-content: center;">
+                    <button onclick="goToVehicleCriticals()" style="padding: 12px 24px; background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); border: 2px solid #ff8c42; color: #ff8c42; font-weight: bold; font-size: 16px; cursor: pointer; border-radius: 5px; transition: all 0.3s; box-shadow: 0 0 10px rgba(183, 28, 28, 0.5);" onmouseover="this.style.boxShadow='0 0 20px rgba(255, 140, 66, 0.8)'; this.style.transform='scale(1.05)'" onmouseout="this.style.boxShadow='0 0 10px rgba(183, 28, 28, 0.5)'; this.style.transform='scale(1)'">
+                        ⚠️ * Crítico
+                    </button>
+                    <button onclick="goToVehicleMotive()" style="padding: 12px 24px; background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); border: 2px solid #ff8c42; color: #ff8c42; font-weight: bold; font-size: 16px; cursor: pointer; border-radius: 5px; transition: all 0.3s; box-shadow: 0 0 10px rgba(183, 28, 28, 0.5);" onmouseover="this.style.boxShadow='0 0 20px rgba(255, 140, 66, 0.8)'; this.style.transform='scale(1.05)'" onmouseout="this.style.boxShadow='0 0 10px rgba(183, 28, 28, 0.5)'; this.style.transform='scale(1)'">
+                        🔧 + Motive
+                    </button>
+                </div>
             </div>
         </div>
         
@@ -91885,69 +91863,81 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
 
                 <!-- INFORMACIÓN DEL CRÍTICO -->
                 <div id="critical-info-display" style="display: none; margin-top: 40px; padding: 20px; background: rgba(183, 28, 28, 0.1); border: 2px solid #b71c1c; border-radius: 5px;">
-                    <p id="critical-text-display" style="color: #e0e0e0; font-size: 18px; line-height: 1.6; margin-bottom: 30px;"></p>
-                    
-                    <!-- TABLAS ADICIONALES -->
-                    <div style="display: flex; gap: 30px; justify-content: center; flex-wrap: wrap;">
-                        <!-- TABLA CRÍTICOS DE MOVIMIENTO -->
-                        <div>
-                            <h3 style="color: #ff8c42; font-size: 22px; margin-bottom: 15px;">Críticos de Movimiento</h3>
-                            <table style="border-collapse: collapse; background: rgba(26, 26, 26, 0.9); border: 2px solid #b71c1c;">
-                                <thead>
-                                    <tr style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff;">
-                                        <th style="padding: 10px; border: 1px solid #b71c1c;">2D6</th>
-                                        <th style="padding: 10px; border: 1px solid #b71c1c;">Efecto</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">2</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Sin Críticos</td></tr>
-                                    <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">3</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Sin Críticos</td></tr>
-                                    <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">4</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Sin Críticos</td></tr>
-                                    <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">5</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Sin Críticos</td></tr>
-                                    <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">6</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">+1 Pilotaje</td></tr>
-                                    <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">7</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">+1 Pilotaje</td></tr>
-                                    <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">8</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">-1 PM, +2 Pilotaje</td></tr>
-                                    <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">9</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">-1 PM, +2 Pilotaje</td></tr>
-                                    <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">10</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">/2 PM, +3 Pilotaje</td></tr>
-                                    <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">11</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">/2 PM, +3 Pilotaje</td></tr>
-                                    <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">12</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Inmovilizado</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
+                    <p id="critical-text-display" style="color: #e0e0e0; font-size: 18px; line-height: 1.6;"></p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- SUBSECCIÓN: VEHICLE MOTIVE (CRÍTICOS DE MOVIMIENTO) -->
+        <div id="vehicle-motive" style="display:none; padding: 20px; background: transparent;">
+            <button class="back-to-home-btn no-print" onclick="backToVehicleDepotLanding()" style="position: fixed; top: 20px; left: 20px;">⬅️ VOLVER</button>
+            <button class="back-to-home-btn no-print" onclick="goHomeNoConfirm()" style="position: fixed; top: 20px; left: 220px; background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%);">🏠 MENÚ</button>
+            
+            <div style="text-align:center; margin: 20px auto; max-width: 1600px; padding: 20px;">
+                <h1 style="font-family: Impact, sans-serif; color: #ff8c42; text-transform: uppercase; letter-spacing: 4px; text-shadow: 2px 2px 8px rgba(255, 140, 66, 0.5); font-size: 36px; margin-bottom: 40px; border-bottom: 2px solid #b71c1c; padding-bottom: 15px;">
+                    MOTIVE - CRÍTICOS DE MOVIMIENTO
+                </h1>
+                
+                <div style="display: flex; gap: 40px; justify-content: center; flex-wrap: wrap; margin: 40px auto;">
+                    <!-- TABLA CRÍTICOS DE MOVIMIENTO -->
+                    <div>
+                        <h2 style="color: #ff8c42; font-size: 26px; margin-bottom: 20px;">Críticos de Movimiento</h2>
+                        <table style="border-collapse: collapse; background: rgba(26, 26, 26, 0.9); border: 2px solid #b71c1c;">
+                            <thead>
+                                <tr style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff;">
+                                    <th style="padding: 12px; border: 1px solid #b71c1c;">2D6</th>
+                                    <th style="padding: 12px; border: 1px solid #b71c1c;">Efecto</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">2</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Sin Críticos</td></tr>
+                                <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">3</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Sin Críticos</td></tr>
+                                <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">4</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Sin Críticos</td></tr>
+                                <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">5</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Sin Críticos</td></tr>
+                                <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">6</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">+1 Pilotaje</td></tr>
+                                <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">7</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">+1 Pilotaje</td></tr>
+                                <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">8</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">-1 PM, +2 Pilotaje</td></tr>
+                                <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">9</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">-1 PM, +2 Pilotaje</td></tr>
+                                <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">10</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">/2 PM, +3 Pilotaje</td></tr>
+                                <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">11</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">/2 PM, +3 Pilotaje</td></tr>
+                                <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">12</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Inmovilizado</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
 
-                        <!-- TABLA MODIFICADORES -->
-                        <div>
-                            <h3 style="color: #ff8c42; font-size: 22px; margin-bottom: 15px;">Modificadores</h3>
-                            <table style="border-collapse: collapse; background: rgba(26, 26, 26, 0.9); border: 2px solid #b71c1c; margin-bottom: 20px;">
-                                <thead>
-                                    <tr style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff;">
-                                        <th colspan="2" style="padding: 10px; border: 1px solid #b71c1c;">Dirección</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Trasero</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">+1</td></tr>
-                                    <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Lateral</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">+2</td></tr>
-                                </tbody>
-                            </table>
-                            
-                            <table style="border-collapse: collapse; background: rgba(26, 26, 26, 0.9); border: 2px solid #b71c1c;">
-                                <thead>
-                                    <tr style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff;">
-                                        <th colspan="2" style="padding: 10px; border: 1px solid #b71c1c;">Tipo de vehículo</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Cadenas/Naval</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">0</td></tr>
-                                    <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Ruedas</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">+2</td></tr>
-                                    <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Hover</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">+3</td></tr>
-                                    <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">WIGE</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">+4</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
+                    <!-- TABLA MODIFICADORES -->
+                    <div>
+                        <h2 style="color: #ff8c42; font-size: 26px; margin-bottom: 20px;">Modificadores</h2>
+                        <table style="border-collapse: collapse; background: rgba(26, 26, 26, 0.9); border: 2px solid #b71c1c; margin-bottom: 25px;">
+                            <thead>
+                                <tr style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff;">
+                                    <th colspan="2" style="padding: 12px; border: 1px solid #b71c1c;">Dirección</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Trasero</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+1</td></tr>
+                                <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Lateral</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+2</td></tr>
+                            </tbody>
+                        </table>
+                        
+                        <table style="border-collapse: collapse; background: rgba(26, 26, 26, 0.9); border: 2px solid #b71c1c;">
+                            <thead>
+                                <tr style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff;">
+                                    <th colspan="2" style="padding: 12px; border: 1px solid #b71c1c;">Tipo de vehículo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Cadenas/Naval</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">0</td></tr>
+                                <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Ruedas</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+2</td></tr>
+                                <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Hover</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+3</td></tr>
+                                <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">WIGE</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+4</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
-        </div>    </div>
+        </div>
+    </div>
 
     <!-- GALACTIC MAP SECTION (SIMPLIFICADO) -->
     <div id="galactic-map" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #0a0a0a; background-image: linear-gradient(rgba(15, 20, 25, 0.85), rgba(10, 10, 10, 0.95)), repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(74, 90, 106, 0.1) 2px, transparent 4px), repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(183, 28, 28, 0.08) 40px, rgba(183, 28, 28, 0.08) 41px), repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(183, 28, 28, 0.08) 40px, rgba(183, 28, 28, 0.08) 41px), radial-gradient(circle at center, #1a1a1a 0%, #000 100%); background-size: 100% 100%, 100% 4px, 100% 100%, 100% 100%, 100% 100%; z-index: 2000; overflow-y: auto; padding-top: 60px;">
@@ -91969,7 +91959,9 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                 Mapa Político de la Esfera Interior - Era de Sucesión (3025)
             </div>
         </div>
+        
     </div>
+        
 
     <!-- TRR INFANTERÍA SECTION -->
     <div id="trr-infantry" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #0a0a0a; background-image: linear-gradient(rgba(15, 20, 25, 0.85), rgba(10, 10, 10, 0.95)), repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(74, 90, 106, 0.1) 2px, transparent 4px), repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(183, 28, 28, 0.08) 40px, rgba(183, 28, 28, 0.08) 41px), repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(183, 28, 28, 0.08) 40px, rgba(183, 28, 28, 0.08) 41px), radial-gradient(circle at center, #1a1a1a 0%, #000 100%); background-size: 100% 100%, 100% 4px, 100% 100%, 100% 100%, 100% 100%; z-index: 2000; overflow-y: auto; padding-top: 60px;">
