@@ -2465,6 +2465,76 @@
             init();
             initMechRotation();
         };
+
+        // --- CRÍTICOS DE VEHÍCULOS ---
+        const VEHICLE_CRITICALS = {
+            "Conductor": "El conductor ha sido eliminado. Cada turno el vehículo realiza un chequeo de Pilotaje para evitar girar en una dirección aleatoria.",
+            "Carga": "La munición o carga del vehículo ha sido dañada. Tira en la tabla de críticos de armas para determinar qué arma es afectada.",
+            "Fallo de arma": "Un arma específica falla y no puede ser usada. Determina aleatoriamente qué arma.",
+            "Estabilizador": "Los sistemas de estabilización fallan. +2 al modificador de ataque.",
+            "Tripulación aturdida": "La tripulación está aturdida durante 1 turno completo. No puede realizar acciones.",
+            "Torreta atascada": "La torreta no puede rotar. Mantiene su orientación actual.",
+            "Torreta bloqueada": "La torreta está completamente bloqueada y no puede disparar ni rotar.",
+            "Arma destruida": "Un arma es destruida permanentemente. Determina aleatoriamente cuál.",
+            "Impacto motor": "El motor ha sido dañado. Reduce PM en 1 y haz un chequeo de crítico de movimiento.",
+            "Sensores": "Los sensores están dañados. +2 al modificador de ataque.",
+            "Comandante": "El comandante ha sido eliminado. La tripulación sufre -2 a todas las tiradas.",
+            "Munición/Arma destruida": "La munición explota o el arma es destruida. 2D6 daño al vehículo.",
+            "Combustible/Motor": "El combustible o motor es destruido. El vehículo queda inmovilizado. Tira para evitar explosión.",
+            "Tripulación muerta": "Toda la tripulación ha sido eliminada. El vehículo queda inoperativo.",
+            "Torreta destruida": "La torreta es completamente destruida con todas sus armas."
+        };
+
+        // --- CRÍTICOS DE BATTLEMECH ---
+        const MECH_CRITICALS = {
+            "Motor": "El motor ha sido dañado. Cada impacto reduce el movimiento. 3 impactos = mech destruido.",
+            "Giroscopo": "El giroscopo está dañado. +3 al modificador de Pilotaje. 2 impactos = caída automática cada turno.",
+            "Sensor": "Los sensores están dañados. +2 al modificador de ataque con armas.",
+            "Sistema de soporte vital": "Los sistemas de soporte vital fallan. El piloto sufre daño por calor adicional.",
+            "Actuador de hombro": "El actuador del hombro está destruido. No se pueden usar armas de ese brazo. +4 al modificador de ataque.",
+            "Actuador de brazo superior": "El actuador superior está destruido. +1 al modificador de ataque para armas del brazo.",
+            "Actuador de brazo inferior": "El actuador inferior está destruido. +1 al modificador de ataque para armas del brazo.",
+            "Actuador de mano": "La mano está destruida. No se pueden realizar ataques físicos con esa mano.",
+            "Actuador de cadera": "La cadera está dañada. +2 al modificador de Pilotaje.",
+            "Actuador de pierna superior": "El actuador de pierna superior está destruido. +1 al modificador de Pilotaje.",
+            "Actuador de pierna inferior": "El actuador de pierna inferior está destruido. +1 al modificador de Pilotaje.",
+            "Actuador de pie": "El pie está destruido. +1 al modificador de Pilotaje.",
+            "Disipadores de calor": "Un disipador de calor está destruido. -1 a la capacidad de disipación de calor.",
+            "Salto Jets": "Un salto jet está destruido. Reduce la capacidad de salto en 1.",
+            "Arma": "Un arma es destruida permanentemente. Determina aleatoriamente cuál.",
+            "Munición": "La munición explota. 2D6 daño a la localización. Tira para determinar si se destruyen más sistemas.",
+            "Cabeza golpeada": "El piloto recibe daño directo. Tira para consciencia del piloto."
+        };
+
+        function showCriticalInfo(criticalName) {
+            const infoDiv = document.getElementById('critical-info-display');
+            const criticalText = document.getElementById('critical-text-display');
+            
+            if (VEHICLE_CRITICALS[criticalName]) {
+                criticalText.innerHTML = `<strong style="color: #ff8c42;">${criticalName}:</strong> ${VEHICLE_CRITICALS[criticalName]}`;
+                infoDiv.style.display = 'block';
+                
+                // Scroll suave al div de información
+                infoDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } else {
+                infoDiv.style.display = 'none';
+            }
+        }
+
+        function showMechCriticalInfo(criticalName) {
+            const infoDiv = document.getElementById('mech-critical-info-display');
+            const criticalText = document.getElementById('mech-critical-text-display');
+            
+            if (MECH_CRITICALS[criticalName]) {
+                criticalText.innerHTML = `<strong style="color: #ff8c42;">${criticalName}:</strong> ${MECH_CRITICALS[criticalName]}`;
+                infoDiv.style.display = 'block';
+                
+                // Scroll suave al div de información
+                infoDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } else {
+                infoDiv.style.display = 'none';
+            }
+        }
     </script>
 </head>
 <body>
@@ -91055,11 +91125,123 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
             <button class="back-to-home-btn no-print" onclick="backToTRRUtilitiesLanding()" style="position: fixed; top: 20px; left: 20px;">⬅️ VOLVER</button>
             <button class="back-to-home-btn no-print" onclick="goHomeNoConfirm()" style="position: fixed; top: 20px; left: 220px; background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%);">🏠 MENÚ</button>
             
-            <div style="text-align:center; margin: 20px auto; max-width: 1600px; padding: 20px;">
+            <div style="text-align:center; margin: 20px auto; max-width: 1800px; padding: 20px;">
                 <h1 style="font-family: Impact, sans-serif; color: #ff8c42; text-transform: uppercase; letter-spacing: 4px; text-shadow: 2px 2px 8px rgba(255, 140, 66, 0.5); font-size: 36px; margin-bottom: 40px; border-bottom: 2px solid #b71c1c; padding-bottom: 15px;">
-                    TABLA DE MODIFICADORES
+                    TABLAS DE MODIFICADORES
                 </h1>
-                <p style="color: #888; font-size: 18px;">Contenido en desarrollo...</p>
+                
+                <!-- TABLA DE MODIFICADORES DE ATAQUE -->
+                <h2 style="color: #ff8c42; font-size: 28px; margin: 40px 0 20px 0;">MODIFICADORES DE ATAQUE</h2>
+                <table style="width: 100%; border-collapse: collapse; margin: 20px auto; background: rgba(26, 26, 26, 0.9); border: 2px solid #b71c1c;">
+                    <thead>
+                        <tr style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff;">
+                            <th style="padding: 12px; border: 1px solid #b71c1c; text-align: left;">Todos los Ataques: Armas y Físicos</th>
+                            <th style="padding: 12px; border: 1px solid #b71c1c;">Modificador</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- MOVIMIENTO -->
+                        <tr style="background: rgba(183, 28, 28, 0.2);"><td colspan="2" style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">Movimiento (los modificadores son acumulativos)</td></tr>
+                        <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Estacionario</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">-1</td></tr>
+                        <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Caminar</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">0</td></tr>
+                        <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Correr</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+1</td></tr>
+                        <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Saltar</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+3</td></tr>
+                        <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Cuerpo a tierra</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+2 (no se aplica a los quad mechs de cuatro piernas)</td></tr>
+                        <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Derrapar</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+1</td></tr>
+                        
+                        <!-- TERRENO -->
+                        <tr style="background: rgba(183, 28, 28, 0.2);"><td colspan="2" style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">Terreno (los modificadores son acumulativos)</td></tr>
+                        <tr style="background: rgba(26, 26, 26, 0.7);"><td colspan="2" style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-size: 14px;">BOSQUE</td></tr>
+                        <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Bosque/jungla Denso</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+2 por hexágono interviniente; +1 si el objetivo esta en jungla/bosque disperso</td></tr>
+                        <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Bosque/jungla Dispersa</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+1 por hexágono interviniente; +1 si el objetivo esta en jungla/bosque disperso</td></tr>
+                        <tr style="background: rgba(10, 10, 10, 0.7);"><td colspan="2" style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-size: 14px;">AGUA</td></tr>
+                        <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Profundidad 1</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+1; ver modificadores por cobertura parcial</td></tr>
+                        <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Profundidad 2</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">Los mechs sumergidos solo pueden atacar a otros mechs sumergidos (ver modificadores por terreno).</td></tr>
+                        
+                        <!-- OBJETIVO -->
+                        <tr style="background: rgba(183, 28, 28, 0.2);"><td colspan="2" style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">Objetivo (los modificadores son acumulativos)</td></tr>
+                        <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Cuerpo a tierra</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">–2 si esta en un hexágono adyacente; +1 en el resto de situaciones</td></tr>
+                        <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Estacionario</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">-4</td></tr>
+                        <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Derrapó</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+2</td></tr>
+                        <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Movió 0–6 hexágonos</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+0</td></tr>
+                        <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Movió 7–8 hexágonos</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+1</td></tr>
+                        <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Movió 9–10 hexágonos</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+2</td></tr>
+                        <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Movió 11–12 hexágonos</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+3</td></tr>
+                        <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Movió 13–14 hexágonos</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+4</td></tr>
+                        <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Movió 15–16 hexágonos</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+5</td></tr>
+                        <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Movió 17-18 hexágonos</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+6</td></tr>
+                        <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Movió 19-20 hexágonos</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+7</td></tr>
+                        <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Saltó</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+1 por hexágono</td></tr>
+                        <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Armadura de camuflaje</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+1 a distancia media, +2 a distancia larga</td></tr>
+                        
+                        <!-- SOLO ATAQUES CON ARMAS -->
+                        <tr style="background: rgba(183, 28, 28, 0.2);"><td colspan="2" style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">Solo ataques con armas</td></tr>
+                        <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Impacto en un sensor</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+2</td></tr>
+                        <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Impacto en un hombro</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+4 para las armas de ese brazo, sin tener en cuenta otros actuadores dañados en el brazo</td></tr>
+                        <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Actuador superior o inferior (cada uno)</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+1 para las armas de ese brazo</td></tr>
+                        
+                        <!-- CALOR -->
+                        <tr style="background: rgba(183, 28, 28, 0.2);"><td colspan="2" style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">Calor</td></tr>
+                        <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">0–7</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">Nada</td></tr>
+                        <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">8–12</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+1</td></tr>
+                        <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">13–16</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+2</td></tr>
+                        <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">17–23</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+3</td></tr>
+                        <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">24+</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+4</td></tr>
+                        
+                        <!-- FUEGO INDIRECTO -->
+                        <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Realizando fuego indirecto</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+1 (+2 si el observador dispara también en ese turno)</td></tr>
+                        <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Observador para fuego indirecto</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+1</td></tr>
+                    </tbody>
+                </table>
+
+                <!-- TABLA DE MODIFICADORES DE MOVIMIENTO -->
+                <h2 style="color: #ff8c42; font-size: 28px; margin: 60px 0 20px 0;">MODIFICADORES DE MOVIMIENTO</h2>
+                <table style="width: 100%; border-collapse: collapse; margin: 20px auto; background: rgba(26, 26, 26, 0.9); border: 2px solid #b71c1c;">
+                    <thead>
+                        <tr style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff;">
+                            <th style="padding: 12px; border: 1px solid #b71c1c; text-align: left;">Daños al Mech</th>
+                            <th style="padding: 12px; border: 1px solid #b71c1c;">Modificador</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Recibe +20 daños</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+1</td></tr>
+                        <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Se apaga el reactor</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+3</td></tr>
+                        <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Actuador de pie/pierna</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+1</td></tr>
+                        <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Cadera</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+4</td></tr>
+                        <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Impacto en el giroscopo</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+3</td></tr>
+                        <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Giroscopo destruido</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">Caida automatica</td></tr>
+                        <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Pierna destruida</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">Caida automatica</td></tr>
+                        
+                        <!-- ATAQUES FISICOS -->
+                        <tr style="background: rgba(183, 28, 28, 0.2);"><td colspan="2" style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">Ataques fisicos</td></tr>
+                        <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Recibir una patada</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">0</td></tr>
+                        <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Recibir un puñetazo/empujon</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">0</td></tr>
+                        <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Recibir una carga/DFA</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+2</td></tr>
+                        
+                        <!-- ACCIONES -->
+                        <tr style="background: rgba(183, 28, 28, 0.2);"><td colspan="2" style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">Acciones</td></tr>
+                        <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Fallar una patada</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">0</td></tr>
+                        <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Carga exitosa</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+2</td></tr>
+                        <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">DFA exitoso</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+4</td></tr>
+                        <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Entrar en agua profundidad 1</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">-1</td></tr>
+                        <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Entrar en agua profundidad 2</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">0</td></tr>
+                        <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Entrar en agua profundidad 3</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+1</td></tr>
+                        
+                        <!-- ESPECIAL -->
+                        <tr style="background: rgba(183, 28, 28, 0.2);"><td colspan="2" style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">Especial</td></tr>
+                        <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Evitar daños por caida</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+1 por nivel</td></tr>
+                        <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Quad con piernas intactas</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">-2 a las tiradas</td></tr>
+                        <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Carga inintencionada</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+3</td></tr>
+                        <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Mech con cabina pequeña</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+1</td></tr>
+                        
+                        <!-- DAÑO PREEXISTENTE -->
+                        <tr style="background: rgba(183, 28, 28, 0.2);"><td colspan="2" style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">Daño preexistente</td></tr>
+                        <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Actuador de pie/pierna destruido</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+1 (acumulativo)</td></tr>
+                        <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Cadera destruida</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+2 (acumulativo)</td></tr>
+                        <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Impacto en el giroscopo</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+3</td></tr>
+                        <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Pierna destruida</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">+5</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -91322,7 +91504,151 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                 <h1 style="font-family: Impact, sans-serif; color: #ff8c42; text-transform: uppercase; letter-spacing: 4px; text-shadow: 2px 2px 8px rgba(255, 140, 66, 0.5); font-size: 36px; margin-bottom: 40px; border-bottom: 2px solid #b71c1c; padding-bottom: 15px;">
                     CRÍTICOS - BATTLEMECH
                 </h1>
-                <p style="color: #888; font-size: 18px;">Contenido en desarrollo...</p>
+                
+                <p style="color: #ff8c42; font-size: 16px; margin-bottom: 20px;">Haz click en cualquier crítico para ver su explicación</p>
+                
+                <table style="width: 100%; border-collapse: collapse; margin: 20px auto; background: rgba(26, 26, 26, 0.9); border: 2px solid #b71c1c;">
+                    <thead>
+                        <tr style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff;">
+                            <th style="padding: 12px; border: 1px solid #b71c1c;">2D6</th>
+                            <th style="padding: 12px; border: 1px solid #b71c1c;">Torso/Cabeza</th>
+                            <th style="padding: 12px; border: 1px solid #b71c1c;">Brazos</th>
+                            <th style="padding: 12px; border: 1px solid #b71c1c;">Piernas</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="background: rgba(26, 26, 26, 0.7);">
+                            <td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">2</td>
+                            <td onclick="showMechCriticalInfo('Motor')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Motor</td>
+                            <td onclick="showMechCriticalInfo('Actuador de hombro')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Actuador de hombro</td>
+                            <td onclick="showMechCriticalInfo('Actuador de cadera')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Actuador de cadera</td>
+                        </tr>
+                        <tr style="background: rgba(10, 10, 10, 0.7);">
+                            <td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">3</td>
+                            <td onclick="showMechCriticalInfo('Motor')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Motor</td>
+                            <td onclick="showMechCriticalInfo('Actuador de brazo superior')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Actuador de brazo superior</td>
+                            <td onclick="showMechCriticalInfo('Actuador de pierna superior')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Actuador de pierna superior</td>
+                        </tr>
+                        <tr style="background: rgba(26, 26, 26, 0.7);">
+                            <td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">4</td>
+                            <td onclick="showMechCriticalInfo('Giroscopo')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Giroscopo</td>
+                            <td onclick="showMechCriticalInfo('Actuador de brazo inferior')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Actuador de brazo inferior</td>
+                            <td onclick="showMechCriticalInfo('Actuador de pierna inferior')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Actuador de pierna inferior</td>
+                        </tr>
+                        <tr style="background: rgba(10, 10, 10, 0.7);">
+                            <td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">5</td>
+                            <td onclick="showMechCriticalInfo('Sensor')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Sensor</td>
+                            <td onclick="showMechCriticalInfo('Actuador de mano')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Actuador de mano</td>
+                            <td onclick="showMechCriticalInfo('Actuador de pie')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Actuador de pie</td>
+                        </tr>
+                        <tr style="background: rgba(26, 26, 26, 0.7);">
+                            <td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">6</td>
+                            <td onclick="showMechCriticalInfo('Disipadores de calor')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Disipadores de calor</td>
+                            <td onclick="showMechCriticalInfo('Arma')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Arma</td>
+                            <td onclick="showMechCriticalInfo('Disipadores de calor')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Disipadores de calor</td>
+                        </tr>
+                        <tr style="background: rgba(10, 10, 10, 0.7);">
+                            <td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">7</td>
+                            <td onclick="showMechCriticalInfo('Sistema de soporte vital')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Sistema de soporte vital</td>
+                            <td onclick="showMechCriticalInfo('Arma')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Arma</td>
+                            <td onclick="showMechCriticalInfo('Arma')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Arma</td>
+                        </tr>
+                        <tr style="background: rgba(26, 26, 26, 0.7);">
+                            <td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">8</td>
+                            <td onclick="showMechCriticalInfo('Salto Jets')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Salto Jets</td>
+                            <td onclick="showMechCriticalInfo('Munición')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Munición</td>
+                            <td onclick="showMechCriticalInfo('Munición')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Munición</td>
+                        </tr>
+                        <tr style="background: rgba(10, 10, 10, 0.7);">
+                            <td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">9</td>
+                            <td onclick="showMechCriticalInfo('Sensor')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Sensor</td>
+                            <td onclick="showMechCriticalInfo('Arma')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Arma</td>
+                            <td onclick="showMechCriticalInfo('Arma')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Arma</td>
+                        </tr>
+                        <tr style="background: rgba(26, 26, 26, 0.7);">
+                            <td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">10</td>
+                            <td onclick="showMechCriticalInfo('Motor')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Motor</td>
+                            <td onclick="showMechCriticalInfo('Munición')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Munición</td>
+                            <td onclick="showMechCriticalInfo('Disipadores de calor')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Disipadores de calor</td>
+                        </tr>
+                        <tr style="background: rgba(10, 10, 10, 0.7);">
+                            <td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">11</td>
+                            <td onclick="showMechCriticalInfo('Giroscopo')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Giroscopo</td>
+                            <td onclick="showMechCriticalInfo('Arma')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Arma</td>
+                            <td onclick="showMechCriticalInfo('Arma')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Arma</td>
+                        </tr>
+                        <tr style="background: rgba(26, 26, 26, 0.7);">
+                            <td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">12</td>
+                            <td onclick="showMechCriticalInfo('Cabeza golpeada')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Cabeza golpeada</td>
+                            <td onclick="showMechCriticalInfo('Munición')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Munición</td>
+                            <td onclick="showMechCriticalInfo('Munición')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Munición</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- INFORMACIÓN DEL CRÍTICO -->
+                <div id="mech-critical-info-display" style="display: none; margin-top: 40px; padding: 20px; background: rgba(183, 28, 28, 0.1); border: 2px solid #b71c1c; border-radius: 5px;">
+                    <p id="mech-critical-text-display" style="color: #e0e0e0; font-size: 18px; line-height: 1.6; margin-bottom: 30px;"></p>
+                    
+                    <!-- TABLAS ADICIONALES -->
+                    <div style="display: flex; gap: 30px; justify-content: center; flex-wrap: wrap;">
+                        <!-- TABLA CRÍTICOS DE MOVIMIENTO -->
+                        <div>
+                            <h3 style="color: #ff8c42; font-size: 22px; margin-bottom: 15px;">Críticos de Movimiento</h3>
+                            <table style="border-collapse: collapse; background: rgba(26, 26, 26, 0.9); border: 2px solid #b71c1c;">
+                                <thead>
+                                    <tr style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff;">
+                                        <th style="padding: 10px; border: 1px solid #b71c1c;">2D6</th>
+                                        <th style="padding: 10px; border: 1px solid #b71c1c;">Efecto</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">2</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Sin Críticos</td></tr>
+                                    <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">3</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Sin Críticos</td></tr>
+                                    <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">4</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Sin Críticos</td></tr>
+                                    <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">5</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Sin Críticos</td></tr>
+                                    <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">6</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">+1 Pilotaje</td></tr>
+                                    <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">7</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">+1 Pilotaje</td></tr>
+                                    <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">8</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">-1 PM, +2 Pilotaje</td></tr>
+                                    <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">9</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">-1 PM, +2 Pilotaje</td></tr>
+                                    <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">10</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">/2 PM, +3 Pilotaje</td></tr>
+                                    <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">11</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">/2 PM, +3 Pilotaje</td></tr>
+                                    <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">12</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Inmovilizado</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- TABLA MODIFICADORES -->
+                        <div>
+                            <h3 style="color: #ff8c42; font-size: 22px; margin-bottom: 15px;">Modificadores</h3>
+                            <table style="border-collapse: collapse; background: rgba(26, 26, 26, 0.9); border: 2px solid #b71c1c; margin-bottom: 20px;">
+                                <thead>
+                                    <tr style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff;">
+                                        <th colspan="2" style="padding: 10px; border: 1px solid #b71c1c;">Dirección</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Trasero</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">+1</td></tr>
+                                    <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Lateral</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">+2</td></tr>
+                                </tbody>
+                            </table>
+                            
+                            <table style="border-collapse: collapse; background: rgba(26, 26, 26, 0.9); border: 2px solid #b71c1c;">
+                                <thead>
+                                    <tr style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff;">
+                                        <th colspan="2" style="padding: 10px; border: 1px solid #b71c1c;">Tipo de vehículo</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Cadenas/Naval</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">0</td></tr>
+                                    <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Ruedas</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">+2</td></tr>
+                                    <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Hover</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">+3</td></tr>
+                                    <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">WIGE</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">+4</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -91464,6 +91790,8 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                     CRÍTICOS - VEHÍCULOS
                 </h1>
                 
+                <p style="color: #ff8c42; font-size: 16px; margin-bottom: 20px;">Haz click en cualquier crítico para ver su explicación</p>
+                
                 <table style="width: 100%; border-collapse: collapse; margin: 20px auto; background: rgba(26, 26, 26, 0.9); border: 2px solid #b71c1c;">
                     <thead>
                         <tr style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff;">
@@ -91505,58 +91833,121 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                         </tr>
                         <tr style="background: rgba(26, 26, 26, 0.7);">
                             <td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">6</td>
-                            <td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Conductor</td>
-                            <td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Carga</td>
-                            <td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Fallo de arma</td>
-                            <td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Estabilizador</td>
+                            <td onclick="showCriticalInfo('Conductor')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Conductor</td>
+                            <td onclick="showCriticalInfo('Carga')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Carga</td>
+                            <td onclick="showCriticalInfo('Fallo de arma')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Fallo de arma</td>
+                            <td onclick="showCriticalInfo('Estabilizador')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Estabilizador</td>
                         </tr>
                         <tr style="background: rgba(10, 10, 10, 0.7);">
                             <td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">7</td>
-                            <td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Fallo de arma</td>
-                            <td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Fallo de arma</td>
-                            <td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Carga</td>
-                            <td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Torreta atascada</td>
+                            <td onclick="showCriticalInfo('Fallo de arma')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Fallo de arma</td>
+                            <td onclick="showCriticalInfo('Fallo de arma')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Fallo de arma</td>
+                            <td onclick="showCriticalInfo('Carga')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Carga</td>
+                            <td onclick="showCriticalInfo('Torreta atascada')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Torreta atascada</td>
                         </tr>
                         <tr style="background: rgba(26, 26, 26, 0.7);">
                             <td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">8</td>
-                            <td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Estabilizador</td>
-                            <td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Tripulación aturdida</td>
-                            <td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Estabilizador</td>
-                            <td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Fallo de arma</td>
+                            <td onclick="showCriticalInfo('Estabilizador')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Estabilizador</td>
+                            <td onclick="showCriticalInfo('Tripulación aturdida')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Tripulación aturdida</td>
+                            <td onclick="showCriticalInfo('Estabilizador')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Estabilizador</td>
+                            <td onclick="showCriticalInfo('Fallo de arma')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Fallo de arma</td>
                         </tr>
                         <tr style="background: rgba(10, 10, 10, 0.7);">
                             <td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">9</td>
-                            <td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Sensores</td>
-                            <td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Estabilizador</td>
-                            <td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Arma destruida</td>
-                            <td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Torreta bloqueada</td>
+                            <td onclick="showCriticalInfo('Sensores')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Sensores</td>
+                            <td onclick="showCriticalInfo('Estabilizador')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Estabilizador</td>
+                            <td onclick="showCriticalInfo('Arma destruida')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Arma destruida</td>
+                            <td onclick="showCriticalInfo('Torreta bloqueada')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Torreta bloqueada</td>
                         </tr>
                         <tr style="background: rgba(26, 26, 26, 0.7);">
                             <td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">10</td>
-                            <td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Comandante</td>
-                            <td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Arma destruida</td>
-                            <td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Impacto motor</td>
-                            <td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Arma destruida</td>
+                            <td onclick="showCriticalInfo('Comandante')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Comandante</td>
+                            <td onclick="showCriticalInfo('Arma destruida')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Arma destruida</td>
+                            <td onclick="showCriticalInfo('Impacto motor')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Impacto motor</td>
+                            <td onclick="showCriticalInfo('Arma destruida')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Arma destruida</td>
                         </tr>
                         <tr style="background: rgba(10, 10, 10, 0.7);">
                             <td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">11</td>
-                            <td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Arma destruida</td>
-                            <td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Impacto motor</td>
-                            <td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Munición/Arma destruida</td>
-                            <td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Munición/Arma destruida</td>
+                            <td onclick="showCriticalInfo('Arma destruida')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Arma destruida</td>
+                            <td onclick="showCriticalInfo('Impacto motor')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Impacto motor</td>
+                            <td onclick="showCriticalInfo('Munición/Arma destruida')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Munición/Arma destruida</td>
+                            <td onclick="showCriticalInfo('Munición/Arma destruida')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Munición/Arma destruida</td>
                         </tr>
                         <tr style="background: rgba(26, 26, 26, 0.7);">
                             <td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">12</td>
-                            <td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Tripulación muerta</td>
-                            <td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Combustible/Motor</td>
-                            <td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Combustible/Motor</td>
-                            <td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Torreta destruida</td>
+                            <td onclick="showCriticalInfo('Tripulación muerta')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Tripulación muerta</td>
+                            <td onclick="showCriticalInfo('Combustible/Motor')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Combustible/Motor</td>
+                            <td onclick="showCriticalInfo('Combustible/Motor')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Combustible/Motor</td>
+                            <td onclick="showCriticalInfo('Torreta destruida')" style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0; cursor: pointer; transition: background 0.3s;" onmouseover="this.style.background='rgba(183, 28, 28, 0.3)'" onmouseout="this.style.background=''">Torreta destruida</td>
                         </tr>
                     </tbody>
                 </table>
+
+                <!-- INFORMACIÓN DEL CRÍTICO -->
+                <div id="critical-info-display" style="display: none; margin-top: 40px; padding: 20px; background: rgba(183, 28, 28, 0.1); border: 2px solid #b71c1c; border-radius: 5px;">
+                    <p id="critical-text-display" style="color: #e0e0e0; font-size: 18px; line-height: 1.6; margin-bottom: 30px;"></p>
+                    
+                    <!-- TABLAS ADICIONALES -->
+                    <div style="display: flex; gap: 30px; justify-content: center; flex-wrap: wrap;">
+                        <!-- TABLA CRÍTICOS DE MOVIMIENTO -->
+                        <div>
+                            <h3 style="color: #ff8c42; font-size: 22px; margin-bottom: 15px;">Críticos de Movimiento</h3>
+                            <table style="border-collapse: collapse; background: rgba(26, 26, 26, 0.9); border: 2px solid #b71c1c;">
+                                <thead>
+                                    <tr style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff;">
+                                        <th style="padding: 10px; border: 1px solid #b71c1c;">2D6</th>
+                                        <th style="padding: 10px; border: 1px solid #b71c1c;">Efecto</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">2</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Sin Críticos</td></tr>
+                                    <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">3</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Sin Críticos</td></tr>
+                                    <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">4</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Sin Críticos</td></tr>
+                                    <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">5</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Sin Críticos</td></tr>
+                                    <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">6</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">+1 Pilotaje</td></tr>
+                                    <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">7</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">+1 Pilotaje</td></tr>
+                                    <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">8</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">-1 PM, +2 Pilotaje</td></tr>
+                                    <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">9</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">-1 PM, +2 Pilotaje</td></tr>
+                                    <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">10</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">/2 PM, +3 Pilotaje</td></tr>
+                                    <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">11</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">/2 PM, +3 Pilotaje</td></tr>
+                                    <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">12</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Inmovilizado</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- TABLA MODIFICADORES -->
+                        <div>
+                            <h3 style="color: #ff8c42; font-size: 22px; margin-bottom: 15px;">Modificadores</h3>
+                            <table style="border-collapse: collapse; background: rgba(26, 26, 26, 0.9); border: 2px solid #b71c1c; margin-bottom: 20px;">
+                                <thead>
+                                    <tr style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff;">
+                                        <th colspan="2" style="padding: 10px; border: 1px solid #b71c1c;">Dirección</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Trasero</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">+1</td></tr>
+                                    <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Lateral</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">+2</td></tr>
+                                </tbody>
+                            </table>
+                            
+                            <table style="border-collapse: collapse; background: rgba(26, 26, 26, 0.9); border: 2px solid #b71c1c;">
+                                <thead>
+                                    <tr style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff;">
+                                        <th colspan="2" style="padding: 10px; border: 1px solid #b71c1c;">Tipo de vehículo</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Cadenas/Naval</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">0</td></tr>
+                                    <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Ruedas</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">+2</td></tr>
+                                    <tr style="background: rgba(26, 26, 26, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">Hover</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">+3</td></tr>
+                                    <tr style="background: rgba(10, 10, 10, 0.7);"><td style="padding: 8px; border: 1px solid #b71c1c; color: #e0e0e0;">WIGE</td><td style="padding: 8px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold;">+4</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
+        </div>    </div>
 
     <!-- GALACTIC MAP SECTION (SIMPLIFICADO) -->
     <div id="galactic-map" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #0a0a0a; background-image: linear-gradient(rgba(15, 20, 25, 0.85), rgba(10, 10, 10, 0.95)), repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(74, 90, 106, 0.1) 2px, transparent 4px), repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(183, 28, 28, 0.08) 40px, rgba(183, 28, 28, 0.08) 41px), repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(183, 28, 28, 0.08) 40px, rgba(183, 28, 28, 0.08) 41px), radial-gradient(circle at center, #1a1a1a 0%, #000 100%); background-size: 100% 100%, 100% 4px, 100% 100%, 100% 100%, 100% 100%; z-index: 2000; overflow-y: auto; padding-top: 60px;">
