@@ -1906,6 +1906,7 @@
             document.getElementById('cluster-table').style.display = 'block';
             document.getElementById('damage-grouper').style.display = 'none';
             document.getElementById('modifiers-table').style.display = 'none';
+            generateClusterTableHTML();
         }
 
         function goToDamageGrouper() {
@@ -2398,6 +2399,168 @@
             .catch(error => {
                 console.warn("Error de conexión al guardar automáticamente:", error);
             });
+        }
+
+        // ======================== TABLA DE CLÚSTER DE MISILES ========================
+        const CLUSTER_TABLE = {
+            2: {2:1, 4:1, 5:1, 6:2, 10:3, 12:4, 15:5, 20:6},
+            3: {2:1, 4:2, 5:2, 6:2, 10:3, 12:4, 15:5, 20:6},
+            4: {2:1, 4:2, 5:2, 6:3, 10:4, 12:5, 15:6, 20:9},
+            5: {2:1, 4:2, 5:3, 6:3, 10:6, 12:8, 15:9, 20:12},
+            6: {2:1, 4:2, 5:3, 6:4, 10:6, 12:8, 15:9, 20:12},
+            7: {2:1, 4:3, 5:3, 6:4, 10:6, 12:8, 15:9, 20:12},
+            8: {2:2, 4:3, 5:3, 6:4, 10:6, 12:8, 15:9, 20:12},
+            9: {2:2, 4:3, 5:4, 6:5, 10:8, 12:10, 15:11, 20:16},
+            10: {2:2, 4:3, 5:4, 6:5, 10:9, 12:11, 15:13, 20:18},
+            11: {2:2, 4:4, 5:5, 6:6, 10:10, 12:12, 15:15, 20:20},
+            12: {2:2, 4:4, 5:5, 6:6, 10:10, 12:12, 15:15, 20:20}
+        };
+
+        function generateClusterTableHTML() {
+            const container = document.getElementById('cluster-table-container');
+            if (!container) return;
+            let html = '<table id="missile-cluster-table" style="width: 100%; border-collapse: collapse; min-width: 900px; font-size: 10pt;"><thead><tr><th style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff; padding: 8px; border: 1px solid #b71c1c; position: sticky; top: 0; z-index: 2; width: 60px;">2D6</th>';
+            const cols = [2, 4, 5, 6, 10, 15, 20]; 
+            cols.forEach(c => html += `<th style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff; padding: 12px; border: 1px solid #b71c1c; position: sticky; top: 0; z-index: 2;">${c}</th>`);
+            html += '</tr></thead><tbody>';
+
+            for (let roll = 2; roll <= 12; roll++) {
+                const rowBg = roll % 2 === 0 ? 'rgba(26, 26, 26, 0.7)' : 'rgba(10, 10, 10, 0.7)';
+                html += `<tr><td id="row-missile-${roll}" style="background: ${rowBg}; color: #ff8c42; font-weight: bold; padding: 8px; border: 1px solid #b71c1c; text-align: center; width: 60px;"><strong>${roll}</strong></td>`;
+                cols.forEach(c => {
+                    const cellValue = CLUSTER_TABLE[roll][c] !== undefined ? CLUSTER_TABLE[roll][c] : '-'; 
+                    html += `<td id="cell-missile-${roll}-${c}" style="background: ${rowBg}; color: #e0e0e0; padding: 10px; border: 1px solid #b71c1c; text-align: center;">${cellValue}</td>`;
+                });
+                html += '</tr>';
+            }
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function rollCluster() {
+            const launcherSize = parseInt(document.getElementById('launcher-select').value);
+            if (isNaN(launcherSize)) return;
+
+            const roll = Math.floor(Math.random() * 11) + 2;
+            const hits = CLUSTER_TABLE[roll][launcherSize] !== undefined ? CLUSTER_TABLE[roll][launcherSize] : 0;
+
+            document.getElementById('missile-result-display').innerHTML = `<div style="font-size: 24px; color: #00ff41; text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);">Tirada: <strong style="color: #ff8c42;">${roll}</strong></div><div style="font-size: 28px; margin-top: 10px;">Impactos: <strong style="color: #ff8c42; text-shadow: 0 0 15px rgba(255, 140, 66, 0.8);">${hits}</strong></div>`;
+
+            document.querySelectorAll('.cell-highlight').forEach(el => {
+                el.classList.remove('cell-highlight');
+                el.style.background = '';
+                el.style.color = '';
+            });
+            
+            const row = document.getElementById(`row-missile-${roll}`);
+            const cell = document.getElementById(`cell-missile-${roll}-${launcherSize}`);
+            if (row) {
+                row.classList.add('cell-highlight');
+                row.style.background = 'rgba(183, 28, 28, 0.8)';
+                row.style.color = '#00ff41';
+            }
+            if (cell) {
+                cell.classList.add('cell-highlight');
+                cell.style.background = 'rgba(183, 28, 28, 0.8)';
+                cell.style.color = '#00ff41';
+                cell.style.fontWeight = 'bold';
+                cell.style.fontSize = '14pt';
+            }
+        }
+
+        // ======================== AGRUPADOR DE DAÑOS ========================
+        function roll2D6() {
+            return Math.floor(Math.random() * 11) + 2; 
+        }
+
+        function getLocation(roll) {
+            switch (roll) {
+                case 2: return "Cabeza (Head)";
+                case 3: return "Brazo Derecho (RA)";
+                case 4: return "Pierna Derecha (RL)";
+                case 5: return "Torso Derecho (RT)";
+                case 6: return "Torso Central (CT)";
+                case 7: return "Torso Central (CT)";
+                case 8: return "Torso Izquierdo (LT)";
+                case 9: return "Pierna Izquierda (LL)";
+                case 10: return "Brazo Izquierdo (LA)";
+                case 11: return "Cabeza (Head)";
+                case 12: return "Torso Central (CT)";
+                default: return "Error de Tirada";
+            }
+        }
+
+        function procesarMisiles() {
+            const tipoMisil = document.getElementById('tipoMisil').value;
+            let cantidadHits = parseInt(document.getElementById('cantidadHits').value);
+            const resultadosDiv = document.getElementById('resultados');
+
+            if (isNaN(cantidadHits) || cantidadHits <= 0) {
+                resultadosDiv.innerHTML = '<h3 style="color: #ff8c42;">Error:</h3><p style="color: #e0e0e0;">Por favor, introduce una cantidad de impactos válida (mayor que 0).</p>';
+                return;
+            }
+
+            const damageUnit = tipoMisil === 'LRM' ? 1 : 2;
+            const damageGrouping = tipoMisil === 'LRM' ? 5 : 2;
+            
+            let totalDamage = 0;
+            let damageByLocation = {};
+            let tableBody = '';
+
+            const numFullGroups = Math.floor(cantidadHits / damageGrouping);
+            let remainingHits = cantidadHits % damageGrouping;
+
+            for (let i = 0; i < numFullGroups; i++) {
+                const roll = roll2D6();
+                const location = getLocation(roll);
+                const damageThisGroup = damageGrouping * damageUnit;
+                
+                totalDamage += damageThisGroup;
+                damageByLocation[location] = (damageByLocation[location] || 0) + damageThisGroup;
+                
+                const hitsInGroup = damageGrouping;
+                const rowBg = i % 2 === 0 ? 'rgba(26, 26, 26, 0.7)' : 'rgba(10, 10, 10, 0.7)';
+                tableBody += `<tr style="background: ${rowBg};">
+                                <td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">Grupo ${i + 1} (${hitsInGroup} hits)</td>
+                                <td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">${roll}</td>
+                                <td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">${location}</td>
+                                <td style="padding: 10px; border: 1px solid #b71c1c; color: #00ff41; font-weight: bold; text-align: center;">${damageThisGroup}</td>
+                              </tr>`;
+            }
+
+            if (remainingHits > 0) {
+                const roll = roll2D6();
+                const location = getLocation(roll);
+                const damageThisGroup = remainingHits * damageUnit;
+                
+                totalDamage += damageThisGroup;
+                damageByLocation[location] = (damageByLocation[location] || 0) + damageThisGroup;
+
+                tableBody += `<tr style="background: rgba(183, 28, 28, 0.3); font-style: italic;">
+                                <td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42;">Grupo Final (${remainingHits} hits)</td>
+                                <td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42; font-weight: bold; text-align: center;">${roll}</td>
+                                <td style="padding: 10px; border: 1px solid #b71c1c; color: #ff8c42;">${location}</td>
+                                <td style="padding: 10px; border: 1px solid #b71c1c; color: #00ff41; font-weight: bold; text-align: center;">${damageThisGroup}</td>
+                              </tr>`;
+            }
+
+            const sortedLocations = Object.keys(damageByLocation).sort((a, b) => damageByLocation[b] - damageByLocation[a]);
+
+            let summaryTable = '<h3 style="color: #ff8c42; border-bottom: 2px solid #b71c1c; padding-bottom: 10px; margin-top: 30px;">Resumen de Daño por Localización:</h3><table style="width: 100%; border-collapse: collapse; margin-top: 20px;"><thead><tr><th style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff; padding: 12px; border: 1px solid #b71c1c;">Localización</th><th style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff; padding: 12px; border: 1px solid #b71c1c;">Daño Total</th></tr></thead><tbody>';
+            let rowIndex = 0;
+            for (const loc of sortedLocations) {
+                const rowBg = rowIndex % 2 === 0 ? 'rgba(26, 26, 26, 0.7)' : 'rgba(10, 10, 10, 0.7)';
+                summaryTable += `<tr style="background: ${rowBg};"><td style="padding: 10px; border: 1px solid #b71c1c; color: #e0e0e0;">${loc}</td><td style="padding: 10px; border: 1px solid #b71c1c; color: #00ff41; font-weight: bold; text-align: center; font-size: 16pt;">${damageByLocation[loc]}</td></tr>`;
+                rowIndex++;
+            }
+            summaryTable += `</tbody></table><p style="text-align: right; margin-top: 20px; font-size: 24px; color: #ff8c42; text-shadow: 0 0 10px rgba(255, 140, 66, 0.5);">Daño Total: <strong style="color: #00ff41; text-shadow: 0 0 15px rgba(0, 255, 65, 0.8);">${totalDamage}</strong></p>`;
+
+            let detailTable = '<h3 style="color: #ff8c42; border-bottom: 2px solid #b71c1c; padding-bottom: 10px; margin-top: 30px;">Detalle de Tiradas (1 Tirada por Grupo de Daño):</h3><div style="max-height: 500px; overflow-y: auto; background-color: rgba(10, 10, 10, 0.8); padding: 15px; margin-top: 20px; border: 2px solid #b71c1c; border-radius: 5px;"><table style="width: 100%; border-collapse: collapse; font-size: 10pt;">';
+            detailTable += '<thead><tr><th style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff; padding: 10px; border: 1px solid #b71c1c; position: sticky; top: 0; z-index: 1;">Grupo</th><th style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff; padding: 10px; border: 1px solid #b71c1c; position: sticky; top: 0; z-index: 1;">2D6</th><th style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff; padding: 10px; border: 1px solid #b71c1c; position: sticky; top: 0; z-index: 1;">Localización</th><th style="background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%); color: #fff; padding: 10px; border: 1px solid #b71c1c; position: sticky; top: 0; z-index: 1;">Daño Aplicado</th></tr></thead><tbody>';
+            detailTable += tableBody;
+            detailTable += '</tbody></table></div>';
+
+            resultadosDiv.innerHTML = summaryTable + detailTable;
         }
 
         // SISTEMA DE ROTACIÓN DE DATOS DE MECHS
@@ -91544,9 +91707,37 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
             
             <div style="text-align:center; margin: 20px auto; max-width: 1600px; padding: 20px;">
                 <h1 style="font-family: Impact, sans-serif; color: #ff8c42; text-transform: uppercase; letter-spacing: 4px; text-shadow: 2px 2px 8px rgba(255, 140, 66, 0.5); font-size: 36px; margin-bottom: 40px; border-bottom: 2px solid #b71c1c; padding-bottom: 15px;">
-                    TABLA DE CLUSTER
+                    TABLA DE CLUSTER DE MISILES
                 </h1>
-                <p style="color: #888; font-size: 18px;">Contenido en desarrollo...</p>
+                
+                <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 40px; align-items: start; max-width: 1400px; margin: 0 auto;">
+                    <!-- TABLA DE CLUSTER -->
+                    <div id="cluster-table-container" style="background: rgba(10, 10, 10, 0.8); padding: 20px; border: 2px solid #b71c1c; border-radius: 5px; overflow-x: auto;"></div>
+                    
+                    <!-- CALCULADORA DE IMPACTOS -->
+                    <div style="background: rgba(26, 26, 26, 0.9); padding: 30px; border: 2px solid #b71c1c; border-radius: 10px; box-shadow: 0 0 30px rgba(183, 28, 28, 0.3);">
+                        <h3 style="color: #ff8c42; margin-top: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 2px; border-bottom: 2px solid #ff8c42; padding-bottom: 10px;">🎲 CALCULADORA DE IMPACTOS</h3>
+                        
+                        <label style="color: #e0e0e0; display: block; margin: 20px 0 10px 0; font-weight: bold; font-size: 14px;">Tamaño del Lanzador:</label>
+                        <select id="launcher-select" style="width: 100%; padding: 12px; font-size: 16px; background-color: #0a0a0a; color: #ff8c42; border: 2px solid #b71c1c; border-radius: 5px; cursor: pointer;">
+                            <option value="2">SRM-2</option>
+                            <option value="4">SRM-4</option>
+                            <option value="5">LRM-5</option>
+                            <option value="6">SRM-6</option>
+                            <option value="10">LRM-10</option>
+                            <option value="15">LRM-15</option>
+                            <option value="20">LRM-20</option>
+                        </select>
+                        
+                        <button onclick="rollCluster()" style="width: 100%; margin-top: 30px; background: linear-gradient(135deg, #00ff41 0%, #00cc33 100%); color: #000; font-family: Impact, sans-serif; font-size: 24px; padding: 20px; border: none; border-radius: 10px; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; box-shadow: 0 6px 0 #006600, 0 0 30px rgba(0, 255, 65, 0.5); transition: all 0.2s; font-weight: bold;" onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 0 #006600, 0 0 40px rgba(0, 255, 65, 0.8)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 6px 0 #006600, 0 0 30px rgba(0, 255, 65, 0.5)'" onmousedown="this.style.transform='translateY(6px)'; this.style.boxShadow='none'" onmouseup="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 0 #006600, 0 0 40px rgba(0, 255, 65, 0.8)'">
+                            🎲 TIRAR 2D6
+                        </button>
+                        
+                        <div id="missile-result-display" style="margin-top: 30px; padding: 25px; background: rgba(0, 0, 0, 0.6); border: 2px solid #00ff41; border-radius: 8px; text-align: center; font-size: 20px; color: #00ff41; text-shadow: 0 0 10px rgba(0, 255, 65, 0.5); min-height: 100px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                            Selecciona tamaño y tira
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -91555,11 +91746,33 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
             <button class="back-to-home-btn no-print" onclick="backToTRRUtilitiesLanding()" style="position: fixed; top: 20px; left: 20px;">⬅️ VOLVER</button>
             <button class="back-to-home-btn no-print" onclick="goHomeNoConfirm()" style="position: fixed; top: 20px; left: 220px; background: linear-gradient(135deg, #b71c1c 0%, #8b0000 100%);">🏠 MENÚ</button>
             
-            <div style="text-align:center; margin: 20px auto; max-width: 1600px; padding: 20px;">
-                <h1 style="font-family: Impact, sans-serif; color: #ff8c42; text-transform: uppercase; letter-spacing: 4px; text-shadow: 2px 2px 8px rgba(255, 140, 66, 0.5); font-size: 36px; margin-bottom: 40px; border-bottom: 2px solid #b71c1c; padding-bottom: 15px;">
-                    AGRUPADOR DE DAÑOS
+            <div style="text-align:center; margin: 20px auto; max-width: 1400px; padding: 20px;">
+                <h1 style="font-family: Impact, sans-serif; color: #ff8c42; text-transform: uppercase; letter-spacing: 4px; text-shadow: 2px 2px 8px rgba(255, 140, 66, 0.5); font-size: 36px; margin-bottom: 20px; border-bottom: 2px solid #b71c1c; padding-bottom: 15px;">
+                    AGRUPADOR DE IMPACTOS (MISILES)
                 </h1>
-                <p style="color: #888; font-size: 18px;">Contenido en desarrollo...</p>
+                <p style="color: #e0e0e0; font-size: 16px; margin-bottom: 40px;">Calcula automáticamente la localización del daño de misiles en grupos<br><span style="color: #ff8c42;">(LRM = 5 daño/grupo | SRM = 2 daño/grupo)</span></p>
+                
+                <div style="background: rgba(26, 26, 26, 0.9); padding: 40px; border: 2px solid #b71c1c; border-radius: 10px; box-shadow: 0 0 30px rgba(183, 28, 28, 0.3); text-align: left;">
+                    <h2 style="color: #ff8c42; font-size: 28px; margin: 0 0 30px 0; border-bottom: 2px solid #ff8c42; padding-bottom: 15px; text-transform: uppercase; letter-spacing: 2px;">🎯 Resolución Automatizada de Misiles</h2>
+                    
+                    <label style="color: #e0e0e0; display: block; margin-bottom: 10px; font-weight: bold; font-size: 16px;">Tipo de Misil:</label>
+                    <select id="tipoMisil" style="width: 100%; padding: 15px; font-size: 18px; background-color: #0a0a0a; color: #ff8c42; border: 2px solid #b71c1c; border-radius: 5px; cursor: pointer; margin-bottom: 25px;">
+                        <option value="LRM">LRM (Grupos de 5 Daño)</option>
+                        <option value="SRM">SRM (Grupos de 2 Daño)</option>
+                    </select>
+                    
+                    <label style="color: #e0e0e0; display: block; margin-bottom: 10px; font-weight: bold; font-size: 16px;">Cantidad de Misiles que Impactaron:</label>
+                    <input type="number" id="cantidadHits" min="1" value="12" placeholder="Ej: 12" style="width: 100%; padding: 15px; font-size: 18px; background-color: #0a0a0a; color: #ff8c42; border: 2px solid #b71c1c; border-radius: 5px; margin-bottom: 30px; box-sizing: border-box;">
+                    
+                    <button onclick="procesarMisiles()" style="width: 100%; background: linear-gradient(135deg, #ff8c42 0%, #ff6b00 100%); color: #000; font-family: Impact, sans-serif; font-size: 24px; padding: 20px; border: none; border-radius: 10px; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; box-shadow: 0 6px 0 #b35000, 0 0 30px rgba(255, 140, 66, 0.5); transition: all 0.2s; font-weight: bold;" onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 0 #b35000, 0 0 40px rgba(255, 140, 66, 0.8)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 6px 0 #b35000, 0 0 30px rgba(255, 140, 66, 0.5)'" onmousedown="this.style.transform='translateY(6px)'; this.style.boxShadow='none'" onmouseup="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 0 #b35000, 0 0 40px rgba(255, 140, 66, 0.8)'">
+                        ⚙️ PROCESAR Y ASIGNAR LOCALIZACIONES
+                    </button>
+                    
+                    <div id="resultados" style="margin-top: 40px; padding: 30px; border: 2px dashed #b71c1c; background: rgba(10, 10, 10, 0.8); border-radius: 8px; min-height: 150px;">
+                        <h3 style="color: #ff8c42; margin-top: 0;">Resultados:</h3>
+                        <p style="color: #e0e0e0;">Introduce la información y presiona el botón para empezar.</p>
+                    </div>
+                </div>
             </div>
         </div>
         
