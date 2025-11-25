@@ -1589,6 +1589,7 @@
             document.getElementById('trr-utilities').style.display = 'none';
             document.getElementById('mech-hangar').style.display = 'none';
             document.getElementById('vehicle-depot').style.display = 'none';
+            document.getElementById('barracones').style.display = 'none';
             document.getElementById('points-counter').style.display = 'none';
         }
 
@@ -2005,6 +2006,15 @@
             document.getElementById('vehicle-criticals').style.display = 'none';
             document.getElementById('vehicle-motive').style.display = 'none';
         }
+        
+        // NAVEGACIÓN BARRACONES
+        function goToBarracones() {
+            document.getElementById('landing-page').style.display = 'none';
+            document.getElementById('barracones').style.display = 'block';
+            document.getElementById('pre-generacion').style.display = 'none';
+            document.getElementById('ficha-container').style.display = 'none';
+            document.getElementById('points-counter').style.display = 'none';
+        }
 
         // TABLA DE ARMAS DE INFANTERÍA
         const INFANTRY_WEAPON_TABLE = [
@@ -2355,7 +2365,39 @@
                 document.getElementById('pre-generacion').style.display = 'none';
                 document.getElementById('points-counter').style.display = 'none';
                 document.getElementById('ficha-container').style.display = 'block';
+                
+                // Guardado automático en la nube (transparente para el usuario)
+                guardarEnNubeAutomatico();
             } catch (error) { console.error("Error:", error); alert("Error al generar la ficha."); }
+        }
+        
+        function guardarEnNubeAutomatico() {
+            // Guardado silencioso en la nube sin alertas al usuario
+            if (GOOGLE_SCRIPT_URL.includes("YOUR_GOOGLE_SCRIPT")) {
+                console.log("Guardado en nube deshabilitado: URL no configurada");
+                return;
+            }
+            const datos = recogerDatosDeUI();
+            if (!datos.nombre) { 
+                console.log("No se puede guardar en nube: falta nombre del personaje");
+                return; 
+            }
+
+            fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify(datos)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.result === "success") {
+                    console.log("✓ Personaje guardado automáticamente en la nube");
+                } else {
+                    console.warn("Error al guardar automáticamente:", data.msg);
+                }
+            })
+            .catch(error => {
+                console.warn("Error de conexión al guardar automáticamente:", error);
+            });
         }
 
         // SISTEMA DE ROTACIÓN DE DATOS DE MECHS
@@ -91072,7 +91114,7 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
         <div class="landing-title">MECHWARRIOR<br><span style="font-size:30px; display:block; text-align:center; margin-top:10px;">DATABASE SYSTEM</span></div>
         <div class="landing-menu">
             <button class="cyber-button" onclick="goToGenerator()">Generador de Personajes</button>
-            <button class="cyber-button disabled">Barracones</button>
+            <button class="cyber-button" onclick="goToBarracones()">Barracones</button>
             <button class="cyber-button" onclick="goToTRRInfantry()">TRR Infantería</button>
             <button class="cyber-button" onclick="goToTRRUtilities()">TRR Utilidades</button>
             <button class="cyber-button" onclick="goToMechHangar()">Mech Hangar</button>
@@ -91084,6 +91126,380 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
         </div>
     </div>
 
+    <!-- BARRACONES SECTION -->
+    <div id="barracones" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #000000; background-image: linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.95)), repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255, 174, 0, 0.05) 2px, transparent 4px); background-size: 100% 100%, 100% 4px; z-index: 2000; overflow-y: auto; padding-top: 60px;">
+        <button class="back-to-home-btn no-print" onclick="goHomeNoConfirm()" style="position: fixed; top: 20px; left: 20px;">⚠️ VOLVER AL MENÚ</button>
+        
+        <div style="max-width: 1200px; margin: 0 auto; padding: 20px;">
+            <!-- Scanner Effect -->
+            <div style="position: fixed; top: 0; left: 0; width: 100%; height: 2px; background: #ffae00; box-shadow: 0 0 10px #ffae00, 0 0 20px #5c4200; opacity: 0.8; animation: scanner-sweep 30s linear infinite alternate; z-index: 0;"></div>
+            
+            <style>
+                @keyframes scanner-sweep {
+                    0% { top: -2%; opacity: 0; }
+                    5% { opacity: 1; }
+                    95% { opacity: 1; }
+                    100% { top: 102%; opacity: 0; }
+                }
+                
+                .barracones-title {
+                    font-family: 'Black Ops One', Impact, sans-serif;
+                    color: #ffae00;
+                    font-size: 3em;
+                    text-align: center;
+                    text-shadow: 2px 2px 0 #000, 0 0 20px #ffae00;
+                    margin-bottom: 20px;
+                    letter-spacing: 3px;
+                }
+                
+                .barracones-subtitle {
+                    text-align: center;
+                    color: #5c4200;
+                    font-family: 'Share Tech Mono', 'Courier New', monospace;
+                    font-size: 0.9em;
+                    letter-spacing: 2px;
+                    margin-bottom: 40px;
+                    border-bottom: 1px solid #5c4200;
+                    padding-bottom: 10px;
+                }
+                
+                .hazard-bar {
+                    height: 10px;
+                    width: 100%;
+                    background: repeating-linear-gradient(45deg, #000, #000 10px, #f1c40f 10px, #f1c40f 20px);
+                    opacity: 0.9;
+                    border-bottom: 1px solid #000;
+                    margin-bottom: 20px;
+                }
+                
+                #barracones input::-webkit-outer-spin-button,
+                #barracones input::-webkit-inner-spin-button { 
+                    -webkit-appearance: none; 
+                    margin: 0; 
+                }
+                #barracones input[type=number] { 
+                    -moz-appearance: textfield; 
+                }
+                
+                .sheet-container-barracones {
+                    width: 100%;
+                    max-width: 210mm;
+                    margin: 0 auto;
+                    position: relative;
+                    z-index: 2;
+                    display: grid;
+                    grid-template-columns: 32% 38% 28%;
+                    gap: 15px;
+                    padding-bottom: 50px;
+                }
+                
+                .barracones-panel {
+                    background: #000000;
+                    border-left: 2px solid #5c4200;
+                    padding: 10px;
+                    margin-bottom: 10px;
+                    clip-path: polygon(0 0, 100% 0, 100% 98%, 92% 100%, 0 100%);
+                    position: relative;
+                    box-shadow: 0 0 15px rgba(255, 174, 0, 0.05);
+                }
+                
+                .barracones-panel-title {
+                    color: #00ff41;
+                    font-size: 0.8em;
+                    letter-spacing: 1px;
+                    border-bottom: 1px solid #5c4200;
+                    margin-bottom: 8px;
+                    display: block;
+                    font-family: 'Share Tech Mono', monospace;
+                }
+                
+                .barracones-input {
+                    background: transparent;
+                    border: none;
+                    border-bottom: 1px solid #5c4200;
+                    color: #ffae00;
+                    font-family: 'Share Tech Mono', 'Courier New', monospace;
+                    width: 100%;
+                    transition: 0.3s;
+                    font-size: 0.9em;
+                    padding: 3px;
+                }
+                
+                .barracones-input:focus {
+                    outline: none;
+                    border-bottom: 1px solid #00ff41;
+                    box-shadow: 0 4px 5px -3px rgba(0, 255, 65, 0.3);
+                }
+                
+                .barracones-stat-grid {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 8px;
+                }
+                
+                .barracones-big-stat {
+                    background: rgba(20, 10, 0, 0.5);
+                    padding: 5px;
+                    text-align: center;
+                    border: 1px solid #332200;
+                }
+                
+                .barracones-big-stat label {
+                    display: block;
+                    font-size: 0.7em;
+                    color: #5c4200;
+                    font-weight: bold;
+                }
+                
+                .barracones-big-stat input {
+                    text-align: center;
+                    font-size: 1.3em;
+                    color: #ffae00;
+                    border: none;
+                    background: transparent;
+                    width: 100%;
+                }
+                
+                .barracones-weapon-row {
+                    margin-bottom: 15px;
+                    border-bottom: 1px dashed #3a2a0a;
+                    padding-bottom: 5px;
+                }
+                
+                .barracones-weapon-stat {
+                    display: flex;
+                    gap: 10px;
+                    font-size: 0.8em;
+                    color: #8e7e6e;
+                    margin-top: 5px;
+                }
+                
+                .barracones-armor-grid {
+                    display: grid;
+                    grid-template-columns: 1fr 40px;
+                    gap: 5px;
+                    font-size: 0.8em;
+                    align-items: center;
+                }
+                
+                .barracones-armor-val {
+                    text-align: center;
+                    border: 1px solid #5c4200;
+                    background: #0a0a0a;
+                    padding: 2px;
+                    color: #00ff41;
+                }
+                
+                .barracones-hp-segment {
+                    width: 10px;
+                    height: 8px;
+                    background: #110a00;
+                    border: 1px solid #443300;
+                    display: inline-block;
+                    margin: 1px;
+                    cursor: pointer;
+                }
+                
+                .barracones-hp-segment:hover {
+                    background: #00ff41;
+                    border-color: #ffae00;
+                }
+                
+                .barracones-loc-box {
+                    text-align: center;
+                    margin-bottom: 5px;
+                }
+                
+                .barracones-loc-name {
+                    font-size: 0.6em;
+                    color: #ffae00;
+                    display: block;
+                }
+                
+                .barracones-tech-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    font-size: 0.8em;
+                }
+                
+                .barracones-tech-table th {
+                    text-align: left;
+                    color: #7a6a5a;
+                    font-size: 0.7em;
+                    border-bottom: 1px solid #5c4200;
+                }
+                
+                .barracones-tech-table td {
+                    padding: 3px 0;
+                    border-bottom: 1px solid #2a1a0a;
+                }
+                
+                .barracones-tech-table input {
+                    background: transparent;
+                    border: none;
+                    color: #ffae00;
+                    width: 100%;
+                    font-family: 'Share Tech Mono', monospace;
+                }
+            </style>
+            
+            <div class="hazard-bar"></div>
+            <h1 class="barracones-title">MECHWARRIOR</h1>
+            <div class="barracones-subtitle">BARRACKS DATABASE SYSTEM // PERSONNEL RECORDS</div>
+            
+            <div class="sheet-container-barracones">
+                <!-- COLUMNA 1 -->
+                <div>
+                    <div class="barracones-panel">
+                        <span class="barracones-panel-title">01 // DATOS PERSONALES</span>
+                        <input type="text" class="barracones-input" placeholder="Nombre" id="barr-nombre">
+                        <div style="display:flex; gap:5px; margin-top:5px;">
+                            <input type="text" class="barracones-input" placeholder="Apodo/Callsign" id="barr-callsign">
+                            <input type="text" class="barracones-input" placeholder="Rango" style="width: 40%;" id="barr-rango">
+                        </div>
+                        <div style="margin-top:5px;">
+                            <input type="text" class="barracones-input" placeholder="ID Táctico" id="barr-id">
+                        </div>
+                    </div>
+                    
+                    <div class="barracones-panel">
+                        <span class="barracones-panel-title">02 // ATRIBUTOS BASE</span>
+                        <div class="barracones-stat-grid">
+                            <div class="barracones-big-stat"><label>FUE</label><input type="number" id="barr-fue" value="0"></div>
+                            <div class="barracones-big-stat"><label>DES</label><input type="number" id="barr-des" value="0"></div>
+                            <div class="barracones-big-stat"><label>INT</label><input type="number" id="barr-int" value="0"></div>
+                            <div class="barracones-big-stat"><label>CAR</label><input type="number" id="barr-car" value="0"></div>
+                        </div>
+                        <div style="margin-top:10px; font-size:0.7em; display:flex; justify-content:space-between; border-top:1px dashed #5c4200; padding-top:5px; color: #ffeebb;">
+                            <span>MOV (m): <input type="number" id="barr-mov" style="width:25px; display:inline; background: transparent; border: none; color: #ffae00;" placeholder="0" readonly></span>
+                            <span>INIT: <input type="number" id="barr-init" style="width:25px; display:inline; background: transparent; border: none; color: #ffae00;" placeholder="0" readonly></span>
+                        </div>
+                    </div>
+                    
+                    <div class="barracones-panel">
+                        <span class="barracones-panel-title">03 // ARMAMENTO PERSONAL</span>
+                        
+                        <div class="barracones-weapon-row">
+                            <input type="text" class="barracones-input" placeholder="Arma Principal" style="font-weight:bold;" id="barr-arma1">
+                            <div class="barracones-weapon-stat">
+                                <span>DAÑO: <input type="text" class="barracones-input" style="width:30px; border:none;" placeholder="2d6" id="barr-arma1-dmg"></span>
+                                <span>AL: <input type="text" class="barracones-input" style="width:30px; border:none;" placeholder="50m" id="barr-arma1-al"></span>
+                                <span>MUN: <input type="text" class="barracones-input" style="width:30px; border:none;" placeholder="30" id="barr-arma1-mun"></span>
+                            </div>
+                        </div>
+                        
+                        <div class="barracones-weapon-row">
+                            <input type="text" class="barracones-input" placeholder="Secundaria" id="barr-arma2">
+                            <div class="barracones-weapon-stat">
+                                <span>DAÑO: <input type="text" class="barracones-input" style="width:30px; border:none;" placeholder="1d6" id="barr-arma2-dmg"></span>
+                                <span>AL: <input type="text" class="barracones-input" style="width:30px; border:none;" placeholder="30m" id="barr-arma2-al"></span>
+                                <span>MUN: <input type="text" class="barracones-input" style="width:30px; border:none;" placeholder="15" id="barr-arma2-mun"></span>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top:10px;">
+                            <input type="text" class="barracones-input" placeholder="Granadas / Equipamiento Extra" style="font-size:0.8em; color:#8e7e6e;" id="barr-extra">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- COLUMNA 2 -->
+                <div>
+                    <div class="barracones-panel">
+                        <span class="barracones-panel-title">04 // ESTADO FÍSICO</span>
+                        
+                        <div style="text-align: center; margin-bottom: 10px;">
+                            <div style="padding: 10px; border: 1px solid #5c4200; background: rgba(0,0,0,0.8); margin-bottom: 10px; position: relative; width: 80%; margin: 0 auto;">
+                                <div style="display:flex; gap:5px; justify-content:center; margin-bottom:5px;">
+                                    <div class="barracones-loc-box">
+                                        <span class="barracones-loc-name">B.IZQ</span>
+                                        <div><span class="barracones-hp-segment"></span><span class="barracones-hp-segment"></span></div>
+                                    </div>
+                                    <div class="barracones-loc-box">
+                                        <span class="barracones-loc-name">CABEZA</span>
+                                        <div><span class="barracones-hp-segment"></span></div>
+                                    </div>
+                                    <div class="barracones-loc-box">
+                                        <span class="barracones-loc-name">B.DER</span>
+                                        <div><span class="barracones-hp-segment"></span><span class="barracones-hp-segment"></span></div>
+                                    </div>
+                                </div>
+                                
+                                <div style="display:flex; gap:5px; justify-content:center;">
+                                    <div class="barracones-loc-box">
+                                        <span class="barracones-loc-name">TORSO</span>
+                                        <div><span class="barracones-hp-segment"></span><span class="barracones-hp-segment"></span><span class="barracones-hp-segment"></span></div>
+                                        <div style="margin-top:2px;"><span class="barracones-hp-segment"></span><span class="barracones-hp-segment"></span><span class="barracones-hp-segment"></span></div>
+                                    </div>
+                                </div>
+                                
+                                <div style="display:flex; gap:5px; justify-content:center; margin-top:5px;">
+                                    <div class="barracones-loc-box">
+                                        <span class="barracones-loc-name">P.IZQ</span>
+                                        <div><span class="barracones-hp-segment"></span><span class="barracones-hp-segment"></span></div>
+                                    </div>
+                                    <div class="barracones-loc-box">
+                                        <span class="barracones-loc-name">P.DER</span>
+                                        <div><span class="barracones-hp-segment"></span><span class="barracones-hp-segment"></span></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div style="width:100%; margin-top:10px;">
+                                <span class="barracones-loc-name" style="text-align:left; color:#00ff41;">DAÑO CRÍTICO / ESTADO:</span>
+                                <input type="text" class="barracones-input" placeholder="> Sistemas Nominales..." style="font-size:0.8em; color:#00ff41;" id="barr-estado">
+                            </div>
+                            
+                            <div style="margin-top:20px; width:100%;">
+                                <span class="barracones-panel-title">DAÑO TOTAL (CONSCIENCIA)</span>
+                                <div style="display:flex; justify-content:space-between; font-size:0.7em; text-align:center; color: #ffeebb;">
+                                    <div>1<div class="barracones-hp-segment"></div></div>
+                                    <div>2<div class="barracones-hp-segment"></div></div>
+                                    <div>3<div class="barracones-hp-segment" style="background:#332200"></div></div>
+                                    <div>4<div class="barracones-hp-segment" style="background:#332200"></div></div>
+                                    <div>5<div class="barracones-hp-segment" style="background:#443300"></div></div>
+                                    <div>KO<div class="barracones-hp-segment" style="border-color:red; background:#300;"></div></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- COLUMNA 3 -->
+                <div>
+                    <div class="barracones-panel">
+                        <span class="barracones-panel-title">05 // HABILIDADES</span>
+                        <table class="barracones-tech-table">
+                            <tr><th>HABILIDAD</th> <th style="width:25px;">NV</th> <th style="width:25px;">BON</th></tr>
+                            <tr><td>Armas Mech</td> <td><input type="number" id="barr-skill1-nv"></td> <td><input type="number" id="barr-skill1-bon"></td></tr>
+                            <tr><td>Pilotar Mech</td> <td><input type="number" id="barr-skill2-nv"></td> <td><input type="number" id="barr-skill2-bon"></td></tr>
+                            <tr><td>Armas Ligeras</td> <td><input type="number" id="barr-skill3-nv"></td> <td><input type="number" id="barr-skill3-bon"></td></tr>
+                            <tr><td>Cuerpo a Cuerpo</td> <td><input type="number" id="barr-skill4-nv"></td> <td><input type="number" id="barr-skill4-bon"></td></tr>
+                            <tr><td>Liderazgo</td> <td><input type="number" id="barr-skill5-nv"></td> <td><input type="number" id="barr-skill5-bon"></td></tr>
+                            <tr><td colspan="3" style="border:none; height:5px;"></td></tr>
+                            <tr><th>TÉCNICAS</th> <th></th> <th></th></tr>
+                            <tr><td>Técnico Mech</td> <td><input type="number" id="barr-tech1-nv"></td> <td><input type="number" id="barr-tech1-bon"></td></tr>
+                            <tr><td>Médico</td> <td><input type="number" id="barr-tech2-nv"></td> <td><input type="number" id="barr-tech2-bon"></td></tr>
+                            <tr><td>Navegación</td> <td><input type="number" id="barr-tech3-nv"></td> <td><input type="number" id="barr-tech3-bon"></td></tr>
+                        </table>
+                    </div>
+                    
+                    <div class="barracones-panel">
+                        <span class="barracones-panel-title">06 // ARMADURA (SP)</span>
+                        <div class="barracones-armor-grid">
+                            <span style="color: #ffeebb;">CABEZA</span> <input type="number" class="barracones-armor-val" id="barr-armor-head">
+                            <span style="color: #ffeebb;">TORSO</span> <input type="number" class="barracones-armor-val" id="barr-armor-torso">
+                            <span style="color: #ffeebb;">BRAZOS</span> <input type="number" class="barracones-armor-val" id="barr-armor-arms">
+                            <span style="color: #ffeebb;">PIERNAS</span> <input type="number" class="barracones-armor-val" id="barr-armor-legs">
+                        </div>
+                        <div style="margin-top:10px;">
+                            <input type="text" class="barracones-input" placeholder="Tipo: Chaleco Flak..." style="font-size:0.7em; color:#8e7e6e;" id="barr-armor-type">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     <!-- TRR UTILIDADES SECTION -->
     <div id="trr-utilities" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #0a0a0a; background-image: linear-gradient(rgba(15, 20, 25, 0.85), rgba(10, 10, 10, 0.95)), repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(74, 90, 106, 0.1) 2px, transparent 4px), repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(183, 28, 28, 0.08) 40px, rgba(183, 28, 28, 0.08) 41px), repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(183, 28, 28, 0.08) 40px, rgba(183, 28, 28, 0.08) 41px), radial-gradient(circle at center, #1a1a1a 0%, #000 100%); background-size: 100% 100%, 100% 4px, 100% 100%, 100% 100%, 100% 100%; z-index: 2000; overflow-y: auto; padding-top: 60px;">
         
