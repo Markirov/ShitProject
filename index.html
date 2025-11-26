@@ -637,6 +637,16 @@
                 padding: 14px;
             }
         }
+        
+        /* Estilos hover para botones del modal de confirmación */
+        #exit-confirmation-modal button:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.2);
+        }
+        
+        #exit-confirmation-modal button:active {
+            transform: translateY(0);
+        }
     </style>
 
     <script>
@@ -861,56 +871,17 @@
          * @param {Object} datos - Datos del personaje
          */
         function rellenarBarraconesDesdeGenerador(datos) {
-            // Verificar que los elementos de Barracones existen
-            const barrFue = document.getElementById('barr-fue');
-            const barrDes = document.getElementById('barr-des');
-            const barrInt = document.getElementById('barr-int');
-            const barrCar = document.getElementById('barr-car');
-            
-            if (!barrFue || !barrDes || !barrInt || !barrCar) {
-                // Los elementos no existen todavía, salir silenciosamente
-                return;
-            }
-            
-            // Rellenar atributos base
-            const fue = parseInt(datos.str) || 0;
-            const des = parseInt(datos.dex) || 0;
-            const int = parseInt(datos.int) || 0;
-            const car = parseInt(datos.cha) || 0;
-            
-            barrFue.value = fue;
-            barrDes.value = des;
-            barrInt.value = int;
-            barrCar.value = car;
-            
-            // Calcular MOV e INIT
-            const barrMov = document.getElementById('barr-mov');
-            const barrInit = document.getElementById('barr-init');
-            
-            if (barrMov && barrInit) {
-                barrMov.value = des; // MOV = DES
-                barrInit.value = des; // INIT = DES
-            }
-            
-            // Generar estado físico basándose en FUE
-            if (fue > 0) {
-                generarEstadoFisicoBarracones(fue);
-            }
-            
-            // Generar habilidades dinámicamente desde extraSkills
-            if (datos.extraSkills && Array.isArray(datos.extraSkills)) {
-                generarHabilidadesBarracones(datos.extraSkills);
-            }
-            
-            // Calcular TIR para todas las habilidades
-            calcularTIRBarracones();
+            // Usar la función completa de carga
+            cargarPersonajeEnBarracones(datos);
         }
         
         /**
-         * Genera dinámicamente la tabla de habilidades desde extraSkills
-         * @param {Array} extraSkills - Array de {name, level} del generador
+         * Genera dinámicamente la tabla de habilidades combinando estudios y extraSkills
+         * @param {string} estudios - Nivel de estudios del personaje
+         * @param {string} nobleSkill - Habilidad noble si aplica
+         * @param {Array} extraSkills - Array de {name, level} adicionales
          */
-        function generarHabilidadesBarracones(extraSkills) {
+        function generarHabilidadesBarracones(estudios, nobleSkill, extraSkills) {
             const table = document.getElementById('barr-skills-table');
             if (!table) return;
             
@@ -919,11 +890,38 @@
                 table.deleteRow(1);
             }
             
-            // Filtrar habilidades válidas (que tienen nombre y nivel)
-            const validSkills = extraSkills.filter(skill => skill.name && skill.level);
+            // Obtener habilidades base del nivel de estudios
+            const baseSkills = getSkillsFromStudy(estudios || "", nobleSkill || "");
+            
+            // Crear mapa de habilidades: nombre → nivel
+            const skillsMap = {};
+            
+            // Añadir habilidades base del estudio
+            baseSkills.forEach(skill => {
+                if (skill.n && skill.v) {
+                    skillsMap[skill.n] = parseInt(skill.v) || 0;
+                }
+            });
+            
+            // Añadir/combinar habilidades extra (pueden sobrescribir o sumar)
+            if (extraSkills && Array.isArray(extraSkills)) {
+                extraSkills.forEach(skill => {
+                    if (skill.name && skill.level) {
+                        const currentLevel = skillsMap[skill.name] || 0;
+                        const newLevel = parseInt(skill.level) || 0;
+                        // Usar el nivel mayor entre base y extra
+                        skillsMap[skill.name] = Math.max(currentLevel, newLevel);
+                    }
+                });
+            }
+            
+            // Convertir mapa a array y ordenar alfabéticamente
+            const allSkills = Object.entries(skillsMap)
+                .map(([name, level]) => ({ name, level }))
+                .sort((a, b) => a.name.localeCompare(b.name));
             
             // Generar fila por cada habilidad
-            validSkills.forEach((skill, index) => {
+            allSkills.forEach((skill, index) => {
                 const row = table.insertRow(-1);
                 
                 // Columna 1: Nombre de habilidad
@@ -935,7 +933,7 @@
                 const inputNv = document.createElement('input');
                 inputNv.type = 'number';
                 inputNv.id = 'barr-skill-' + index + '-nv';
-                inputNv.value = skill.level || 0;
+                inputNv.value = skill.level;
                 inputNv.onchange = calcularTIRBarracones;
                 cellNv.appendChild(inputNv);
                 
@@ -948,6 +946,22 @@
                 inputTir.style.background = 'transparent';
                 inputTir.style.color = '#00ff41';
                 cellTir.appendChild(inputTir);
+                
+                // Columna 4: Cuadrados de mejora (4 en cuadrícula 2x2)
+                const cellUpgrades = row.insertCell(3);
+                const upgradesContainer = document.createElement('div');
+                upgradesContainer.className = 'barracones-skill-upgrades';
+                upgradesContainer.id = 'barr-skill-' + index + '-upgrades';
+                
+                // Crear 4 cuadrados
+                for (let i = 0; i < 4; i++) {
+                    const upgrade = document.createElement('div');
+                    upgrade.className = 'barracones-skill-upgrade';
+                    upgrade.onclick = () => toggleSkillUpgrade(upgrade, 'barr-skill-' + index + '-nv');
+                    upgradesContainer.appendChild(upgrade);
+                }
+                
+                cellUpgrades.appendChild(upgradesContainer);
             });
         }
         
@@ -978,6 +992,86 @@
                     const nivel = parseInt(nvInput.value) || 0;
                     const tir = Math.round(promedioAtributos - nivel);
                     tirInput.value = tir;
+                }
+            }
+        }
+        
+        /**
+         * Toggle cuadrado de mejora de atributo
+         * Solo permite seleccionar en orden (1, 2) y deseleccionar en orden inverso (2, 1)
+         * @param {HTMLElement} square - El cuadrado clickeado
+         * @param {string} attrId - ID del input de atributo (ej: 'barr-fue')
+         */
+        function toggleAttrUpgrade(square, attrId) {
+            const container = square.parentElement;
+            const squares = Array.from(container.querySelectorAll('.barracones-attr-upgrade'));
+            const clickedIndex = squares.indexOf(square);
+            const input = document.getElementById(attrId);
+            
+            if (!input) return;
+            
+            // Contar cuántos están seleccionados
+            const selectedCount = squares.filter(sq => sq.classList.contains('selected')).length;
+            
+            // Si clickeamos un cuadrado seleccionado
+            if (square.classList.contains('selected')) {
+                // Solo permitir deseleccionar si es el último seleccionado
+                if (clickedIndex === selectedCount - 1) {
+                    square.classList.remove('selected');
+                    // Decrementar atributo
+                    input.value = Math.max(0, parseInt(input.value) - 1);
+                    // Trigger onchange
+                    input.dispatchEvent(new Event('change'));
+                }
+            } else {
+                // Si clickeamos un cuadrado no seleccionado
+                // Solo permitir seleccionar si todos los anteriores están seleccionados
+                if (clickedIndex === selectedCount) {
+                    square.classList.add('selected');
+                    // Incrementar atributo
+                    input.value = parseInt(input.value) + 1;
+                    // Trigger onchange
+                    input.dispatchEvent(new Event('change'));
+                }
+            }
+        }
+        
+        /**
+         * Toggle cuadrado de mejora de habilidad
+         * Solo permite seleccionar en orden (1-4) y deseleccionar en orden inverso (4-1)
+         * @param {HTMLElement} square - El cuadrado clickeado
+         * @param {string} skillNvId - ID del input de nivel de habilidad (ej: 'barr-skill-0-nv')
+         */
+        function toggleSkillUpgrade(square, skillNvId) {
+            const container = square.parentElement;
+            const squares = Array.from(container.querySelectorAll('.barracones-skill-upgrade'));
+            const clickedIndex = squares.indexOf(square);
+            const input = document.getElementById(skillNvId);
+            
+            if (!input) return;
+            
+            // Contar cuántos están seleccionados
+            const selectedCount = squares.filter(sq => sq.classList.contains('selected')).length;
+            
+            // Si clickeamos un cuadrado seleccionado
+            if (square.classList.contains('selected')) {
+                // Solo permitir deseleccionar si es el último seleccionado
+                if (clickedIndex === selectedCount - 1) {
+                    square.classList.remove('selected');
+                    // Decrementar nivel
+                    input.value = Math.max(0, parseInt(input.value) - 1);
+                    // Trigger onchange para recalcular TIR
+                    input.dispatchEvent(new Event('change'));
+                }
+            } else {
+                // Si clickeamos un cuadrado no seleccionado
+                // Solo permitir seleccionar si todos los anteriores están seleccionados
+                if (clickedIndex === selectedCount) {
+                    square.classList.add('selected');
+                    // Incrementar nivel
+                    input.value = parseInt(input.value) + 1;
+                    // Trigger onchange para recalcular TIR
+                    input.dispatchEvent(new Event('change'));
                 }
             }
         }
@@ -1314,19 +1408,35 @@
         function cargarPersonajeDesdeCache(index) {
             if (personajesEncontradosCache[index]) {
                 const p = personajesEncontradosCache[index];
-                rellenarUIConDatos(p);
                 
-                // Cerrar resultados tanto en generador como en editor
-                const resultsGen = document.getElementById('cloud-search-results');
-                const resultsEditor = document.getElementById('cloud-search-results-editor');
-                if(resultsGen) resultsGen.style.display = 'none';
-                if(resultsEditor) resultsEditor.style.display = 'none';
+                // Verificar si estamos en Barracones o en Generador
+                const barraconesVisible = document.getElementById('barracones').style.display !== 'none';
                 
-                alert(`Personaje '${p.nombre}' cargado exitosamente.`);
-                
-                // Si no estamos en ficha, ir al generador
-                const fichaVisible = document.getElementById('ficha-container').style.display !== 'none';
-                if(!fichaVisible) goToGenerator();
+                if (barraconesVisible) {
+                    // Cargar en Barracones
+                    cargarPersonajeEnBarracones(p);
+                    
+                    // Cerrar resultados de Barracones
+                    const resultsBarr = document.getElementById('cloud-search-results-barracones');
+                    if(resultsBarr) resultsBarr.style.display = 'none';
+                    
+                    alert(`Personaje '${p.nombre}' cargado exitosamente en Barracones.`);
+                } else {
+                    // Cargar en Generador
+                    rellenarUIConDatos(p);
+                    
+                    // Cerrar resultados tanto en generador como en editor
+                    const resultsGen = document.getElementById('cloud-search-results');
+                    const resultsEditor = document.getElementById('cloud-search-results-editor');
+                    if(resultsGen) resultsGen.style.display = 'none';
+                    if(resultsEditor) resultsEditor.style.display = 'none';
+                    
+                    alert(`Personaje '${p.nombre}' cargado exitosamente.`);
+                    
+                    // Si no estamos en ficha, ir al generador
+                    const fichaVisible = document.getElementById('ficha-container').style.display !== 'none';
+                    if(!fichaVisible) goToGenerator();
+                }
             }
         }
 
@@ -1445,11 +1555,21 @@
 
                     // CASO 1: Un solo personaje encontrado
                     if (personajes.length === 1) {
-                        rellenarUIConDatos(personajes[0]);
-                        alert(`Personaje '${personajes[0].nombre}' cargado exitosamente.\nXP Total: ${personajes[0].xpTotal}`);
-                        // Navegar al generador si estamos en landing
-                        const fichaVisible = document.getElementById('ficha-container').style.display !== 'none';
-                        if(!fichaVisible) goToGenerator();
+                        // Verificar si estamos en Barracones o en Generador
+                        const barraconesVisible = document.getElementById('barracones').style.display !== 'none';
+                        
+                        if (barraconesVisible) {
+                            // Cargar en Barracones
+                            cargarPersonajeEnBarracones(personajes[0]);
+                            alert(`Personaje '${personajes[0].nombre}' cargado exitosamente en Barracones.`);
+                        } else {
+                            // Cargar en Generador
+                            rellenarUIConDatos(personajes[0]);
+                            alert(`Personaje '${personajes[0].nombre}' cargado exitosamente.\nXP Total: ${personajes[0].xpTotal}`);
+                            // Navegar al generador si estamos en landing
+                            const fichaVisible = document.getElementById('ficha-container').style.display !== 'none';
+                            if(!fichaVisible) goToGenerator();
+                        }
                     } 
                     // CASO 2: Múltiples personajes encontrados
                     else {
@@ -1534,6 +1654,369 @@
                 console.error("Error en buscarEnNubeBarracones:", error);
                 alert("Error de conexión con la nube: " + error);
             });
+        }
+
+        /**
+         * Recopila todos los datos del formulario de Barracones
+         * @returns {Object} Objeto con todos los datos del personaje
+         */
+        function recogerDatosBarracones() {
+            // Recopilar datos básicos (usando campos reales de Barracones)
+            const datos = {
+                nombre: document.getElementById('barr-nombre').value,
+                callsign: document.getElementById('barr-callsign') ? document.getElementById('barr-callsign').value : '',
+                rango: document.getElementById('barr-rango').value,
+                tactico: document.getElementById('barr-id') ? document.getElementById('barr-id').value : '',
+                
+                // Atributos
+                str: document.getElementById('barr-fue').value,
+                dex: document.getElementById('barr-des').value,
+                int: document.getElementById('barr-int').value,
+                cha: document.getElementById('barr-car').value,
+                
+                // Movimiento e iniciativa
+                mov: document.getElementById('barr-mov').value,
+                init: document.getElementById('barr-init').value,
+                
+                // Armas
+                armas: [
+                    {
+                        nombre: document.getElementById('barr-arma1-nombre').value,
+                        alcance: document.getElementById('barr-arma1-alcance').value,
+                        dano: document.getElementById('barr-arma1-dano').value,
+                        municion: document.getElementById('barr-arma1-municion').value
+                    },
+                    {
+                        nombre: document.getElementById('barr-arma2-nombre').value,
+                        alcance: document.getElementById('barr-arma2-alcance').value,
+                        dano: document.getElementById('barr-arma2-dano').value,
+                        municion: document.getElementById('barr-arma2-municion').value
+                    }
+                ],
+                
+                // Notas
+                notas: document.getElementById('barr-notas').value,
+                
+                // Habilidades (desde la tabla)
+                extraSkills: [],
+                
+                // Estado de cuadrados de mejora de atributos
+                mejorasAtributos: {
+                    fue: 0,
+                    des: 0,
+                    int: 0,
+                    car: 0
+                },
+                
+                // Estado de cuadrados de mejora de habilidades
+                mejorasHabilidades: {}
+            };
+            
+            // Recopilar estado de cuadrados de mejora de atributos
+            const atributos = ['fue', 'des', 'int', 'car'];
+            atributos.forEach(attr => {
+                const attrId = 'barr-' + attr;
+                const container = document.querySelector(`input#${attrId}`).parentElement.parentElement;
+                const squares = container.querySelectorAll('.barracones-attr-upgrade');
+                let selectedCount = 0;
+                squares.forEach(sq => {
+                    if (sq.classList.contains('selected')) selectedCount++;
+                });
+                datos.mejorasAtributos[attr] = selectedCount;
+            });
+            
+            // Recopilar habilidades y sus mejoras de la tabla
+            const skillsTable = document.getElementById('barr-skills-table');
+            if (skillsTable) {
+                for (let i = 1; i < skillsTable.rows.length; i++) {
+                    const nombreCell = skillsTable.rows[i].cells[0];
+                    const nivelInput = document.getElementById('barr-skill-' + (i-1) + '-nv');
+                    const upgradesContainer = document.getElementById('barr-skill-' + (i-1) + '-upgrades');
+                    
+                    if (nombreCell && nivelInput) {
+                        const skillName = nombreCell.textContent;
+                        
+                        // Contar cuadrados de mejora seleccionados
+                        let selectedUpgrades = 0;
+                        if (upgradesContainer) {
+                            const squares = upgradesContainer.querySelectorAll('.barracones-skill-upgrade');
+                            squares.forEach(sq => {
+                                if (sq.classList.contains('selected')) selectedUpgrades++;
+                            });
+                        }
+                        
+                        datos.extraSkills.push({
+                            name: skillName,
+                            level: nivelInput.value,
+                            upgrades: selectedUpgrades
+                        });
+                        
+                        // Guardar mejoras por nombre de habilidad
+                        datos.mejorasHabilidades[skillName] = selectedUpgrades;
+                    }
+                }
+            }
+            
+            // Recopilar estado físico
+            const hpSegments = document.querySelectorAll('#barr-hp-container .barracones-hp-segment');
+            datos.estadoFisico = [];
+            hpSegments.forEach((seg, idx) => {
+                datos.estadoFisico.push({
+                    index: idx,
+                    damaged: seg.classList.contains('damaged')
+                });
+            });
+            
+            return datos;
+        }
+        
+        /**
+         * Guarda los datos de Barracones en la nube (Google Sheets)
+         */
+        function guardarEnNubeBarracones() {
+            // Verificar configuración
+            if (GOOGLE_SCRIPT_URL.includes("YOUR_GOOGLE_SCRIPT")) {
+                alert("¡Error! Debes configurar la variable GOOGLE_SCRIPT_URL en el código HTML primero.");
+                return;
+            }
+            
+            // Recopilar datos
+            const datos = recogerDatosBarracones();
+            
+            // Validar que hay datos mínimos
+            if (!datos.nombre) {
+                alert("El personaje necesita un nombre para guardarse.");
+                return;
+            }
+            
+            // Indicar que se está guardando
+            const originalText = "GUARDAR EN LA NUBE";
+            const btn = document.querySelector('#barracones-toolbar button[onclick*="guardarEnNubeBarracones"]');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerText = "GUARDANDO...";
+            }
+            
+            // Enviar a la nube
+            return fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify(datos)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerText = originalText;
+                }
+                
+                if (data.result === "success") {
+                    alert("¡Guardado exitoso en Google Sheet!");
+                    return true;
+                } else {
+                    alert("Error al guardar: " + data.msg);
+                    return false;
+                }
+            })
+            .catch(error => {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerText = originalText;
+                }
+                console.error("Error:", error);
+                alert("Error de conexión al intentar guardar.");
+                return false;
+            });
+        }
+        
+        /**
+         * Restaura el estado de los cuadrados de mejora de atributos
+         * @param {Object} mejorasAtributos - Objeto con cantidad de mejoras por atributo
+         *                                    {fue: 2, des: 1, int: 0, car: 2}
+         */
+        function restaurarMejorasAtributos(mejorasAtributos) {
+            if (!mejorasAtributos) return;
+            
+            const atributos = ['fue', 'des', 'int', 'car'];
+            
+            atributos.forEach(attr => {
+                const cantidadMejoras = mejorasAtributos[attr] || 0;
+                if (cantidadMejoras === 0) return;
+                
+                const attrId = 'barr-' + attr;
+                const input = document.getElementById(attrId);
+                if (!input) return;
+                
+                // Encontrar el contenedor de cuadrados de mejora
+                const container = input.parentElement.parentElement;
+                const squares = container.querySelectorAll('.barracones-attr-upgrade');
+                
+                // Seleccionar la cantidad correcta de cuadrados
+                for (let i = 0; i < Math.min(cantidadMejoras, squares.length); i++) {
+                    squares[i].classList.add('selected');
+                }
+            });
+        }
+        
+        /**
+         * Restaura el estado de los cuadrados de mejora de habilidades
+         * @param {Object} mejorasHabilidades - Objeto con cantidad de mejoras por habilidad
+         *                                      {"Pilotar Mech": 2, "Disparo Mech": 3, ...}
+         */
+        function restaurarMejorasHabilidades(mejorasHabilidades) {
+            if (!mejorasHabilidades) return;
+            
+            const skillsTable = document.getElementById('barr-skills-table');
+            if (!skillsTable) return;
+            
+            // Iterar sobre todas las filas de habilidades
+            for (let i = 1; i < skillsTable.rows.length; i++) {
+                const nombreCell = skillsTable.rows[i].cells[0];
+                const skillName = nombreCell.textContent;
+                const cantidadMejoras = mejorasHabilidades[skillName] || 0;
+                
+                if (cantidadMejoras === 0) continue;
+                
+                const upgradesContainer = document.getElementById('barr-skill-' + (i-1) + '-upgrades');
+                if (!upgradesContainer) continue;
+                
+                const squares = upgradesContainer.querySelectorAll('.barracones-skill-upgrade');
+                
+                // Seleccionar la cantidad correcta de cuadrados
+                for (let j = 0; j < Math.min(cantidadMejoras, squares.length); j++) {
+                    squares[j].classList.add('selected');
+                }
+            }
+        }
+        
+        /**
+         * Restaura el estado físico (daños) en los cuadrados de HP
+         * @param {Array} estadoFisico - Array de {index, damaged}
+         */
+        function restaurarEstadoFisico(estadoFisico) {
+            if (!estadoFisico || !Array.isArray(estadoFisico)) return;
+            
+            const hpSegments = document.querySelectorAll('#barr-hp-container .barracones-hp-segment');
+            
+            estadoFisico.forEach(estado => {
+                if (estado.damaged && estado.index < hpSegments.length) {
+                    hpSegments[estado.index].classList.add('damaged');
+                }
+            });
+        }
+        
+        /**
+         * Restaura las armas en Barracones
+         * @param {Array} armas - Array de objetos de arma {nombre, alcance, dano, municion}
+         */
+        function restaurarArmas(armas) {
+            if (!armas || !Array.isArray(armas)) return;
+            
+            // Restaurar arma 1
+            if (armas[0]) {
+                const arma1 = armas[0];
+                const nom1 = document.getElementById('barr-arma1-nombre');
+                const alc1 = document.getElementById('barr-arma1-alcance');
+                const dan1 = document.getElementById('barr-arma1-dano');
+                const mun1 = document.getElementById('barr-arma1-municion');
+                
+                if (nom1) nom1.value = arma1.nombre || '';
+                if (alc1) alc1.value = arma1.alcance || '';
+                if (dan1) dan1.value = arma1.dano || '';
+                if (mun1) mun1.value = arma1.municion || '';
+            }
+            
+            // Restaurar arma 2
+            if (armas[1]) {
+                const arma2 = armas[1];
+                const nom2 = document.getElementById('barr-arma2-nombre');
+                const alc2 = document.getElementById('barr-arma2-alcance');
+                const dan2 = document.getElementById('barr-arma2-dano');
+                const mun2 = document.getElementById('barr-arma2-municion');
+                
+                if (nom2) nom2.value = arma2.nombre || '';
+                if (alc2) alc2.value = arma2.alcance || '';
+                if (dan2) dan2.value = arma2.dano || '';
+                if (mun2) mun2.value = arma2.municion || '';
+            }
+        }
+        
+        /**
+         * Carga un personaje completo en Barracones desde datos de la nube
+         * Incluye: datos básicos, atributos, armas, habilidades, estado físico, mejoras
+         * @param {Object} datos - Objeto con todos los datos del personaje
+         */
+        function cargarPersonajeEnBarracones(datos) {
+            if (!datos) return;
+            
+            // 1. Cargar datos básicos (usando campos reales de Barracones)
+            const barrNombre = document.getElementById('barr-nombre');
+            const barrCallsign = document.getElementById('barr-callsign');
+            const barrRango = document.getElementById('barr-rango');
+            const barrId = document.getElementById('barr-id');
+            const barrNotas = document.getElementById('barr-notas');
+            
+            if (barrNombre) barrNombre.value = datos.nombre || '';
+            if (barrCallsign) barrCallsign.value = datos.callsign || '';
+            if (barrRango) barrRango.value = datos.rango || '';
+            if (barrId) barrId.value = datos.tactico || '';
+            if (barrNotas) barrNotas.value = datos.notas || '';
+            
+            // 2. Cargar atributos
+            const barrFue = document.getElementById('barr-fue');
+            const barrDes = document.getElementById('barr-des');
+            const barrInt = document.getElementById('barr-int');
+            const barrCar = document.getElementById('barr-car');
+            
+            const fue = parseInt(datos.str) || 0;
+            const des = parseInt(datos.dex) || 0;
+            const int = parseInt(datos.int) || 0;
+            const car = parseInt(datos.cha) || 0;
+            
+            if (barrFue) barrFue.value = fue;
+            if (barrDes) barrDes.value = des;
+            if (barrInt) barrInt.value = int;
+            if (barrCar) barrCar.value = car;
+            
+            // 3. Calcular MOV e INIT
+            const barrMov = document.getElementById('barr-mov');
+            const barrInit = document.getElementById('barr-init');
+            
+            if (barrMov) barrMov.value = datos.mov || des;
+            if (barrInit) barrInit.value = datos.init || des;
+            
+            // 4. Generar estado físico
+            if (fue > 0) {
+                generarEstadoFisicoBarracones(fue);
+            }
+            
+            // 5. Generar habilidades
+            generarHabilidadesBarracones(datos.estudios, datos.nobleSkill, datos.extraSkills);
+            
+            // 6. Calcular TIR
+            calcularTIRBarracones();
+            
+            // 7. Restaurar mejoras de atributos
+            if (datos.mejorasAtributos) {
+                restaurarMejorasAtributos(datos.mejorasAtributos);
+            }
+            
+            // 8. Restaurar mejoras de habilidades
+            if (datos.mejorasHabilidades) {
+                restaurarMejorasHabilidades(datos.mejorasHabilidades);
+            }
+            
+            // 9. Restaurar estado físico (daños)
+            if (datos.estadoFisico) {
+                // Dar tiempo para que se genere el estado físico
+                setTimeout(() => {
+                    restaurarEstadoFisico(datos.estadoFisico);
+                }, 100);
+            }
+            
+            // 10. Restaurar armas
+            if (datos.armas) {
+                restaurarArmas(datos.armas);
+            }
         }
 
         // --- FUNCIONES DE ARMAS ---
@@ -2114,6 +2597,216 @@
             document.getElementById('trr-combat').style.display = 'none';
             document.getElementById('trr-weapons').style.display = 'none';
             document.getElementById('points-counter').style.display = 'none';
+        }
+
+        // ============================================================================
+        // SISTEMA DE CONFIRMACIÓN DE SALIDA CON POPUP
+        // ============================================================================
+        
+        let exitCallback = null; // Función a ejecutar al confirmar salida
+        let currentSection = ''; // Sección actual (para limpiar datos)
+        
+        /**
+         * Muestra el modal de confirmación de salida
+         * @param {string} section - Sección desde la que se sale ('barracones' o 'generador')
+         * @param {function} callback - Función a ejecutar al confirmar salida sin guardar
+         */
+        function showExitModal(section, callback) {
+            currentSection = section;
+            exitCallback = callback;
+            
+            // Personalizar mensaje según la sección
+            const messages = {
+                'barracones': '¿Salir de Barracones?',
+                'generador': '¿Salir del Generador de Personajes?',
+                'default': '¿Salir de esta sección?'
+            };
+            
+            const message = messages[section] || messages['default'];
+            document.getElementById('exit-modal-message').innerHTML = 
+                message + '<br><span style="color: #ff6b6b; font-size: 0.9em;">Los datos no guardados se perderán</span>';
+            
+            // Mostrar modal
+            const modal = document.getElementById('exit-confirmation-modal');
+            modal.style.display = 'flex';
+        }
+        
+        /**
+         * Guarda en la nube y sale sin mostrar confirmación adicional
+         */
+        async function confirmExitAndSave() {
+            const modal = document.getElementById('exit-confirmation-modal');
+            modal.style.display = 'none';
+            
+            // Determinar qué función de guardado usar según la sección
+            if (currentSection === 'barracones') {
+                // Guardar en nube desde Barracones
+                await guardarEnNubeBarracones();
+            } else if (currentSection === 'generador') {
+                // Guardar en nube desde Generador
+                await guardarEnNube();
+            }
+            
+            // Limpiar ficha y ejecutar callback de salida
+            limpiarFichaSeccion(currentSection);
+            if (exitCallback) {
+                exitCallback();
+            }
+        }
+        
+        /**
+         * Sale sin guardar
+         */
+        function confirmExitWithoutSave() {
+            const modal = document.getElementById('exit-confirmation-modal');
+            modal.style.display = 'none';
+            
+            // Limpiar ficha y ejecutar callback de salida
+            limpiarFichaSeccion(currentSection);
+            if (exitCallback) {
+                exitCallback();
+            }
+        }
+        
+        /**
+         * Cancela la salida y cierra el modal
+         */
+        function cancelExit() {
+            const modal = document.getElementById('exit-confirmation-modal');
+            modal.style.display = 'none';
+            exitCallback = null;
+            currentSection = '';
+        }
+        
+        /**
+         * Limpia los datos de la ficha según la sección
+         * @param {string} section - Sección a limpiar ('barracones' o 'generador')
+         */
+        function limpiarFichaSeccion(section) {
+            if (section === 'barracones') {
+                // Limpiar Barracones (usando campos reales)
+                const nombreEl = document.getElementById('barr-nombre');
+                const callsignEl = document.getElementById('barr-callsign');
+                const rangoEl = document.getElementById('barr-rango');
+                const idEl = document.getElementById('barr-id');
+                
+                if (nombreEl) nombreEl.value = '';
+                if (callsignEl) callsignEl.value = '';
+                if (rangoEl) rangoEl.value = '';
+                if (idEl) idEl.value = '';
+                
+                document.getElementById('barr-fue').value = '0';
+                document.getElementById('barr-des').value = '0';
+                document.getElementById('barr-int').value = '0';
+                document.getElementById('barr-car').value = '0';
+                document.getElementById('barr-mov').value = '';
+                document.getElementById('barr-init').value = '';
+                
+                // Limpiar cuadrados de mejora de atributos
+                document.querySelectorAll('.barracones-attr-upgrade').forEach(sq => {
+                    sq.classList.remove('selected');
+                });
+                
+                // Limpiar estado físico
+                const hpContainer = document.getElementById('barr-hp-container');
+                if (hpContainer) {
+                    hpContainer.innerHTML = '';
+                }
+                
+                // Limpiar tabla de habilidades
+                const skillsTable = document.getElementById('barr-skills-table');
+                if (skillsTable) {
+                    while (skillsTable.rows.length > 1) {
+                        skillsTable.deleteRow(1);
+                    }
+                }
+                
+                // Limpiar armas
+                document.getElementById('barr-arma1-nombre').value = '';
+                document.getElementById('barr-arma1-alcance').value = '';
+                document.getElementById('barr-arma1-dano').value = '';
+                document.getElementById('barr-arma1-municion').value = '';
+                document.getElementById('barr-arma2-nombre').value = '';
+                document.getElementById('barr-arma2-alcance').value = '';
+                document.getElementById('barr-arma2-dano').value = '';
+                document.getElementById('barr-arma2-municion').value = '';
+                
+                // Limpiar notas
+                const notasEl = document.getElementById('barr-notas');
+                if (notasEl) notasEl.value = '';
+                
+            } else if (section === 'generador') {
+                // Limpiar Generador
+                // Resetear puntos
+                pointsUsed = 0;
+                const ptsVal = document.getElementById('points-val');
+                if (ptsVal) {
+                    ptsVal.textContent = '150';
+                }
+                
+                // Limpiar campos de personaje
+                const fields = ['nombre', 'edad', 'planeta', 'afiliacion', 'rango'];
+                fields.forEach(field => {
+                    const el = document.getElementById(field);
+                    if (el) el.value = '';
+                });
+                
+                // Resetear atributos
+                const attrs = ['str', 'dex', 'int', 'cha'];
+                attrs.forEach(attr => {
+                    const el = document.getElementById(attr);
+                    if (el) el.value = '1';
+                });
+                
+                // Limpiar selector de estudios
+                const estudiosSelect = document.getElementById('estudios');
+                if (estudiosSelect) estudiosSelect.selectedIndex = 0;
+                
+                // Limpiar habilidades extra
+                extraSkillsData = [];
+                const skillList = document.getElementById('extra-skill-list');
+                if (skillList) skillList.innerHTML = '';
+                
+                // Limpiar selector de habilidad noble
+                const nobleSkillSelect = document.getElementById('noble-skill-select');
+                if (nobleSkillSelect) nobleSkillSelect.selectedIndex = 0;
+            }
+        }
+        
+        /**
+         * Navega a home desde Barracones con confirmación
+         */
+        function goHomeFromBarracones() {
+            showExitModal('barracones', function() {
+                clearCriticalInfoDisplays();
+                document.getElementById('landing-page').style.display = 'flex';
+                document.getElementById('barracones').style.display = 'none';
+                document.getElementById('pre-generacion').style.display = 'none';
+                document.getElementById('ficha-container').style.display = 'none';
+                document.getElementById('points-counter').style.display = 'none';
+                
+                // Ocultar barra de herramientas de Barracones
+                const toolbar = document.getElementById('barracones-toolbar');
+                if (toolbar) toolbar.style.display = 'none';
+            });
+        }
+        
+        /**
+         * Navega a home desde Generador con confirmación
+         */
+        function goHomeFromGenerador() {
+            showExitModal('generador', function() {
+                clearCriticalInfoDisplays();
+                document.getElementById('landing-page').style.display = 'flex';
+                document.getElementById('pre-generacion').style.display = 'none';
+                document.getElementById('ficha-container').style.display = 'none';
+                document.getElementById('barracones').style.display = 'none';
+                document.getElementById('points-counter').style.display = 'none';
+                
+                // Ocultar barra de herramientas de Barracones
+                const toolbar = document.getElementById('barracones-toolbar');
+                if (toolbar) toolbar.style.display = 'none';
+            });
         }
 
         function goToSheetDirectly() {
@@ -3999,6 +4692,37 @@
     </script>
 </head>
 <body>
+
+    <!-- MODAL DE CONFIRMACIÓN DE SALIDA -->
+    <div id="exit-confirmation-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); z-index: 10000; align-items: center; justify-content: center;">
+        <div style="background: linear-gradient(135deg, #1a0f00 0%, #2d1a00 100%); border: 3px solid #ffae00; padding: 30px; max-width: 500px; width: 90%; box-shadow: 0 0 30px rgba(255, 174, 0, 0.5), inset 0 0 20px rgba(255, 174, 0, 0.1);">
+            <div style="text-align: center; margin-bottom: 25px;">
+                <h2 style="color: #ffae00; font-family: 'Courier New', monospace; font-size: 1.5em; margin: 0; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 10px rgba(255, 174, 0, 0.5);">
+                    ⚠️ ADVERTENCIA
+                </h2>
+                <div style="width: 100%; height: 2px; background: linear-gradient(90deg, transparent, #ffae00, transparent); margin: 15px 0;"></div>
+            </div>
+            
+            <p id="exit-modal-message" style="color: #ffeebb; font-family: 'Courier New', monospace; font-size: 1.1em; text-align: center; margin-bottom: 30px; line-height: 1.6;">
+                ¿Salir de esta sección?<br>
+                <span style="color: #ff6b6b; font-size: 0.9em;">Los datos no guardados se perderán</span>
+            </p>
+            
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <button onclick="confirmExitAndSave()" style="background: linear-gradient(135deg, #00ff41 0%, #00cc33 100%); color: #001100; border: 2px solid #00ff41; padding: 12px 20px; font-family: 'Courier New', monospace; font-size: 1em; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 0 10px rgba(0, 255, 65, 0.5); transition: all 0.3s;">
+                    💾 GUARDAR EN LA NUBE Y SALIR
+                </button>
+                
+                <button onclick="confirmExitWithoutSave()" style="background: linear-gradient(135deg, #ff6b6b 0%, #cc0000 100%); color: #ffffff; border: 2px solid #ff6b6b; padding: 12px 20px; font-family: 'Courier New', monospace; font-size: 1em; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 0 10px rgba(255, 107, 107, 0.5); transition: all 0.3s;">
+                    ⚠️ SALIR SIN GUARDAR
+                </button>
+                
+                <button onclick="cancelExit()" style="background: linear-gradient(135deg, #5a4a2a 0%, #3a2a1a 100%); color: #ffae00; border: 2px solid #ffae00; padding: 12px 20px; font-family: 'Courier New', monospace; font-size: 1em; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 0 10px rgba(255, 174, 0, 0.3); transition: all 0.3s;">
+                    ❌ CANCELAR
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- LANDING PAGE MILITAR BATTLETECH -->
     <div id="landing-page">
@@ -92520,7 +93244,7 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
 
     <!-- BARRACONES SECTION -->
     <div id="barracones" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #000000; background-image: linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.95)), repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255, 174, 0, 0.05) 2px, transparent 4px); background-size: 100% 100%, 100% 4px; z-index: 2000; overflow-y: auto; padding-top: 60px;">
-        <button class="back-to-home-btn no-print" onclick="goHomeNoConfirm()" style="position: fixed; top: 20px; left: 20px;">⚠️ VOLVER AL MENÚ</button>
+        <button class="back-to-home-btn no-print" onclick="goHomeFromBarracones()" style="position: fixed; top: 20px; left: 20px;">⚠️ SALIR AL MENÚ</button>
         
         <div style="max-width: 1200px; margin: 0 auto; padding: 20px;">
             <!-- Scanner Effect -->
@@ -92634,6 +93358,11 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                     padding: 5px;
                     text-align: center;
                     border: 1px solid #332200;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    position: relative;
                 }
                 
                 .barracones-big-stat label {
@@ -92650,6 +93379,81 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                     border: none;
                     background: transparent;
                     width: 100%;
+                }
+                
+                /* Contenedor de atributo con label e input */
+                .barracones-attr-content {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    flex: 1;
+                }
+                
+                /* Cuadrados de mejora de atributos (2 verticales) */
+                .barracones-attr-upgrades {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 2px;
+                }
+                
+                .barracones-attr-upgrade {
+                    width: 12px;
+                    height: 12px;
+                    background: #110a00;
+                    border: 1px solid #443300;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                
+                .barracones-attr-upgrade:hover {
+                    background: #ffae00;
+                    border-color: #ffae00;
+                    box-shadow: 0 0 4px #ffae00;
+                }
+                
+                .barracones-attr-upgrade.selected {
+                    background: #00ff41;
+                    border-color: #00dd33;
+                }
+                
+                .barracones-attr-upgrade.selected:hover {
+                    background: #00dd33;
+                    border-color: #00bb22;
+                    box-shadow: 0 0 4px #00ff41;
+                }
+                
+                /* Cuadrados de mejora de habilidades (4 en cuadrícula 2x2) */
+                .barracones-skill-upgrades {
+                    display: grid;
+                    grid-template-columns: repeat(2, 10px);
+                    grid-template-rows: repeat(2, 10px);
+                    gap: 2px;
+                }
+                
+                .barracones-skill-upgrade {
+                    width: 10px;
+                    height: 10px;
+                    background: #110a00;
+                    border: 1px solid #443300;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                
+                .barracones-skill-upgrade:hover {
+                    background: #ffae00;
+                    border-color: #ffae00;
+                    box-shadow: 0 0 3px #ffae00;
+                }
+                
+                .barracones-skill-upgrade.selected {
+                    background: #00ff41;
+                    border-color: #00dd33;
+                }
+                
+                .barracones-skill-upgrade.selected:hover {
+                    background: #00dd33;
+                    border-color: #00bb22;
+                    box-shadow: 0 0 3px #00ff41;
                 }
                 
                 .barracones-weapon-row {
@@ -92798,10 +93602,46 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                     <div class="barracones-panel">
                         <span class="barracones-panel-title">02 // ATRIBUTOS BASE</span>
                         <div class="barracones-stat-grid">
-                            <div class="barracones-big-stat"><label>FUE</label><input type="number" id="barr-fue" value="0" onchange="generarEstadoFisicoBarracones(parseInt(this.value) || 0); calcularTIRBarracones();"></div>
-                            <div class="barracones-big-stat"><label>DES</label><input type="number" id="barr-des" value="0" onchange="actualizarMovInitBarracones(); calcularTIRBarracones();"></div>
-                            <div class="barracones-big-stat"><label>INT</label><input type="number" id="barr-int" value="0" onchange="calcularTIRBarracones()"></div>
-                            <div class="barracones-big-stat"><label>CAR</label><input type="number" id="barr-car" value="0" onchange="calcularTIRBarracones()"></div>
+                            <div class="barracones-big-stat">
+                                <div class="barracones-attr-upgrades">
+                                    <div class="barracones-attr-upgrade" onclick="toggleAttrUpgrade(this, 'barr-fue')"></div>
+                                    <div class="barracones-attr-upgrade" onclick="toggleAttrUpgrade(this, 'barr-fue')"></div>
+                                </div>
+                                <div class="barracones-attr-content">
+                                    <label>FUE</label>
+                                    <input type="number" id="barr-fue" value="0" onchange="generarEstadoFisicoBarracones(parseInt(this.value) || 0); calcularTIRBarracones();">
+                                </div>
+                            </div>
+                            <div class="barracones-big-stat">
+                                <div class="barracones-attr-upgrades">
+                                    <div class="barracones-attr-upgrade" onclick="toggleAttrUpgrade(this, 'barr-des')"></div>
+                                    <div class="barracones-attr-upgrade" onclick="toggleAttrUpgrade(this, 'barr-des')"></div>
+                                </div>
+                                <div class="barracones-attr-content">
+                                    <label>DES</label>
+                                    <input type="number" id="barr-des" value="0" onchange="actualizarMovInitBarracones(); calcularTIRBarracones();">
+                                </div>
+                            </div>
+                            <div class="barracones-big-stat">
+                                <div class="barracones-attr-upgrades">
+                                    <div class="barracones-attr-upgrade" onclick="toggleAttrUpgrade(this, 'barr-int')"></div>
+                                    <div class="barracones-attr-upgrade" onclick="toggleAttrUpgrade(this, 'barr-int')"></div>
+                                </div>
+                                <div class="barracones-attr-content">
+                                    <label>INT</label>
+                                    <input type="number" id="barr-int" value="0" onchange="calcularTIRBarracones()">
+                                </div>
+                            </div>
+                            <div class="barracones-big-stat">
+                                <div class="barracones-attr-upgrades">
+                                    <div class="barracones-attr-upgrade" onclick="toggleAttrUpgrade(this, 'barr-car')"></div>
+                                    <div class="barracones-attr-upgrade" onclick="toggleAttrUpgrade(this, 'barr-car')"></div>
+                                </div>
+                                <div class="barracones-attr-content">
+                                    <label>CAR</label>
+                                    <input type="number" id="barr-car" value="0" onchange="calcularTIRBarracones()">
+                                </div>
+                            </div>
                         </div>
                         <div style="margin-top:10px; font-size:0.7em; display:flex; justify-content:space-between; border-top:1px dashed #5c4200; padding-top:5px; color: #ffeebb;">
                             <span>MOV (m): <input type="number" id="barr-mov" style="width:25px; display:inline; background: transparent; border: none; color: #ffae00;" placeholder="0" readonly></span>
@@ -92951,18 +93791,6 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                                 <span class="barracones-loc-name" style="text-align:left; color:#00ff41;">DAÑO CRÍTICO / ESTADO:</span>
                                 <input type="text" class="barracones-input" placeholder="> Sistemas Nominales..." style="font-size:0.8em; color:#00ff41;" id="barr-estado">
                             </div>
-                            
-                            <div style="margin-top:20px; width:100%;">
-                                <span class="barracones-panel-title">DAÑO TOTAL (CONSCIENCIA)</span>
-                                <div style="display:flex; justify-content:space-between; font-size:0.7em; text-align:center; color: #ffeebb;">
-                                    <div>1<div class="barracones-hp-segment"></div></div>
-                                    <div>2<div class="barracones-hp-segment"></div></div>
-                                    <div>3<div class="barracones-hp-segment" style="background:#332200"></div></div>
-                                    <div>4<div class="barracones-hp-segment" style="background:#332200"></div></div>
-                                    <div>5<div class="barracones-hp-segment" style="background:#443300"></div></div>
-                                    <div>KO<div class="barracones-hp-segment" style="border-color:red; background:#300;"></div></div>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -92972,7 +93800,7 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                     <div class="barracones-panel">
                         <span class="barracones-panel-title">05 // HABILIDADES</span>
                         <table class="barracones-tech-table" id="barr-skills-table">
-                            <tr><th>HABILIDAD</th> <th style="width:25px;">NV</th> <th style="width:25px;">TIR</th></tr>
+                            <tr><th>HABILIDAD</th> <th style="width:25px;">NV</th> <th style="width:25px;">TIR</th> <th style="width:28px;">↑</th></tr>
                             <!-- Las habilidades se generan dinámicamente desde extraSkills -->
                         </table>
                     </div>
@@ -94385,7 +95213,7 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
     <div id="points-counter" style="display:none;">Puntos Restantes: <span id="points-val">150</span></div>
 
     <div id="pre-generacion" style="display:none;">
-        <button class="back-to-home-btn no-print" onclick="goHome()">⚠️ SALIR AL MENÚ</button>
+        <button class="back-to-home-btn no-print" onclick="goHomeFromGenerador()">⚠️ SALIR AL MENÚ</button>
 
         <h1>GENERADOR DE FICHA MECHWARRIOR</h1>
         
