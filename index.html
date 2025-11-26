@@ -1678,19 +1678,19 @@
                 mov: document.getElementById('barr-mov').value,
                 init: document.getElementById('barr-init').value,
                 
-                // Armas
+                // Armas (guardar selectores y munición)
                 armas: [
                     {
-                        nombre: document.getElementById('barr-arma1-nombre').value,
-                        alcance: document.getElementById('barr-arma1-alcance').value,
-                        dano: document.getElementById('barr-arma1-dano').value,
-                        municion: document.getElementById('barr-arma1-municion').value
+                        select: document.getElementById('barr-arma1-select') ? document.getElementById('barr-arma1-select').value : '',
+                        munActual: document.getElementById('barr-arma1-mun-actual') ? document.getElementById('barr-arma1-mun-actual').value : ''
                     },
                     {
-                        nombre: document.getElementById('barr-arma2-nombre').value,
-                        alcance: document.getElementById('barr-arma2-alcance').value,
-                        dano: document.getElementById('barr-arma2-dano').value,
-                        municion: document.getElementById('barr-arma2-municion').value
+                        select: document.getElementById('barr-arma2-select') ? document.getElementById('barr-arma2-select').value : '',
+                        munActual: document.getElementById('barr-arma2-mun-actual') ? document.getElementById('barr-arma2-mun-actual').value : ''
+                    },
+                    {
+                        select: document.getElementById('barr-arma3-select') ? document.getElementById('barr-arma3-select').value : '',
+                        munActual: document.getElementById('barr-arma3-mun-actual') ? document.getElementById('barr-arma3-mun-actual').value : ''
                     }
                 ],
                 
@@ -1889,6 +1889,48 @@
         }
         
         /**
+         * Restaura los niveles correctos en los inputs de habilidades
+         * @param {Array} extraSkills - Array con {name, level, upgrades}
+         */
+        function restaurarNivelesHabilidades(extraSkills) {
+            if (!extraSkills || !Array.isArray(extraSkills)) {
+                console.log('⚠️ restaurarNivelesHabilidades: extraSkills no válido');
+                return;
+            }
+            
+            const skillsTable = document.getElementById('barr-skills-table');
+            if (!skillsTable) {
+                console.log('⚠️ restaurarNivelesHabilidades: tabla no encontrada');
+                return;
+            }
+            
+            console.log('✅ Restaurando niveles de habilidades:', extraSkills);
+            
+            // Crear mapa de niveles por nombre
+            const nivelesMap = {};
+            extraSkills.forEach(skill => {
+                if (skill.name && skill.level) {
+                    nivelesMap[skill.name] = parseInt(skill.level) || 0;
+                }
+            });
+            
+            console.log('📊 Mapa de niveles:', nivelesMap);
+            
+            // Iterar sobre todas las filas y actualizar niveles
+            for (let i = 1; i < skillsTable.rows.length; i++) {
+                const nombreCell = skillsTable.rows[i].cells[0];
+                const skillName = nombreCell.textContent;
+                const nivelInput = document.getElementById('barr-skill-' + (i-1) + '-nv');
+                
+                if (nivelInput && nivelesMap[skillName] !== undefined) {
+                    const nivelAnterior = nivelInput.value;
+                    nivelInput.value = nivelesMap[skillName];
+                    console.log(`  📝 ${skillName}: ${nivelAnterior} → ${nivelesMap[skillName]}`);
+                }
+            }
+        }
+        
+        /**
          * Restaura el estado físico (daños) en los cuadrados de HP
          * @param {Array} estadoFisico - Array de {index, damaged}
          */
@@ -1906,38 +1948,77 @@
         
         /**
          * Restaura las armas en Barracones
-         * @param {Array} armas - Array de objetos de arma {nombre, alcance, dano, municion}
+         * @param {Array} armas - Array de objetos de arma {select, munActual}
          */
         function restaurarArmas(armas) {
-            if (!armas || !Array.isArray(armas)) return;
-            
-            // Restaurar arma 1
-            if (armas[0]) {
-                const arma1 = armas[0];
-                const nom1 = document.getElementById('barr-arma1-nombre');
-                const alc1 = document.getElementById('barr-arma1-alcance');
-                const dan1 = document.getElementById('barr-arma1-dano');
-                const mun1 = document.getElementById('barr-arma1-municion');
-                
-                if (nom1) nom1.value = arma1.nombre || '';
-                if (alc1) alc1.value = arma1.alcance || '';
-                if (dan1) dan1.value = arma1.dano || '';
-                if (mun1) mun1.value = arma1.municion || '';
+            if (!armas || !Array.isArray(armas)) {
+                console.log('⚠️ restaurarArmas: armas no válido');
+                return;
             }
             
-            // Restaurar arma 2
-            if (armas[1]) {
-                const arma2 = armas[1];
-                const nom2 = document.getElementById('barr-arma2-nombre');
-                const alc2 = document.getElementById('barr-arma2-alcance');
-                const dan2 = document.getElementById('barr-arma2-dano');
-                const mun2 = document.getElementById('barr-arma2-municion');
+            console.log('🔫 Restaurando armas:', armas);
+            
+            // Usar timeout para asegurar que los selects estén populados
+            setTimeout(() => {
+                // Restaurar arma 1
+                if (armas[0] && armas[0].select) {
+                    const sel1 = document.getElementById('barr-arma1-select');
+                    
+                    if (sel1) {
+                        console.log(`  🔫 Arma 1: ${armas[0].select}, Munición: ${armas[0].munActual}`);
+                        sel1.value = armas[0].select;
+                        // Disparar evento change para cargar stats del arma
+                        cargarArmaBarracones(1);
+                        
+                        // Restaurar munición actual (después de que cargarArmaBarracones haya puesto el máximo)
+                        setTimeout(() => {
+                            const mun1 = document.getElementById('barr-arma1-mun-actual');
+                            if (mun1 && armas[0].munActual) {
+                                mun1.value = armas[0].munActual;
+                                console.log(`    ✅ Munición arma 1 restaurada: ${armas[0].munActual}`);
+                            }
+                        }, 50);
+                    }
+                }
                 
-                if (nom2) nom2.value = arma2.nombre || '';
-                if (alc2) alc2.value = arma2.alcance || '';
-                if (dan2) dan2.value = arma2.dano || '';
-                if (mun2) mun2.value = arma2.municion || '';
-            }
+                // Restaurar arma 2
+                if (armas[1] && armas[1].select) {
+                    const sel2 = document.getElementById('barr-arma2-select');
+                    
+                    if (sel2) {
+                        console.log(`  🔫 Arma 2: ${armas[1].select}, Munición: ${armas[1].munActual}`);
+                        sel2.value = armas[1].select;
+                        cargarArmaBarracones(2);
+                        
+                        setTimeout(() => {
+                            const mun2 = document.getElementById('barr-arma2-mun-actual');
+                            if (mun2 && armas[1].munActual) {
+                                mun2.value = armas[1].munActual;
+                                console.log(`    ✅ Munición arma 2 restaurada: ${armas[1].munActual}`);
+                            }
+                        }, 50);
+                    }
+                }
+                
+                // Restaurar arma 3
+                if (armas[2] && armas[2].select) {
+                    const sel3 = document.getElementById('barr-arma3-select');
+                    
+                    if (sel3) {
+                        console.log(`  🔫 Arma 3: ${armas[2].select}, Munición: ${armas[2].munActual}`);
+                        sel3.value = armas[2].select;
+                        cargarArmaBarracones(3);
+                        
+                        setTimeout(() => {
+                            const mun3 = document.getElementById('barr-arma3-mun-actual');
+                            if (mun3 && armas[2].munActual) {
+                                mun3.value = armas[2].munActual;
+                                console.log(`    ✅ Munición arma 3 restaurada: ${armas[2].munActual}`);
+                            }
+                        }, 50);
+                    }
+                }
+            }, 150);
         }
         
         /**
@@ -1947,6 +2028,8 @@
          */
         function cargarPersonajeEnBarracones(datos) {
             if (!datos) return;
+            
+            console.log('🎯 Cargando personaje en Barracones:', datos);
             
             // 1. Cargar datos básicos (usando campos reales de Barracones)
             const barrNombre = document.getElementById('barr-nombre');
@@ -2000,12 +2083,23 @@
                 restaurarMejorasAtributos(datos.mejorasAtributos);
             }
             
-            // 8. Restaurar mejoras de habilidades
-            if (datos.mejorasHabilidades) {
-                restaurarMejorasHabilidades(datos.mejorasHabilidades);
-            }
+            // 8-10. Usar timeout para asegurar que la tabla esté completamente renderizada
+            setTimeout(() => {
+                // 8. Restaurar niveles correctos en habilidades
+                if (datos.extraSkills) {
+                    restaurarNivelesHabilidades(datos.extraSkills);
+                }
+                
+                // 9. Restaurar mejoras de habilidades (cuadrados verdes)
+                if (datos.mejorasHabilidades) {
+                    restaurarMejorasHabilidades(datos.mejorasHabilidades);
+                }
+                
+                // 10. Recalcular TIR con niveles correctos
+                calcularTIRBarracones();
+            }, 100);
             
-            // 9. Restaurar estado físico (daños)
+            // 11. Restaurar estado físico (daños)
             if (datos.estadoFisico) {
                 // Dar tiempo para que se genere el estado físico
                 setTimeout(() => {
@@ -2013,7 +2107,7 @@
                 }, 100);
             }
             
-            // 10. Restaurar armas
+            // 12. Restaurar armas
             if (datos.armas) {
                 restaurarArmas(datos.armas);
             }
@@ -2722,14 +2816,19 @@
                 }
                 
                 // Limpiar armas
-                document.getElementById('barr-arma1-nombre').value = '';
-                document.getElementById('barr-arma1-alcance').value = '';
-                document.getElementById('barr-arma1-dano').value = '';
-                document.getElementById('barr-arma1-municion').value = '';
-                document.getElementById('barr-arma2-nombre').value = '';
-                document.getElementById('barr-arma2-alcance').value = '';
-                document.getElementById('barr-arma2-dano').value = '';
-                document.getElementById('barr-arma2-municion').value = '';
+                const arma1Sel = document.getElementById('barr-arma1-select');
+                const arma1Mun = document.getElementById('barr-arma1-mun-actual');
+                const arma2Sel = document.getElementById('barr-arma2-select');
+                const arma2Mun = document.getElementById('barr-arma2-mun-actual');
+                const arma3Sel = document.getElementById('barr-arma3-select');
+                const arma3Mun = document.getElementById('barr-arma3-mun-actual');
+                
+                if (arma1Sel) arma1Sel.selectedIndex = 0;
+                if (arma1Mun) arma1Mun.value = '';
+                if (arma2Sel) arma2Sel.selectedIndex = 0;
+                if (arma2Mun) arma2Mun.value = '';
+                if (arma3Sel) arma3Sel.selectedIndex = 0;
+                if (arma3Mun) arma3Mun.value = '';
                 
                 // Limpiar notas
                 const notasEl = document.getElementById('barr-notas');
