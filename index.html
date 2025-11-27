@@ -93661,6 +93661,30 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                     padding: 3px;
                 }
                 
+                /* Estilos específicos para los desplegables (select) */
+                select.barracones-input {
+                    background: rgba(0, 0, 0, 0.9);
+                    border: 1px solid #5c4200;
+                    color: #ffae00;
+                    padding: 5px;
+                    cursor: pointer;
+                }
+                
+                /* Estilos para las opciones del desplegable */
+                select.barracones-input option {
+                    background: #1a1a1a;
+                    color: #ffae00;
+                    padding: 5px;
+                }
+                
+                /* Hover en las opciones */
+                select.barracones-input option:hover,
+                select.barracones-input option:focus,
+                select.barracones-input option:checked {
+                    background: #2a2a2a;
+                    color: #00ff41;
+                }
+                
                 .barracones-input:focus {
                     outline: none;
                     border-bottom: 1px solid #00ff41;
