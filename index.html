@@ -1537,15 +1537,22 @@
             resultsContainer.innerHTML = '';
 
             // FETCH: Consultar Google Sheets
+            console.log('🔍 Buscando personaje:', nombreJugador);
             fetch(`${GOOGLE_SCRIPT_URL}?jugador=${encodeURIComponent(nombreJugador)}`)
-            .then(response => response.json())
+            .then(response => {
+                console.log('📥 Respuesta de búsqueda:', response);
+                return response.json();
+            })
             .then(data => {
+                console.log('📥 Datos de búsqueda parseados:', data);
+                
                 // UI: Restaurar botón
                 btn.disabled = false; 
                 btn.innerText = originalBtnText;
                 
                 if (data.result === "success") {
                     const personajes = data.personajes;
+                    console.log('✅ Personajes encontrados:', personajes);
 
                     // VALIDACIÓN: Verificar que hay resultados
                     if (!personajes || personajes.length === 0) {
@@ -1555,6 +1562,10 @@
 
                     // CASO 1: Un solo personaje encontrado
                     if (personajes.length === 1) {
+                        console.log('📦 Cargando personaje único:', personajes[0]);
+                        console.log('📦 Armas del personaje:', personajes[0].armas);
+                        console.log('📦 extraSkills del personaje:', personajes[0].extraSkills);
+                        
                         // Verificar si estamos en Barracones o en Generador
                         const barraconesVisible = document.getElementById('barracones').style.display !== 'none';
                         
@@ -1663,39 +1674,39 @@
         function recogerDatosBarracones() {
             // Recopilar datos básicos (usando campos reales de Barracones)
             const datos = {
-                nombre: document.getElementById('barr-nombre').value,
-                callsign: document.getElementById('barr-callsign') ? document.getElementById('barr-callsign').value : '',
-                rango: document.getElementById('barr-rango').value,
-                tactico: document.getElementById('barr-id') ? document.getElementById('barr-id').value : '',
+                nombre: document.getElementById('barr-nombre')?.value || '',
+                jugador: document.getElementById('barr-callsign')?.value || '',
+                rango: document.getElementById('barr-rango')?.value || '',
+                tactico: document.getElementById('barr-id')?.value || '',
                 
                 // Atributos
-                str: document.getElementById('barr-fue').value,
-                dex: document.getElementById('barr-des').value,
-                int: document.getElementById('barr-int').value,
-                cha: document.getElementById('barr-car').value,
+                str: document.getElementById('barr-fue')?.value || '0',
+                dex: document.getElementById('barr-des')?.value || '0',
+                int: document.getElementById('barr-int')?.value || '0',
+                cha: document.getElementById('barr-car')?.value || '0',
                 
                 // Movimiento e iniciativa
-                mov: document.getElementById('barr-mov').value,
-                init: document.getElementById('barr-init').value,
+                mov: document.getElementById('barr-mov')?.value || '',
+                init: document.getElementById('barr-init')?.value || '',
                 
                 // Armas (guardar selectores y munición)
                 armas: [
                     {
-                        select: document.getElementById('barr-arma1-select') ? document.getElementById('barr-arma1-select').value : '',
-                        munActual: document.getElementById('barr-arma1-mun-actual') ? document.getElementById('barr-arma1-mun-actual').value : ''
+                        select: document.getElementById('barr-arma1-select')?.value || '',
+                        munActual: document.getElementById('barr-arma1-mun-actual')?.value || ''
                     },
                     {
-                        select: document.getElementById('barr-arma2-select') ? document.getElementById('barr-arma2-select').value : '',
-                        munActual: document.getElementById('barr-arma2-mun-actual') ? document.getElementById('barr-arma2-mun-actual').value : ''
+                        select: document.getElementById('barr-arma2-select')?.value || '',
+                        munActual: document.getElementById('barr-arma2-mun-actual')?.value || ''
                     },
                     {
-                        select: document.getElementById('barr-arma3-select') ? document.getElementById('barr-arma3-select').value : '',
-                        munActual: document.getElementById('barr-arma3-mun-actual') ? document.getElementById('barr-arma3-mun-actual').value : ''
+                        select: document.getElementById('barr-arma3-select')?.value || '',
+                        munActual: document.getElementById('barr-arma3-mun-actual')?.value || ''
                     }
                 ],
                 
                 // Notas
-                notas: document.getElementById('barr-notas').value,
+                notas: document.getElementById('barr-notas')?.value || '',
                 
                 // Habilidades (desde la tabla)
                 extraSkills: [],
@@ -1758,7 +1769,7 @@
             }
             
             // Recopilar estado físico
-            const hpSegments = document.querySelectorAll('#barr-hp-container .barracones-hp-segment');
+            const hpSegments = document.querySelectorAll('.barracones-hp-segment, .barracones-hp-segment-vertical');
             datos.estadoFisico = [];
             hpSegments.forEach((seg, idx) => {
                 datos.estadoFisico.push({
@@ -1767,6 +1778,24 @@
                 });
             });
             
+            // DEBUGGING: Verificar valores de armas ANTES de devolver
+            console.log('🔍 ===== DEBUGGING recogerDatosBarracones() =====');
+            console.log('🔫 Selector arma1:', document.getElementById('barr-arma1-select'));
+            console.log('🔫 Valor arma1:', document.getElementById('barr-arma1-select')?.value);
+            console.log('🔫 SelectedIndex arma1:', document.getElementById('barr-arma1-select')?.selectedIndex);
+            console.log('🔫 Munición arma1:', document.getElementById('barr-arma1-mun-actual')?.value);
+            console.log('🔫 Selector arma2:', document.getElementById('barr-arma2-select'));
+            console.log('🔫 Valor arma2:', document.getElementById('barr-arma2-select')?.value);
+            console.log('🔫 Munición arma2:', document.getElementById('barr-arma2-mun-actual')?.value);
+            console.log('🔫 Selector arma3:', document.getElementById('barr-arma3-select'));
+            console.log('🔫 Valor arma3:', document.getElementById('barr-arma3-select')?.value);
+            console.log('🔫 Munición arma3:', document.getElementById('barr-arma3-mun-actual')?.value);
+            console.log('📦 Array armas completo:', datos.armas);
+            console.log('💔 Total cuadrados HP:', hpSegments.length);
+            console.log('💔 Estado físico recopilado:', datos.estadoFisico);
+            console.log('💔 Cuadrados dañados:', datos.estadoFisico.filter(e => e.damaged).length);
+            console.log('🔍 ===== FIN DEBUGGING =====');
+            
             return datos;
         }
         
@@ -1774,6 +1803,8 @@
          * Guarda los datos de Barracones en la nube (Google Sheets)
          */
         function guardarEnNubeBarracones() {
+            console.log('💾 ====== INICIANDO GUARDADO ======');
+            
             // Verificar configuración
             if (GOOGLE_SCRIPT_URL.includes("YOUR_GOOGLE_SCRIPT")) {
                 alert("¡Error! Debes configurar la variable GOOGLE_SCRIPT_URL en el código HTML primero.");
@@ -1783,8 +1814,21 @@
             // Recopilar datos
             const datos = recogerDatosBarracones();
             
+            console.log('💾 ====== GUARDANDO EN LA NUBE ======');
+            console.log('📦 Datos recopilados:', JSON.stringify(datos, null, 2));
+            console.log('📊 Nombre:', datos.nombre);
+            console.log('📊 Jugador:', datos.jugador);
+            console.log('📊 Armas:', datos.armas);
+            console.log('📊 extraSkills:', datos.extraSkills);
+            console.log('📊 mejorasAtributos:', datos.mejorasAtributos);
+            console.log('📊 mejorasHabilidades:', datos.mejorasHabilidades);
+            console.log('📊 estadoFisico:', datos.estadoFisico);
+            
             // Validar que hay datos mínimos
             if (!datos.nombre) {
+                console.log('❌ ERROR: nombre vacío');
+                console.log('📊 Valor del campo barr-nombre:', document.getElementById('barr-nombre'));
+                console.log('📊 Valor actual:', document.getElementById('barr-nombre')?.value);
                 alert("El personaje necesita un nombre para guardarse.");
                 return;
             }
@@ -1798,26 +1842,38 @@
             }
             
             // Enviar a la nube
+            console.log('📤 Enviando datos a Google Sheets...');
+            console.log('📤 URL:', GOOGLE_SCRIPT_URL);
+            console.log('📤 Body:', JSON.stringify(datos));
+            
             return fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
                 body: JSON.stringify(datos)
             })
-            .then(response => response.json())
+            .then(response => {
+                console.log('📥 Respuesta recibida:', response);
+                return response.json();
+            })
             .then(data => {
+                console.log('📥 Datos parseados:', data);
+                
                 if (btn) {
                     btn.disabled = false;
                     btn.innerText = originalText;
                 }
                 
                 if (data.result === "success") {
+                    console.log('✅ Guardado exitoso!');
                     alert("¡Guardado exitoso en Google Sheet!");
                     return true;
                 } else {
+                    console.log('❌ Error del servidor:', data.msg);
                     alert("Error al guardar: " + data.msg);
                     return false;
                 }
             })
             .catch(error => {
+                console.log('❌ Error de conexión:', error);
                 if (btn) {
                     btn.disabled = false;
                     btn.innerText = originalText;
@@ -1935,15 +1991,26 @@
          * @param {Array} estadoFisico - Array de {index, damaged}
          */
         function restaurarEstadoFisico(estadoFisico) {
-            if (!estadoFisico || !Array.isArray(estadoFisico)) return;
+            if (!estadoFisico || !Array.isArray(estadoFisico)) {
+                console.log('⚠️ restaurarEstadoFisico: estadoFisico no válido');
+                return;
+            }
             
-            const hpSegments = document.querySelectorAll('#barr-hp-container .barracones-hp-segment');
+            console.log('💔 Restaurando estado físico:', estadoFisico);
             
+            const hpSegments = document.querySelectorAll('.barracones-hp-segment, .barracones-hp-segment-vertical');
+            console.log('💔 Cuadrados HP disponibles:', hpSegments.length);
+            
+            let dañadosRestaurados = 0;
             estadoFisico.forEach(estado => {
                 if (estado.damaged && estado.index < hpSegments.length) {
                     hpSegments[estado.index].classList.add('damaged');
+                    dañadosRestaurados++;
+                    console.log(`  💔 Cuadrado ${estado.index} marcado como dañado`);
                 }
             });
+            
+            console.log(`✅ Estado físico restaurado: ${dañadosRestaurados} cuadrados dañados`);
         }
         
         /**
@@ -2033,13 +2100,13 @@
             
             // 1. Cargar datos básicos (usando campos reales de Barracones)
             const barrNombre = document.getElementById('barr-nombre');
-            const barrCallsign = document.getElementById('barr-callsign');
+            const barrCallsign = document.getElementById('barr-callsign'); // Este campo se usa para Jugador
             const barrRango = document.getElementById('barr-rango');
             const barrId = document.getElementById('barr-id');
             const barrNotas = document.getElementById('barr-notas');
             
             if (barrNombre) barrNombre.value = datos.nombre || '';
-            if (barrCallsign) barrCallsign.value = datos.callsign || '';
+            if (barrCallsign) barrCallsign.value = datos.jugador || ''; // Cargar jugador en callsign
             if (barrRango) barrRango.value = datos.rango || '';
             if (barrId) barrId.value = datos.tactico || '';
             if (barrNotas) barrNotas.value = datos.notas || '';
@@ -2104,12 +2171,19 @@
                 // Dar tiempo para que se genere el estado físico
                 setTimeout(() => {
                     restaurarEstadoFisico(datos.estadoFisico);
-                }, 100);
+                }, 150);
             }
             
             // 12. Restaurar armas
+            console.log('🔫 Verificando datos.armas:', datos.armas);
+            console.log('🔫 Tipo de datos.armas:', typeof datos.armas);
+            console.log('🔫 Es array?', Array.isArray(datos.armas));
+            
             if (datos.armas) {
+                console.log('✅ datos.armas existe, llamando a restaurarArmas()');
                 restaurarArmas(datos.armas);
+            } else {
+                console.log('❌ datos.armas es undefined/null/false');
             }
         }
 
@@ -2732,6 +2806,8 @@
             const modal = document.getElementById('exit-confirmation-modal');
             modal.style.display = 'none';
             
+            console.log('💾 Guardando y saliendo...');
+            
             // Determinar qué función de guardado usar según la sección
             if (currentSection === 'barracones') {
                 // Guardar en nube desde Barracones
@@ -2742,7 +2818,10 @@
             }
             
             // Limpiar ficha y ejecutar callback de salida
+            console.log('🧹 Limpiando datos de', currentSection, '...');
             limpiarFichaSeccion(currentSection);
+            console.log('✅ Datos limpiados');
+            
             if (exitCallback) {
                 exitCallback();
             }
@@ -2755,8 +2834,13 @@
             const modal = document.getElementById('exit-confirmation-modal');
             modal.style.display = 'none';
             
+            console.log('🚪 Saliendo sin guardar...');
+            console.log('🧹 Limpiando datos de', currentSection, '...');
+            
             // Limpiar ficha y ejecutar callback de salida
             limpiarFichaSeccion(currentSection);
+            console.log('✅ Datos limpiados');
+            
             if (exitCallback) {
                 exitCallback();
             }
@@ -2789,23 +2873,31 @@
                 if (rangoEl) rangoEl.value = '';
                 if (idEl) idEl.value = '';
                 
-                document.getElementById('barr-fue').value = '0';
-                document.getElementById('barr-des').value = '0';
-                document.getElementById('barr-int').value = '0';
-                document.getElementById('barr-car').value = '0';
-                document.getElementById('barr-mov').value = '';
-                document.getElementById('barr-init').value = '';
+                const fueEl = document.getElementById('barr-fue');
+                const desEl = document.getElementById('barr-des');
+                const intEl = document.getElementById('barr-int');
+                const carEl = document.getElementById('barr-car');
+                const movEl = document.getElementById('barr-mov');
+                const initEl = document.getElementById('barr-init');
+                
+                if (fueEl) fueEl.value = '0';
+                if (desEl) desEl.value = '0';
+                if (intEl) intEl.value = '0';
+                if (carEl) carEl.value = '0';
+                if (movEl) movEl.value = '';
+                if (initEl) initEl.value = '';
                 
                 // Limpiar cuadrados de mejora de atributos
                 document.querySelectorAll('.barracones-attr-upgrade').forEach(sq => {
                     sq.classList.remove('selected');
                 });
                 
-                // Limpiar estado físico
-                const hpContainer = document.getElementById('barr-hp-container');
-                if (hpContainer) {
-                    hpContainer.innerHTML = '';
-                }
+                // Limpiar estado físico (quitar clase damaged de todos los cuadrados)
+                console.log('🧹 Limpiando estado físico...');
+                const hpSegments = document.querySelectorAll('.barracones-hp-segment, .barracones-hp-segment-vertical');
+                console.log('💔 Cuadrados HP antes de limpiar:', hpSegments.length);
+                hpSegments.forEach(seg => seg.classList.remove('damaged'));
+                console.log('✅ Estado físico limpiado (clase damaged removida de todos los cuadrados)');
                 
                 // Limpiar tabla de habilidades
                 const skillsTable = document.getElementById('barr-skills-table');
@@ -2816,19 +2908,41 @@
                 }
                 
                 // Limpiar armas
+                console.log('🔫 Limpiando armas...');
                 const arma1Sel = document.getElementById('barr-arma1-select');
                 const arma1Mun = document.getElementById('barr-arma1-mun-actual');
+                const arma1Dmg = document.getElementById('barr-arma1-dmg');
+                const arma1Al = document.getElementById('barr-arma1-al');
+                
                 const arma2Sel = document.getElementById('barr-arma2-select');
                 const arma2Mun = document.getElementById('barr-arma2-mun-actual');
+                const arma2Dmg = document.getElementById('barr-arma2-dmg');
+                const arma2Al = document.getElementById('barr-arma2-al');
+                
                 const arma3Sel = document.getElementById('barr-arma3-select');
                 const arma3Mun = document.getElementById('barr-arma3-mun-actual');
+                const arma3Dmg = document.getElementById('barr-arma3-dmg');
+                const arma3Al = document.getElementById('barr-arma3-al');
                 
+                // Arma 1
                 if (arma1Sel) arma1Sel.selectedIndex = 0;
                 if (arma1Mun) arma1Mun.value = '';
+                if (arma1Dmg) arma1Dmg.value = '';
+                if (arma1Al) arma1Al.value = '';
+                
+                // Arma 2
                 if (arma2Sel) arma2Sel.selectedIndex = 0;
                 if (arma2Mun) arma2Mun.value = '';
+                if (arma2Dmg) arma2Dmg.value = '';
+                if (arma2Al) arma2Al.value = '';
+                
+                // Arma 3
                 if (arma3Sel) arma3Sel.selectedIndex = 0;
                 if (arma3Mun) arma3Mun.value = '';
+                if (arma3Dmg) arma3Dmg.value = '';
+                if (arma3Al) arma3Al.value = '';
+                
+                console.log('✅ Armas limpiadas (selectores, munición, daño, alcance)');
                 
                 // Limpiar notas
                 const notasEl = document.getElementById('barr-notas');
@@ -2836,6 +2950,8 @@
                 
             } else if (section === 'generador') {
                 // Limpiar Generador
+                console.log('🧹 Limpiando generador...');
+                
                 // Resetear puntos
                 pointsUsed = 0;
                 const ptsVal = document.getElementById('points-val');
@@ -2843,22 +2959,46 @@
                     ptsVal.textContent = '150';
                 }
                 
-                // Limpiar campos de personaje
+                // Limpiar campos principales
+                const selectNombre = document.getElementById('select-nombre');
+                const selectJugador = document.getElementById('select-jugador');
+                if (selectNombre) selectNombre.value = '';
+                if (selectJugador) selectJugador.value = '';
+                
+                // Limpiar campos de personaje (si existen)
                 const fields = ['nombre', 'edad', 'planeta', 'afiliacion', 'rango'];
                 fields.forEach(field => {
                     const el = document.getElementById(field);
                     if (el) el.value = '';
                 });
                 
+                // Resetear selectores de campaña, década y año
+                const campaignSelect = document.getElementById('campaign-select');
+                const decadeSelect = document.getElementById('select-decade');
+                const yearSelect = document.getElementById('select-year-digit');
+                if (campaignSelect) campaignSelect.selectedIndex = 0;
+                if (decadeSelect) decadeSelect.selectedIndex = 0;
+                if (yearSelect) yearSelect.selectedIndex = 0;
+                
                 // Resetear atributos
                 const attrs = ['str', 'dex', 'int', 'cha'];
                 attrs.forEach(attr => {
-                    const el = document.getElementById(attr);
-                    if (el) el.value = '1';
+                    const selectEl = document.getElementById('select-' + attr);
+                    const displayEl = document.getElementById(attr);
+                    if (selectEl) selectEl.value = '1';
+                    if (displayEl) displayEl.value = '1';
                 });
                 
+                // Resetear origen
+                const origenSelect = document.getElementById('origen-select');
+                if (origenSelect) origenSelect.selectedIndex = 0;
+                
+                // Resetear afiliación
+                const factionSelect = document.getElementById('faction-select');
+                if (factionSelect) factionSelect.selectedIndex = 0;
+                
                 // Limpiar selector de estudios
-                const estudiosSelect = document.getElementById('estudios');
+                const estudiosSelect = document.getElementById('estudios-select');
                 if (estudiosSelect) estudiosSelect.selectedIndex = 0;
                 
                 // Limpiar habilidades extra
@@ -2869,6 +3009,12 @@
                 // Limpiar selector de habilidad noble
                 const nobleSkillSelect = document.getElementById('noble-skill-select');
                 if (nobleSkillSelect) nobleSkillSelect.selectedIndex = 0;
+                
+                // Resetear modificador de mech
+                const mechModSelect = document.getElementById('mech-mod-select');
+                if (mechModSelect) mechModSelect.selectedIndex = 0;
+                
+                console.log('✅ Generador limpiado completamente');
             }
         }
         
@@ -2877,6 +3023,9 @@
          */
         function goHomeFromBarracones() {
             showExitModal('barracones', function() {
+                // La limpieza se hace automáticamente en el modal antes de ejecutar este callback
+                console.log('🏠 Volviendo al menú desde Barracones...');
+                
                 clearCriticalInfoDisplays();
                 document.getElementById('landing-page').style.display = 'flex';
                 document.getElementById('barracones').style.display = 'none';
@@ -2887,6 +3036,8 @@
                 // Ocultar barra de herramientas de Barracones
                 const toolbar = document.getElementById('barracones-toolbar');
                 if (toolbar) toolbar.style.display = 'none';
+                
+                console.log('✅ Menú principal mostrado');
             });
         }
         
@@ -2895,6 +3046,9 @@
          */
         function goHomeFromGenerador() {
             showExitModal('generador', function() {
+                // La limpieza se hace automáticamente en el modal antes de ejecutar este callback
+                console.log('🏠 Volviendo al menú desde Generador...');
+                
                 clearCriticalInfoDisplays();
                 document.getElementById('landing-page').style.display = 'flex';
                 document.getElementById('pre-generacion').style.display = 'none';
@@ -2905,6 +3059,8 @@
                 // Ocultar barra de herramientas de Barracones
                 const toolbar = document.getElementById('barracones-toolbar');
                 if (toolbar) toolbar.style.display = 'none';
+                
+                console.log('✅ Menú principal mostrado');
             });
         }
 
@@ -3530,11 +3686,32 @@
         // NAVEGACIÓN BARRACONES
         function goToBarracones() {
             console.log('🎯 goToBarracones() llamada');
+            
+            // Poblar selectores de armas PRIMERO
+            poblarSelectoresArmasBarracones();
+            
+            // Intentar cargar datos del generador antes de ir a Barracones
+            const nombrePersonaje = document.getElementById('select-nombre')?.value;
+            console.log('📊 Nombre en generador:', nombrePersonaje);
+            
+            if (nombrePersonaje) {
+                console.log('✅ Hay datos en el generador, cargando en Barracones...');
+                // Recoger todos los datos del generador
+                const datos = recogerDatosDeUI();
+                console.log('📦 Datos del generador:', datos);
+                // Cargar en Barracones
+                rellenarBarraconesDesdeGenerador(datos);
+            } else {
+                console.log('⚠️ No hay datos en el generador');
+            }
+            
+            // Cambiar a vista de Barracones
             document.getElementById('landing-page').style.display = 'none';
             document.getElementById('barracones').style.display = 'block';
             document.getElementById('pre-generacion').style.display = 'none';
             document.getElementById('ficha-container').style.display = 'none';
             document.getElementById('points-counter').style.display = 'none';
+            
             // Mostrar barra de herramientas de Barracones
             const toolbar = document.getElementById('barracones-toolbar');
             console.log('🔍 Toolbar element:', toolbar);
@@ -3594,6 +3771,50 @@
             { name: "SMG Imperator", dmg: "2D6", s: "4", m: "8", l: "11", car: "50", w: "4", rec: "1", tipo: "Rifle", especial: "Rafaga", clase: "Balistica", size: "Medio" },
             { name: "SMG Rorynex", dmg: "3D6+3", s: "3", m: "6", l: "9", car: "100", w: "3", rec: "1", tipo: "Rifle", especial: "Rafaga", clase: "Balistica", size: "Medio" }
         ];
+
+        /**
+         * Puebla los selectores de armas en Barracones con las armas disponibles
+         * Debe llamarse cuando se carga Barracones o cuando se carga la página
+         */
+        function poblarSelectoresArmasBarracones() {
+            console.log('🔫 Poblando selectores de armas en Barracones...');
+            
+            const select1 = document.getElementById('barr-arma1-select');
+            const select2 = document.getElementById('barr-arma2-select');
+            const select3 = document.getElementById('barr-arma3-select');
+            
+            if (!select1 || !select2 || !select3) {
+                console.log('⚠️ No se encontraron los selectores de armas');
+                return;
+            }
+            
+            // Limpiar opciones existentes (excepto la primera que es el placeholder)
+            [select1, select2, select3].forEach(select => {
+                while (select.options.length > 1) {
+                    select.remove(1);
+                }
+            });
+            
+            // Añadir opciones de armas
+            INFANTRY_WEAPON_TABLE.forEach((weapon, index) => {
+                const option1 = document.createElement('option');
+                option1.value = index;
+                option1.textContent = weapon.name;
+                select1.appendChild(option1);
+                
+                const option2 = document.createElement('option');
+                option2.value = index;
+                option2.textContent = weapon.name;
+                select2.appendChild(option2);
+                
+                const option3 = document.createElement('option');
+                option3.value = index;
+                option3.textContent = weapon.name;
+                select3.appendChild(option3);
+            });
+            
+            console.log('✅ Selectores de armas poblados con ' + INFANTRY_WEAPON_TABLE.length + ' armas');
+        }
 
         function loadWeaponsTable() {
             renderWeaponsTable(INFANTRY_WEAPON_TABLE);
@@ -93688,9 +93909,9 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                 <div>
                     <div class="barracones-panel">
                         <span class="barracones-panel-title">01 // DATOS PERSONALES</span>
-                        <input type="text" class="barracones-input" placeholder="Nombre" id="barr-nombre">
+                        <input type="text" class="barracones-input" placeholder="Nombre del Personaje" id="barr-nombre">
                         <div style="display:flex; gap:5px; margin-top:5px;">
-                            <input type="text" class="barracones-input" placeholder="Apodo/Callsign" id="barr-callsign">
+                            <input type="text" class="barracones-input" placeholder="Jugador" id="barr-callsign">
                             <input type="text" class="barracones-input" placeholder="Rango" style="width: 40%;" id="barr-rango">
                         </div>
                         <div style="margin-top:5px;">
@@ -95777,7 +95998,7 @@ z"/>
                 
                 <!-- SECCIÓN GUARDAR -->
                 <button 
-                    onclick="guardarEnNube()" 
+                    onclick="guardarEnNubeBarracones()" 
                     style="
                         padding: 7px 13px; 
                         background: linear-gradient(135deg, #ff8c42 0%, #d67635 100%); 
