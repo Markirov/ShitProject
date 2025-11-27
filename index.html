@@ -654,6 +654,81 @@
         // ¡IMPORTANTE! Reemplaza esta URL con la que obtengas al implementar tu script
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbybFNvC0HfYOO-JqJRFbdQKipM8CkuTGuxzpELleXvNuFyAbFJ7AjrsFJTeJxf540yg1A/exec";
 
+        // ============================================================================
+        // CONSTANTES DE CONFIGURACIÓN
+        // ============================================================================
+        
+        /**
+         * Constantes de temporización para operaciones asíncronas
+         * Estos valores se ajustaron mediante pruebas para asegurar que el DOM
+         * esté completamente renderizado antes de operar sobre él
+         */
+        const TIMING = {
+            // Tiempo de espera para que la tabla de habilidades se renderice
+            SKILLS_TABLE_RENDER: 100,
+            
+            // Tiempo de espera para que los cuadrados de HP se generen
+            HP_GENERATION: 150,
+            
+            // Tiempo de espera para cargar armas (después de poblar selectores)
+            WEAPON_LOAD: 150,
+            
+            // Tiempo adicional para cargar munición (después de arma cargada)
+            AMMO_LOAD: 50,
+            
+            // Timeout para requests HTTP (en ms)
+            HTTP_TIMEOUT: 30000
+        };
+        
+        /**
+         * Prefijos de IDs para diferentes secciones de la aplicación
+         * Facilita la construcción de selectores dinámicos
+         */
+        const ID_PREFIXES = {
+            BARRACONES: 'barr-',
+            GENERADOR: 'select-',
+            SKILL_BARRACONES: 'barr-skill-',
+            SKILL_GENERADOR: 'skill-'
+        };
+        
+        /**
+         * Clases CSS utilizadas en la aplicación
+         * Centralizadas para fácil referencia y mantenimiento
+         */
+        const CSS_CLASSES = {
+            // Cuadrados de HP (ambas orientaciones)
+            HP_SEGMENT: 'barracones-hp-segment',
+            HP_SEGMENT_VERTICAL: 'barracones-hp-segment-vertical',
+            
+            // Estado de daño
+            DAMAGED: 'damaged',
+            
+            // Cuadrados de mejora
+            ATTR_UPGRADE: 'barracones-attr-upgrade',
+            SKILL_UPGRADE: 'barracones-skill-upgrade',
+            SELECTED: 'selected',
+            
+            // Inputs
+            BARRACONES_INPUT: 'barracones-input'
+        };
+        
+        /**
+         * Nombres de atributos para iterar
+         */
+        const ATTRIBUTES = ['fue', 'des', 'int', 'car'];
+        
+        /**
+         * Mensajes de error estandarizados
+         */
+        const ERROR_MESSAGES = {
+            NO_NAME: 'El personaje necesita un nombre para guardarse.',
+            NO_PLAYER: 'El personaje necesita un nombre de jugador.',
+            GOOGLE_SCRIPT_NOT_CONFIGURED: '¡Error! Debes configurar la variable GOOGLE_SCRIPT_URL en el código HTML primero.',
+            CONNECTION_ERROR: 'Error de conexión con la nube',
+            NO_RESULTS: 'No se encontraron personajes para ese jugador.',
+            GENERIC_ERROR: 'Ocurrió un error inesperado'
+        };
+
         // --- DATOS ---
         const COSTS_STR = { 2: -110, 3: -50, 4: -20, 5: -5, 6: 0, 7: 10, 8: 30, 9: 70, 10: 150, 11: 300, 12: 600 };
         const COSTS_DEX = { 2: -135, 3: -65, 4: -30, 5: -10, 6: 0, 7: 15, 8: 45, 9: 95, 10: 195, 11: 395, 12: 795 };
@@ -1086,84 +1161,201 @@
          * - Brazos = FUE x2 (redondeo a la baja)
          * - Piernas = FUE x2 (redondeo a la alta)
          */
+        /**
+         * Genera los cuadrados de estado físico (HP) basados en el atributo FUE
+         * 
+         * Esta función crea dinámicamente los cuadrados HP para cada localización del cuerpo.
+         * El número de cuadrados depende del valor de FUE según fórmulas específicas.
+         * 
+         * FÓRMULAS DE HP POR LOCALIZACIÓN:
+         * - CABEZA: FUE × 1 (ej: FUE=5 → 5 HP)
+         * - TORSO: FUE × 3 (ej: FUE=5 → 15 HP) 
+         * - BRAZOS: floor(FUE × 2) (ej: FUE=5 → 10 HP, FUE=3 → 6 HP)
+         * - PIERNAS: ceil(FUE × 2) (ej: FUE=5 → 10 HP, FUE=3 → 6 HP)
+         * 
+         * NOTA SOBRE REDONDEO:
+         * - Brazos usan floor() (hacia abajo) para balancear con piernas
+         * - Piernas usan ceil() (hacia arriba) por ser localizaciones más resistentes
+         * - Esto asegura distribución justa cuando FUE es impar
+         * 
+         * TIPOS DE CUADRADOS:
+         * - 'barracones-hp-segment': Para CABEZA y TORSO (visualización horizontal)
+         * - 'barracones-hp-segment-vertical': Para BRAZOS y PIERNAS (vertical)
+         * 
+         * INTERACTIVIDAD:
+         * Cada cuadrado tiene onclick=toggleHPSegment para marcar daño (verde→rojo)
+         * 
+         * @param {number} fue - Valor del atributo Fuerza (FUE)
+         * 
+         * @returns {void}
+         * 
+         * @example
+         * // Con FUE=5
+         * generarEstadoFisicoBarracones(5);
+         * // Genera: Cabeza=5, Torso=15, Brazos=10, Piernas=10 (Total: 40 HP)
+         * 
+         * @example
+         * // Con FUE=3 (impar)
+         * generarEstadoFisicoBarracones(3);
+         * // Genera: Cabeza=3, Torso=9, Brazos=6 (floor), Piernas=6 (ceil) (Total: 24 HP)
+         * 
+         * @see toggleHPSegment() - Función que maneja el click en cuadrados
+         * @see restaurarEstadoFisico() - Función que restaura daños guardados
+         */
         function generarEstadoFisicoBarracones(fue) {
-            // Calcular HP por localización
-            const hpCabeza = fue;
-            const hpTorso = fue * 3;
-            const hpBrazos = Math.floor(fue * 2); // Redondeo a la baja
-            const hpPiernas = Math.ceil(fue * 2);  // Redondeo a la alta
+            console.log(`💔 Generando estado físico con FUE=${fue}...`);
             
-            // Encontrar contenedores de localizaciones
+            // === CALCULAR HP POR LOCALIZACIÓN ===
+            // Fórmulas basadas en el sistema de reglas de MechWarrior
+            const hpCabeza = fue;                    // Cabeza: 1× FUE
+            const hpTorso = fue * 3;                 // Torso: 3× FUE (zona más resistente)
+            const hpBrazos = Math.floor(fue * 2);    // Brazos: 2× FUE (redondeo hacia abajo)
+            const hpPiernas = Math.ceil(fue * 2);    // Piernas: 2× FUE (redondeo hacia arriba)
+            
+            console.log(`  📊 HP calculados:`);
+            console.log(`     - Cabeza: ${hpCabeza}`);
+            console.log(`     - Torso: ${hpTorso}`);
+            console.log(`     - Brazos: ${hpBrazos} (cada uno)`);
+            console.log(`     - Piernas: ${hpPiernas} (cada una)`);
+            console.log(`     - TOTAL: ${hpCabeza + hpTorso + (hpBrazos * 2) + (hpPiernas * 2)} HP`);
+            
+            // === ENCONTRAR CONTENEDORES DE LOCALIZACIONES ===
+            // Buscar todas las cajas de localizaciones en el HTML
             const localizaciones = document.querySelectorAll('.barracones-loc-box');
             
-            localizaciones.forEach(loc => {
-                const nombre = loc.querySelector('.barracones-loc-name').textContent.trim();
-                let hp = 0;
-                
-                // Determinar HP según localización
-                switch(nombre) {
-                    case 'CABEZA':
-                        hp = hpCabeza;
-                        break;
-                    case 'TORSO':
-                        hp = hpTorso;
-                        break;
-                    case 'B.IZQ':
-                    case 'B.DER':
-                        hp = hpBrazos;
-                        break;
-                    case 'P.IZQ':
-                    case 'P.DER':
-                        hp = hpPiernas;
-                        break;
-                }
-                
-                // Buscar el contenedor de HP
-                const contenedor = loc.querySelector('div:not(.barracones-loc-name)');
-                if (!contenedor) return;
-                
-                // Limpiar contenedor
-                contenedor.innerHTML = '';
-                
-                // Generar cuadrados según tipo de localización
-                if (nombre === 'CABEZA') {
-                    // CABEZA: Grid horizontal compacto (2 columnas max)
-                    for (let i = 0; i < hp; i++) {
-                        const segment = document.createElement('span');
-                        segment.className = 'barracones-hp-segment';
-                        segment.onclick = toggleHPSegment;
-                        contenedor.appendChild(segment);
+            if (localizaciones.length === 0) {
+                console.error('❌ No se encontraron contenedores de localizaciones (.barracones-loc-box)');
+                return;
+            }
+            
+            console.log(`  📦 Encontrados ${localizaciones.length} contenedores de localizaciones`);
+            
+            // === GENERAR CUADRADOS PARA CADA LOCALIZACIÓN ===
+            localizaciones.forEach((loc, index) => {
+                try {
+                    // Obtener el nombre de la localización (CABEZA, TORSO, etc.)
+                    const nombreElement = loc.querySelector('.barracones-loc-name');
+                    if (!nombreElement) {
+                        console.warn(`  ⚠️ Localización ${index} sin nombre`);
+                        return;
                     }
-                } else if (nombre === 'TORSO') {
-                    // TORSO: Grid de 3 columnas
-                    for (let i = 0; i < hp; i++) {
-                        const segment = document.createElement('span');
-                        segment.className = 'barracones-hp-segment';
-                        segment.onclick = toggleHPSegment;
-                        contenedor.appendChild(segment);
+                    
+                    const nombre = nombreElement.textContent.trim();
+                    let hp = 0;
+                    
+                    // === DETERMINAR HP SEGÚN LOCALIZACIÓN ===
+                    switch(nombre) {
+                        case 'CABEZA':
+                            hp = hpCabeza;
+                            break;
+                        case 'TORSO':
+                            hp = hpTorso;
+                            break;
+                        case 'B.IZQ':   // Brazo Izquierdo
+                        case 'B.DER':   // Brazo Derecho
+                            hp = hpBrazos;
+                            break;
+                        case 'P.IZQ':   // Pierna Izquierda
+                        case 'P.DER':   // Pierna Derecha
+                            hp = hpPiernas;
+                            break;
+                        default:
+                            console.warn(`  ⚠️ Localización desconocida: ${nombre}`);
+                            return;
                     }
-                } else {
-                    // BRAZOS Y PIERNAS: Grid de 2 columnas
-                    for (let i = 0; i < hp; i++) {
-                        const segment = document.createElement('span');
-                        segment.className = 'barracones-hp-segment-vertical';
-                        segment.onclick = toggleHPSegment;
-                        contenedor.appendChild(segment);
+                    
+                    // === BUSCAR CONTENEDOR DE CUADRADOS HP ===
+                    // El contenedor es el div que NO tiene la clase 'barracones-loc-name'
+                    const contenedor = loc.querySelector('div:not(.barracones-loc-name)');
+                    if (!contenedor) {
+                        console.warn(`  ⚠️ ${nombre}: No se encontró contenedor de HP`);
+                        return;
                     }
+                    
+                    // Limpiar cualquier cuadrado existente
+                    contenedor.innerHTML = '';
+                    
+                    // === GENERAR CUADRADOS SEGÚN TIPO DE LOCALIZACIÓN ===
+                    if (nombre === 'CABEZA') {
+                        // CABEZA: Grid horizontal compacto (2 columnas máximo)
+                        for (let i = 0; i < hp; i++) {
+                            const segment = document.createElement('span');
+                            segment.className = 'barracones-hp-segment';  // Clase horizontal
+                            segment.onclick = toggleHPSegment;            // Hacer clickeable
+                            contenedor.appendChild(segment);
+                        }
+                        console.log(`    ✅ ${nombre}: ${hp} cuadrados (horizontal)`);
+                        
+                    } else if (nombre === 'TORSO') {
+                        // TORSO: Grid de 3 columnas
+                        for (let i = 0; i < hp; i++) {
+                            const segment = document.createElement('span');
+                            segment.className = 'barracones-hp-segment';  // Clase horizontal
+                            segment.onclick = toggleHPSegment;
+                            contenedor.appendChild(segment);
+                        }
+                        console.log(`    ✅ ${nombre}: ${hp} cuadrados (horizontal)`);
+                        
+                    } else {
+                        // BRAZOS Y PIERNAS: Grid de 2 columnas (vertical)
+                        for (let i = 0; i < hp; i++) {
+                            const segment = document.createElement('span');
+                            segment.className = 'barracones-hp-segment-vertical';  // Clase vertical
+                            segment.onclick = toggleHPSegment;
+                            contenedor.appendChild(segment);
+                        }
+                        console.log(`    ✅ ${nombre}: ${hp} cuadrados (vertical)`);
+                    }
+                    
+                } catch (error) {
+                    console.error(`  ❌ Error al generar ${nombre}:`, error);
                 }
             });
+            
+            console.log('✅ Estado físico generado completamente');
         }
         
         /**
-         * Toggle del estado de un cuadrado de HP (sano/dañado)
+         * Alterna el estado de un cuadrado de HP entre sano (verde) y dañado (rojo)
+         * 
+         * Esta función se ejecuta cuando el usuario hace click en un cuadrado HP.
+         * Añade o quita la clase 'damaged' que cambia el color visual del cuadrado.
+         * 
+         * @param {Event} event - Evento de click del navegador
+         * @returns {void}
+         * 
+         * @example
+         * // El usuario hace click en un cuadrado verde
+         * // → Se añade clase 'damaged' → Cuadrado se pone rojo
+         * // 
+         * // El usuario hace click nuevamente
+         * // → Se quita clase 'damaged' → Cuadrado vuelve a verde
          */
         function toggleHPSegment(event) {
             const segment = event.target;
             segment.classList.toggle('damaged');
+            
+            // Log opcional para debugging
+            const isDamaged = segment.classList.contains('damaged');
+            console.log(`💔 Cuadrado HP ${isDamaged ? 'dañado' : 'curado'}`);
         }
         
         /**
-         * Actualiza los valores de MOV e INIT basándose en DES
+         * Actualiza los valores de MOV e INIT basándose en el atributo DES
+         * 
+         * En el sistema de reglas de MechWarrior:
+         * - MOV (Movimiento) = DES por defecto
+         * - INIT (Iniciativa) = DES por defecto
+         * 
+         * Esta función se puede llamar cuando DES cambia para actualizar automáticamente
+         * estos valores derivados.
+         * 
+         * @returns {void}
+         * 
+         * @example
+         * // Usuario cambia DES de 4 a 6
+         * actualizarMovInitBarracones();
+         * // MOV y INIT se actualizan automáticamente a 6
          */
         function actualizarMovInitBarracones() {
             const des = parseInt(document.getElementById('barr-des').value) || 0;
@@ -1172,6 +1364,8 @@
             
             if (barrMov) barrMov.value = des;
             if (barrInit) barrInit.value = des;
+            
+            console.log(`🏃 MOV e INIT actualizados a ${des} (basado en DES)`);
         }
 
 
@@ -1671,149 +1865,264 @@
          * Recopila todos los datos del formulario de Barracones
          * @returns {Object} Objeto con todos los datos del personaje
          */
+        /**
+         * Recopila todos los datos del personaje desde la interfaz de Barracones
+         * 
+         * Esta función extrae y estructura todos los datos del personaje que están
+         * actualmente en los campos de la interfaz de Barracones, incluyendo:
+         * - Datos personales (nombre, jugador, rango)
+         * - Atributos básicos (FUE, DES, INT, CAR)
+         * - Estado físico (cuadrados HP dañados)
+         * - Habilidades y sus niveles
+         * - Mejoras de atributos y habilidades
+         * - Armas equipadas y munición
+         * 
+         * @returns {Object} Objeto con todos los datos del personaje estructurados
+         * @property {string} nombre - Nombre del personaje
+         * @property {string} jugador - Nombre del jugador (callsign)
+         * @property {string} rango - Rango militar del personaje
+         * @property {string} tactico - ID táctico
+         * @property {string} str - Valor de Fuerza (FUE)
+         * @property {string} dex - Valor de Destreza (DES)
+         * @property {string} int - Valor de Inteligencia (INT)
+         * @property {string} cha - Valor de Carisma (CAR)
+         * @property {string} mov - Valor de Movimiento
+         * @property {string} init - Valor de Iniciativa
+         * @property {Array<{select: string, munActual: string}>} armas - Array de 3 armas con índice y munición
+         * @property {string} notas - Notas adicionales del personaje
+         * @property {Array<{name: string, level: string, upgrades: number}>} extraSkills - Habilidades del personaje
+         * @property {Object<string, number>} mejorasAtributos - Cantidad de mejoras por atributo {fue, des, int, car}
+         * @property {Object<string, number>} mejorasHabilidades - Cantidad de mejoras por habilidad
+         * @property {Array<{index: number, damaged: boolean}>} estadoFisico - Estado de cada cuadrado HP
+         * 
+         * @example
+         * const datos = recogerDatosBarracones();
+         * console.log(datos.nombre); // "John Connor"
+         * console.log(datos.armas[0].select); // "5" (índice del arma)
+         * console.log(datos.estadoFisico.filter(e => e.damaged).length); // 3 (cuadrados dañados)
+         */
         function recogerDatosBarracones() {
-            // Recopilar datos básicos (usando campos reales de Barracones)
-            const datos = {
-                nombre: document.getElementById('barr-nombre')?.value || '',
-                jugador: document.getElementById('barr-callsign')?.value || '',
-                rango: document.getElementById('barr-rango')?.value || '',
-                tactico: document.getElementById('barr-id')?.value || '',
-                
-                // Atributos
-                str: document.getElementById('barr-fue')?.value || '0',
-                dex: document.getElementById('barr-des')?.value || '0',
-                int: document.getElementById('barr-int')?.value || '0',
-                cha: document.getElementById('barr-car')?.value || '0',
-                
-                // Movimiento e iniciativa
-                mov: document.getElementById('barr-mov')?.value || '',
-                init: document.getElementById('barr-init')?.value || '',
-                
-                // Armas (guardar selectores y munición)
-                armas: [
-                    {
-                        select: document.getElementById('barr-arma1-select')?.value || '',
-                        munActual: document.getElementById('barr-arma1-mun-actual')?.value || ''
-                    },
-                    {
-                        select: document.getElementById('barr-arma2-select')?.value || '',
-                        munActual: document.getElementById('barr-arma2-mun-actual')?.value || ''
-                    },
-                    {
-                        select: document.getElementById('barr-arma3-select')?.value || '',
-                        munActual: document.getElementById('barr-arma3-mun-actual')?.value || ''
-                    }
-                ],
-                
-                // Notas
-                notas: document.getElementById('barr-notas')?.value || '',
-                
-                // Habilidades (desde la tabla)
-                extraSkills: [],
-                
-                // Estado de cuadrados de mejora de atributos
-                mejorasAtributos: {
-                    fue: 0,
-                    des: 0,
-                    int: 0,
-                    car: 0
-                },
-                
-                // Estado de cuadrados de mejora de habilidades
-                mejorasHabilidades: {}
-            };
+            console.log('📦 Recopilando datos de Barracones...');
             
-            // Recopilar estado de cuadrados de mejora de atributos
-            const atributos = ['fue', 'des', 'int', 'car'];
-            atributos.forEach(attr => {
-                const attrId = 'barr-' + attr;
-                const container = document.querySelector(`input#${attrId}`).parentElement.parentElement;
-                const squares = container.querySelectorAll('.barracones-attr-upgrade');
-                let selectedCount = 0;
-                squares.forEach(sq => {
-                    if (sq.classList.contains('selected')) selectedCount++;
-                });
-                datos.mejorasAtributos[attr] = selectedCount;
-            });
-            
-            // Recopilar habilidades y sus mejoras de la tabla
-            const skillsTable = document.getElementById('barr-skills-table');
-            if (skillsTable) {
-                for (let i = 1; i < skillsTable.rows.length; i++) {
-                    const nombreCell = skillsTable.rows[i].cells[0];
-                    const nivelInput = document.getElementById('barr-skill-' + (i-1) + '-nv');
-                    const upgradesContainer = document.getElementById('barr-skill-' + (i-1) + '-upgrades');
+            try {
+                // === DATOS PERSONALES ===
+                // Recopilar campos básicos del personaje usando operador de encadenamiento opcional (?.)
+                // para evitar errores si los elementos no existen
+                const datos = {
+                    // Identificación del personaje
+                    nombre: document.getElementById('barr-nombre')?.value || '',
+                    jugador: document.getElementById('barr-callsign')?.value || '', // Callsign se usa como campo de Jugador
+                    rango: document.getElementById('barr-rango')?.value || '',
+                    tactico: document.getElementById('barr-id')?.value || '',
                     
-                    if (nombreCell && nivelInput) {
-                        const skillName = nombreCell.textContent;
-                        
-                        // Contar cuadrados de mejora seleccionados
-                        let selectedUpgrades = 0;
-                        if (upgradesContainer) {
-                            const squares = upgradesContainer.querySelectorAll('.barracones-skill-upgrade');
-                            squares.forEach(sq => {
-                                if (sq.classList.contains('selected')) selectedUpgrades++;
-                            });
+                    // === ATRIBUTOS BÁSICOS ===
+                    // Valores por defecto '0' para atributos que deben ser numéricos
+                    str: document.getElementById('barr-fue')?.value || '0',
+                    dex: document.getElementById('barr-des')?.value || '0',
+                    int: document.getElementById('barr-int')?.value || '0',
+                    cha: document.getElementById('barr-car')?.value || '0',
+                    
+                    // === STATS DE COMBATE ===
+                    // MOV e INIT se calculan automáticamente desde DES
+                    mov: document.getElementById('barr-mov')?.value || '',
+                    init: document.getElementById('barr-init')?.value || '',
+                    
+                    // === ARMAS EQUIPADAS ===
+                    // Array de 3 armas posibles (Principal, Secundaria, Terciaria)
+                    // Cada arma guarda: índice del selector (select) y munición actual (munActual)
+                    armas: [
+                        {
+                            select: document.getElementById('barr-arma1-select')?.value || '',
+                            munActual: document.getElementById('barr-arma1-mun-actual')?.value || ''
+                        },
+                        {
+                            select: document.getElementById('barr-arma2-select')?.value || '',
+                            munActual: document.getElementById('barr-arma2-mun-actual')?.value || ''
+                        },
+                        {
+                            select: document.getElementById('barr-arma3-select')?.value || '',
+                            munActual: document.getElementById('barr-arma3-mun-actual')?.value || ''
+                        }
+                    ],
+                    
+                    // === OTROS DATOS ===
+                    notas: document.getElementById('barr-notas')?.value || '',
+                    
+                    // === ARRAYS INICIALES ===
+                    // Estos se rellenan en las secciones siguientes
+                    extraSkills: [],              // Se rellena desde la tabla de habilidades
+                    mejorasAtributos: {           // Se rellena contando cuadrados seleccionados
+                        fue: 0,
+                        des: 0,
+                        int: 0,
+                        car: 0
+                    },
+                    mejorasHabilidades: {}        // Se rellena desde los cuadrados de mejora de habilidades
+                };
+                
+                // === RECOPILAR MEJORAS DE ATRIBUTOS ===
+                // Contar cuántos cuadrados de mejora están seleccionados para cada atributo
+                const atributos = ['fue', 'des', 'int', 'car'];
+                atributos.forEach(attr => {
+                    try {
+                        const attrId = 'barr-' + attr;
+                        // Navegar desde el input del atributo hasta el contenedor de cuadrados
+                        const inputElement = document.querySelector(`input#${attrId}`);
+                        if (!inputElement) {
+                            console.warn(`⚠️ No se encontró input para atributo: ${attr}`);
+                            return;
                         }
                         
-                        datos.extraSkills.push({
-                            name: skillName,
-                            level: nivelInput.value,
-                            upgrades: selectedUpgrades
+                        const container = inputElement.parentElement.parentElement;
+                        const squares = container.querySelectorAll('.barracones-attr-upgrade');
+                        
+                        // Contar cuadrados con clase 'selected'
+                        let selectedCount = 0;
+                        squares.forEach(sq => {
+                            if (sq.classList.contains('selected')) selectedCount++;
                         });
                         
-                        // Guardar mejoras por nombre de habilidad
-                        datos.mejorasHabilidades[skillName] = selectedUpgrades;
+                        datos.mejorasAtributos[attr] = selectedCount;
+                        
+                    } catch (error) {
+                        console.warn(`⚠️ Error al recopilar mejoras de ${attr}:`, error);
+                        datos.mejorasAtributos[attr] = 0;
                     }
-                }
-            }
-            
-            // Recopilar estado físico
-            const hpSegments = document.querySelectorAll('.barracones-hp-segment, .barracones-hp-segment-vertical');
-            datos.estadoFisico = [];
-            hpSegments.forEach((seg, idx) => {
-                datos.estadoFisico.push({
-                    index: idx,
-                    damaged: seg.classList.contains('damaged')
                 });
-            });
-            
-            // DEBUGGING: Verificar valores de armas ANTES de devolver
-            console.log('🔍 ===== DEBUGGING recogerDatosBarracones() =====');
-            console.log('🔫 Selector arma1:', document.getElementById('barr-arma1-select'));
-            console.log('🔫 Valor arma1:', document.getElementById('barr-arma1-select')?.value);
-            console.log('🔫 SelectedIndex arma1:', document.getElementById('barr-arma1-select')?.selectedIndex);
-            console.log('🔫 Munición arma1:', document.getElementById('barr-arma1-mun-actual')?.value);
-            console.log('🔫 Selector arma2:', document.getElementById('barr-arma2-select'));
-            console.log('🔫 Valor arma2:', document.getElementById('barr-arma2-select')?.value);
-            console.log('🔫 Munición arma2:', document.getElementById('barr-arma2-mun-actual')?.value);
-            console.log('🔫 Selector arma3:', document.getElementById('barr-arma3-select'));
-            console.log('🔫 Valor arma3:', document.getElementById('barr-arma3-select')?.value);
-            console.log('🔫 Munición arma3:', document.getElementById('barr-arma3-mun-actual')?.value);
-            console.log('📦 Array armas completo:', datos.armas);
-            console.log('💔 Total cuadrados HP:', hpSegments.length);
-            console.log('💔 Estado físico recopilado:', datos.estadoFisico);
-            console.log('💔 Cuadrados dañados:', datos.estadoFisico.filter(e => e.damaged).length);
-            console.log('🔍 ===== FIN DEBUGGING =====');
-            
-            return datos;
+                
+                // === RECOPILAR HABILIDADES Y SUS MEJORAS ===
+                // Iterar sobre todas las filas de la tabla de habilidades
+                const skillsTable = document.getElementById('barr-skills-table');
+                if (skillsTable) {
+                    for (let i = 1; i < skillsTable.rows.length; i++) {
+                        try {
+                            const nombreCell = skillsTable.rows[i].cells[0];
+                            const nivelInput = document.getElementById('barr-skill-' + (i-1) + '-nv');
+                            const upgradesContainer = document.getElementById('barr-skill-' + (i-1) + '-upgrades');
+                            
+                            if (nombreCell && nivelInput) {
+                                const skillName = nombreCell.textContent;
+                                
+                                // Contar cuadrados de mejora seleccionados para esta habilidad
+                                let selectedUpgrades = 0;
+                                if (upgradesContainer) {
+                                    const squares = upgradesContainer.querySelectorAll('.barracones-skill-upgrade');
+                                    squares.forEach(sq => {
+                                        if (sq.classList.contains('selected')) selectedUpgrades++;
+                                    });
+                                }
+                                
+                                // Añadir habilidad al array con todos sus datos
+                                datos.extraSkills.push({
+                                    name: skillName,
+                                    level: nivelInput.value,
+                                    upgrades: selectedUpgrades
+                                });
+                                
+                                // Guardar mejoras indexadas por nombre de habilidad
+                                datos.mejorasHabilidades[skillName] = selectedUpgrades;
+                            }
+                        } catch (error) {
+                            console.warn(`⚠️ Error al procesar habilidad ${i}:`, error);
+                        }
+                    }
+                } else {
+                    console.warn('⚠️ No se encontró tabla de habilidades');
+                }
+                
+                // === RECOPILAR ESTADO FÍSICO (CUADRADOS HP) ===
+                // Buscar TODOS los cuadrados HP (tanto horizontales como verticales)
+                // Esto incluye cuadrados de CABEZA, TORSO, BRAZOS y PIERNAS
+                const hpSegments = document.querySelectorAll('.barracones-hp-segment, .barracones-hp-segment-vertical');
+                datos.estadoFisico = [];
+                hpSegments.forEach((seg, idx) => {
+                    datos.estadoFisico.push({
+                        index: idx,                                // Posición del cuadrado
+                        damaged: seg.classList.contains('damaged') // true si está dañado (rojo)
+                    });
+                });
+                
+                // === LOGS DE DEBUGGING ===
+                // Estos logs ayudan a diagnosticar problemas de guardado/carga
+                console.log('🔍 ===== DEBUGGING recogerDatosBarracones() =====');
+                console.log('🔫 Selector arma1:', document.getElementById('barr-arma1-select'));
+                console.log('🔫 Valor arma1:', document.getElementById('barr-arma1-select')?.value);
+                console.log('🔫 SelectedIndex arma1:', document.getElementById('barr-arma1-select')?.selectedIndex);
+                console.log('🔫 Munición arma1:', document.getElementById('barr-arma1-mun-actual')?.value);
+                console.log('🔫 Selector arma2:', document.getElementById('barr-arma2-select'));
+                console.log('🔫 Valor arma2:', document.getElementById('barr-arma2-select')?.value);
+                console.log('🔫 Munición arma2:', document.getElementById('barr-arma2-mun-actual')?.value);
+                console.log('🔫 Selector arma3:', document.getElementById('barr-arma3-select'));
+                console.log('🔫 Valor arma3:', document.getElementById('barr-arma3-select')?.value);
+                console.log('🔫 Munición arma3:', document.getElementById('barr-arma3-mun-actual')?.value);
+                console.log('📦 Array armas completo:', datos.armas);
+                console.log('💔 Total cuadrados HP:', hpSegments.length);
+                console.log('💔 Estado físico recopilado:', datos.estadoFisico);
+                console.log('💔 Cuadrados dañados:', datos.estadoFisico.filter(e => e.damaged).length);
+                console.log('🔍 ===== FIN DEBUGGING =====');
+                
+                console.log('✅ Datos recopilados exitosamente');
+                return datos;
+                
+            } catch (error) {
+                console.error('❌ Error crítico al recopilar datos de Barracones:', error);
+                // Devolver objeto mínimo en caso de error catastrófico
+                return {
+                    nombre: '',
+                    jugador: '',
+                    error: error.message
+                };
+            }
         }
         
         /**
          * Guarda los datos de Barracones en la nube (Google Sheets)
          */
+        /**
+         * Guarda los datos del personaje desde Barracones en Google Sheets
+         * 
+         * Esta función maneja el flujo completo de guardado:
+         * 1. Valida la configuración de la URL del script
+         * 2. Recopila todos los datos del personaje via recogerDatosBarracones()
+         * 3. Valida que hay datos mínimos (al menos nombre)
+         * 4. Actualiza UI del botón (disabled + texto "GUARDANDO...")
+         * 5. Envía datos via POST a Google Apps Script
+         * 6. Maneja respuesta exitosa o errores
+         * 7. Restaura el botón al estado original
+         * 
+         * @async
+         * @returns {Promise<boolean>} true si guardó exitosamente, false en caso de error
+         * 
+         * @throws {Error} Si la URL de Google Script no está configurada
+         * @throws {Error} Si falla la conexión HTTP
+         * @throws {Error} Si el servidor devuelve un error
+         * 
+         * @example
+         * // Uso básico
+         * const guardado = await guardarEnNubeBarracones();
+         * if (guardado) {
+         *     console.log("Personaje guardado");
+         * }
+         * 
+         * @see recogerDatosBarracones() - Para ver qué datos se guardan
+         * @see GOOGLE_SCRIPT_URL - Constante global con la URL del backend
+         */
         function guardarEnNubeBarracones() {
             console.log('💾 ====== INICIANDO GUARDADO ======');
             
-            // Verificar configuración
+            // === VALIDAR CONFIGURACIÓN ===
+            // Verificar que la URL del Google Apps Script esté configurada correctamente
             if (GOOGLE_SCRIPT_URL.includes("YOUR_GOOGLE_SCRIPT")) {
+                console.error('❌ URL de Google Script no configurada');
                 alert("¡Error! Debes configurar la variable GOOGLE_SCRIPT_URL en el código HTML primero.");
-                return;
+                return Promise.resolve(false);
             }
             
-            // Recopilar datos
+            // === RECOPILAR DATOS ===
+            // Obtener todos los datos del personaje desde los campos de la UI
             const datos = recogerDatosBarracones();
             
+            // Logs detallados para debugging
             console.log('💾 ====== GUARDANDO EN LA NUBE ======');
             console.log('📦 Datos recopilados:', JSON.stringify(datos, null, 2));
             console.log('📊 Nombre:', datos.nombre);
@@ -1824,62 +2133,95 @@
             console.log('📊 mejorasHabilidades:', datos.mejorasHabilidades);
             console.log('📊 estadoFisico:', datos.estadoFisico);
             
-            // Validar que hay datos mínimos
-            if (!datos.nombre) {
-                console.log('❌ ERROR: nombre vacío');
+            // === VALIDAR DATOS MÍNIMOS ===
+            // Un personaje DEBE tener al menos un nombre para ser guardado
+            if (!datos.nombre || datos.nombre.trim() === '') {
+                console.error('❌ ERROR: nombre vacío o solo espacios');
                 console.log('📊 Valor del campo barr-nombre:', document.getElementById('barr-nombre'));
                 console.log('📊 Valor actual:', document.getElementById('barr-nombre')?.value);
                 alert("El personaje necesita un nombre para guardarse.");
-                return;
+                return Promise.resolve(false);
             }
             
-            // Indicar que se está guardando
+            // === ACTUALIZAR UI DEL BOTÓN ===
+            // Indicar visualmente que se está guardando (deshabilitar botón y cambiar texto)
             const originalText = "GUARDAR EN LA NUBE";
             const btn = document.querySelector('#barracones-toolbar button[onclick*="guardarEnNubeBarracones"]');
             if (btn) {
                 btn.disabled = true;
                 btn.innerText = "GUARDANDO...";
+                btn.style.opacity = "0.6";
+                btn.style.cursor = "wait";
             }
             
-            // Enviar a la nube
+            // === ENVIAR A GOOGLE SHEETS ===
             console.log('📤 Enviando datos a Google Sheets...');
             console.log('📤 URL:', GOOGLE_SCRIPT_URL);
             console.log('📤 Body:', JSON.stringify(datos));
+            console.log('📤 Tamaño del payload:', JSON.stringify(datos).length, 'caracteres');
             
+            // Realizar petición HTTP POST
             return fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
+                mode: 'cors',  // Permitir CORS (necesario para Google Apps Script)
                 body: JSON.stringify(datos)
             })
             .then(response => {
-                console.log('📥 Respuesta recibida:', response);
+                console.log('📥 Respuesta HTTP recibida:');
+                console.log('  - Status:', response.status);
+                console.log('  - OK:', response.ok);
+                console.log('  - Headers:', response.headers);
+                
+                // Verificar que la respuesta HTTP sea exitosa (200-299)
+                if (!response.ok) {
+                    throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
+                }
+                
                 return response.json();
             })
             .then(data => {
-                console.log('📥 Datos parseados:', data);
+                console.log('📥 Datos parseados del servidor:', data);
                 
+                // Restaurar el botón al estado original
                 if (btn) {
                     btn.disabled = false;
                     btn.innerText = originalText;
+                    btn.style.opacity = "1";
+                    btn.style.cursor = "pointer";
                 }
                 
+                // === MANEJAR RESPUESTA DEL SERVIDOR ===
                 if (data.result === "success") {
                     console.log('✅ Guardado exitoso!');
-                    alert("¡Guardado exitoso en Google Sheet!");
+                    console.log('📝 Mensaje del servidor:', data.msg);
+                    alert("¡Guardado exitoso en Google Sheet!\n\n" + (data.msg || ''));
                     return true;
                 } else {
-                    console.log('❌ Error del servidor:', data.msg);
-                    alert("Error al guardar: " + data.msg);
+                    // El servidor respondió pero hubo un error de lógica
+                    console.error('❌ Error del servidor:', data.msg);
+                    alert("Error al guardar: " + (data.msg || 'Error desconocido'));
                     return false;
                 }
             })
             .catch(error => {
-                console.log('❌ Error de conexión:', error);
+                console.error('❌ Error de conexión o procesamiento:', error);
+                console.error('  - Tipo:', error.name);
+                console.error('  - Mensaje:', error.message);
+                console.error('  - Stack:', error.stack);
+                
+                // Restaurar el botón en caso de error
                 if (btn) {
                     btn.disabled = false;
                     btn.innerText = originalText;
+                    btn.style.opacity = "1";
+                    btn.style.cursor = "pointer";
                 }
-                console.error("Error:", error);
-                alert("Error de conexión al intentar guardar.");
+                
+                // Mostrar mensaje de error al usuario
+                alert("Error de conexión al intentar guardar.\n\n" + 
+                      "Detalles técnicos: " + error.message + "\n\n" +
+                      "Verifica tu conexión a Internet y que el script de Google esté publicado correctamente.");
+                
                 return false;
             });
         }
@@ -2014,46 +2356,94 @@
         }
         
         /**
-         * Restaura las armas en Barracones
-         * @param {Array} armas - Array de objetos de arma {select, munActual}
+         * Restaura las armas equipadas en Barracones desde datos guardados
+         * 
+         * Esta función restaura hasta 3 armas en los selectores de Barracones.
+         * Incluye un sistema de timeouts en cascada para:
+         * 1. Esperar a que los selectores estén poblados (150ms)
+         * 2. Setear el valor del selector
+         * 3. Cargar los stats del arma (daño, alcance)
+         * 4. Esperar a que se complete la carga de stats (50ms)
+         * 5. Restaurar la munición actual
+         * 
+         * NOTA IMPORTANTE: Los timeouts son necesarios porque:
+         * - Los selectores se pueblan de forma asíncrona
+         * - cargarArmaBarracones() necesita tiempo para actualizar los campos de stats
+         * - La munición debe restaurarse DESPUÉS de que cargarArmaBarracones() 
+         *   haya seteado la munición máxima
+         * 
+         * @param {Array<{select: string, munActual: string}>} armas - Array de hasta 3 armas
+         * @param {string} armas[].select - Índice del arma en el selector (0-42)
+         * @param {string} armas[].munActual - Munición actual del arma
+         * 
+         * @returns {void}
+         * 
+         * @example
+         * // Restaurar 2 armas
+         * const armas = [
+         *     {select: "5", munActual: "35"},    // Laser Rifle con 35 balas
+         *     {select: "12", munActual: "20"},   // Otra arma con 20 balas
+         *     {select: "", munActual: ""}        // Slot vacío
+         * ];
+         * restaurarArmas(armas);
+         * 
+         * @see cargarArmaBarracones() - Función que carga los stats del arma
+         * @see poblarSelectoresArmasBarracones() - Función que puebla los selectores
          */
         function restaurarArmas(armas) {
+            // === VALIDACIÓN DE ENTRADA ===
             if (!armas || !Array.isArray(armas)) {
-                console.log('⚠️ restaurarArmas: armas no válido');
+                console.warn('⚠️ restaurarArmas: parámetro armas inválido (debe ser array)');
                 return;
             }
             
-            console.log('🔫 Restaurando armas:', armas);
+            console.log('🔫 Iniciando restauración de armas:', armas);
             
-            // Usar timeout para asegurar que los selects estén populados
+            // === TIMEOUT PRINCIPAL ===
+            // Esperar 150ms para que los selectores estén completamente poblados
+            // Este delay es necesario porque poblarSelectoresArmasBarracones() puede
+            // tardar en completar el llenado de las opciones
             setTimeout(() => {
-                // Restaurar arma 1
+                console.log('  ⏱️ Selectores poblados, procediendo a restaurar...');
+                
+                // === RESTAURAR ARMA 1 (PRINCIPAL) ===
                 if (armas[0] && armas[0].select) {
                     const sel1 = document.getElementById('barr-arma1-select');
                     
                     if (sel1) {
-                        console.log(`  🔫 Arma 1: ${armas[0].select}, Munición: ${armas[0].munActual}`);
+                        console.log(`  🔫 Restaurando Arma 1:`);
+                        console.log(`     - Índice: ${armas[0].select}`);
+                        console.log(`     - Munición: ${armas[0].munActual}`);
+                        
+                        // Setear el valor del selector (índice del arma)
                         sel1.value = armas[0].select;
-                        // Disparar evento change para cargar stats del arma
+                        
+                        // Cargar los stats del arma (daño, alcance, munición máxima)
                         cargarArmaBarracones(1);
                         
-                        // Restaurar munición actual (después de que cargarArmaBarracones haya puesto el máximo)
+                        // TIMEOUT ANIDADO: Esperar a que cargarArmaBarracones() complete
+                        // Necesario porque cargarArmaBarracones() actualiza los campos de forma asíncrona
                         setTimeout(() => {
                             const mun1 = document.getElementById('barr-arma1-mun-actual');
                             if (mun1 && armas[0].munActual) {
                                 mun1.value = armas[0].munActual;
                                 console.log(`    ✅ Munición arma 1 restaurada: ${armas[0].munActual}`);
                             }
-                        }, 50);
+                        }, 50); // 50ms suficiente para que cargarArmaBarracones() actualice el DOM
+                    } else {
+                        console.warn('  ⚠️ Selector arma 1 no encontrado');
                     }
                 }
                 
-                // Restaurar arma 2
+                // === RESTAURAR ARMA 2 (SECUNDARIA) ===
                 if (armas[1] && armas[1].select) {
                     const sel2 = document.getElementById('barr-arma2-select');
                     
                     if (sel2) {
-                        console.log(`  🔫 Arma 2: ${armas[1].select}, Munición: ${armas[1].munActual}`);
+                        console.log(`  🔫 Restaurando Arma 2:`);
+                        console.log(`     - Índice: ${armas[1].select}`);
+                        console.log(`     - Munición: ${armas[1].munActual}`);
+                        
                         sel2.value = armas[1].select;
                         cargarArmaBarracones(2);
                         
@@ -2064,15 +2454,20 @@
                                 console.log(`    ✅ Munición arma 2 restaurada: ${armas[1].munActual}`);
                             }
                         }, 50);
+                    } else {
+                        console.warn('  ⚠️ Selector arma 2 no encontrado');
                     }
                 }
                 
-                // Restaurar arma 3
+                // === RESTAURAR ARMA 3 (TERCIARIA) ===
                 if (armas[2] && armas[2].select) {
                     const sel3 = document.getElementById('barr-arma3-select');
                     
                     if (sel3) {
-                        console.log(`  🔫 Arma 3: ${armas[2].select}, Munición: ${armas[2].munActual}`);
+                        console.log(`  🔫 Restaurando Arma 3:`);
+                        console.log(`     - Índice: ${armas[2].select}`);
+                        console.log(`     - Munición: ${armas[2].munActual}`);
+                        
                         sel3.value = armas[2].select;
                         cargarArmaBarracones(3);
                         
@@ -2083,107 +2478,242 @@
                                 console.log(`    ✅ Munición arma 3 restaurada: ${armas[2].munActual}`);
                             }
                         }, 50);
+                    } else {
+                        console.warn('  ⚠️ Selector arma 3 no encontrado');
                     }
                 }
-            }, 150);
+                
+                console.log('✅ Proceso de restauración de armas completado');
+                
+            }, 150); // Timeout principal de 150ms
         }
         
         /**
-         * Carga un personaje completo en Barracones desde datos de la nube
-         * Incluye: datos básicos, atributos, armas, habilidades, estado físico, mejoras
-         * @param {Object} datos - Objeto con todos los datos del personaje
+         * Carga un personaje completo en la interfaz de Barracones desde datos guardados
+         * 
+         * Esta es la función principal de carga que orquesta la restauración de TODOS
+         * los datos del personaje en la interfaz de Barracones. El proceso incluye:
+         * 
+         * FLUJO DE CARGA (12 pasos):
+         * 1. Cargar datos básicos (nombre, jugador, rango, ID, notas)
+         * 2. Cargar atributos básicos (FUE, DES, INT, CAR)
+         * 3. Calcular y setear MOV e INIT (basados en DES)
+         * 4. Generar cuadrados de estado físico (basados en FUE)
+         * 5. Generar tabla de habilidades
+         * 6. Calcular TIR inicial
+         * 7. Restaurar mejoras de atributos (cuadrados dorados)
+         * 8. [TIMEOUT TIMING.SKILLS_TABLE_RENDER] Restaurar niveles de habilidades
+         * 9. [TIMEOUT TIMING.SKILLS_TABLE_RENDER] Restaurar mejoras de habilidades (cuadrados verdes)
+         * 10. [TIMEOUT TIMING.SKILLS_TABLE_RENDER] Recalcular TIR con niveles correctos
+         * 11. [TIMEOUT TIMING.HP_GENERATION] Restaurar estado físico (cuadrados HP dañados)
+         * 12. [via restaurarArmas] Restaurar armas equipadas
+         * 
+         * NOTA SOBRE TIMEOUTS:
+         * Los timeouts son necesarios porque varias operaciones requieren que el DOM
+         * se actualice antes de continuar:
+         * - generarHabilidadesBarracones() crea elementos dinámicamente
+         * - generarEstadoFisicoBarracones() genera cuadrados HP
+         * - Los selectores de armas necesitan poblarse antes de restaurar
+         * 
+         * @param {Object} datos - Objeto completo con todos los datos del personaje
+         * @param {string} datos.nombre - Nombre del personaje
+         * @param {string} datos.jugador - Nombre del jugador (se carga en callsign)
+         * @param {string} datos.rango - Rango militar
+         * @param {string} datos.tactico - ID táctico
+         * @param {string} datos.str - Fuerza (FUE)
+         * @param {string} datos.dex - Destreza (DES)
+         * @param {string} datos.int - Inteligencia (INT)
+         * @param {string} datos.cha - Carisma (CAR)
+         * @param {string} datos.mov - Movimiento
+         * @param {string} datos.init - Iniciativa
+         * @param {string} datos.notas - Notas adicionales
+         * @param {string} datos.estudios - Tipo de estudios (para generar habilidades)
+         * @param {string} datos.nobleSkill - Habilidad noble (si aplica)
+         * @param {Array} datos.extraSkills - Array de habilidades con niveles
+         * @param {Object} datos.mejorasAtributos - Mejoras de atributos {fue, des, int, car}
+         * @param {Object} datos.mejorasHabilidades - Mejoras de habilidades {nombreSkill: cantidad}
+         * @param {Array} datos.estadoFisico - Estado de cada cuadrado HP
+         * @param {Array} datos.armas - Array de armas equipadas
+         * 
+         * @returns {void}
+         * 
+         * @example
+         * // Cargar un personaje desde Google Sheets
+         * const datos = {
+         *     nombre: "John Connor",
+         *     jugador: "Marcos",
+         *     str: "5", dex: "4", int: "3", cha: "3",
+         *     armas: [{select: "5", munActual: "35"}, ...],
+         *     estadoFisico: [{index: 2, damaged: true}, ...],
+         *     // ... más datos
+         * };
+         * cargarPersonajeEnBarracones(datos);
+         * 
+         * @see recogerDatosBarracones() - Función inversa que recopila datos
+         * @see generarEstadoFisicoBarracones() - Genera cuadrados HP
+         * @see generarHabilidadesBarracones() - Genera tabla de habilidades
+         * @see restaurarArmas() - Restaura armas equipadas
+         * @see restaurarEstadoFisico() - Restaura daños en cuadrados HP
          */
         function cargarPersonajeEnBarracones(datos) {
-            if (!datos) return;
-            
-            console.log('🎯 Cargando personaje en Barracones:', datos);
-            
-            // 1. Cargar datos básicos (usando campos reales de Barracones)
-            const barrNombre = document.getElementById('barr-nombre');
-            const barrCallsign = document.getElementById('barr-callsign'); // Este campo se usa para Jugador
-            const barrRango = document.getElementById('barr-rango');
-            const barrId = document.getElementById('barr-id');
-            const barrNotas = document.getElementById('barr-notas');
-            
-            if (barrNombre) barrNombre.value = datos.nombre || '';
-            if (barrCallsign) barrCallsign.value = datos.jugador || ''; // Cargar jugador en callsign
-            if (barrRango) barrRango.value = datos.rango || '';
-            if (barrId) barrId.value = datos.tactico || '';
-            if (barrNotas) barrNotas.value = datos.notas || '';
-            
-            // 2. Cargar atributos
-            const barrFue = document.getElementById('barr-fue');
-            const barrDes = document.getElementById('barr-des');
-            const barrInt = document.getElementById('barr-int');
-            const barrCar = document.getElementById('barr-car');
-            
-            const fue = parseInt(datos.str) || 0;
-            const des = parseInt(datos.dex) || 0;
-            const int = parseInt(datos.int) || 0;
-            const car = parseInt(datos.cha) || 0;
-            
-            if (barrFue) barrFue.value = fue;
-            if (barrDes) barrDes.value = des;
-            if (barrInt) barrInt.value = int;
-            if (barrCar) barrCar.value = car;
-            
-            // 3. Calcular MOV e INIT
-            const barrMov = document.getElementById('barr-mov');
-            const barrInit = document.getElementById('barr-init');
-            
-            if (barrMov) barrMov.value = datos.mov || des;
-            if (barrInit) barrInit.value = datos.init || des;
-            
-            // 4. Generar estado físico
-            if (fue > 0) {
-                generarEstadoFisicoBarracones(fue);
+            // === VALIDACIÓN DE ENTRADA ===
+            if (!datos) {
+                console.error('❌ cargarPersonajeEnBarracones: datos es null/undefined');
+                return;
             }
             
-            // 5. Generar habilidades
-            generarHabilidadesBarracones(datos.estudios, datos.nobleSkill, datos.extraSkills);
+            console.log('🎯 ===== INICIANDO CARGA DE PERSONAJE =====');
+            console.log('📦 Datos recibidos:', datos);
             
-            // 6. Calcular TIR
-            calcularTIRBarracones();
-            
-            // 7. Restaurar mejoras de atributos
-            if (datos.mejorasAtributos) {
-                restaurarMejorasAtributos(datos.mejorasAtributos);
-            }
-            
-            // 8-10. Usar timeout para asegurar que la tabla esté completamente renderizada
-            setTimeout(() => {
-                // 8. Restaurar niveles correctos en habilidades
-                if (datos.extraSkills) {
-                    restaurarNivelesHabilidades(datos.extraSkills);
+            try {
+                // === PASO 1: CARGAR DATOS BÁSICOS ===
+                console.log('📝 Paso 1: Cargando datos básicos...');
+                
+                // Obtener referencias a los campos del formulario
+                const barrNombre = document.getElementById('barr-nombre');
+                const barrCallsign = document.getElementById('barr-callsign'); // Usado para campo "Jugador"
+                const barrRango = document.getElementById('barr-rango');
+                const barrId = document.getElementById('barr-id');
+                const barrNotas = document.getElementById('barr-notas');
+                
+                // Setear valores con validación
+                if (barrNombre) barrNombre.value = datos.nombre || '';
+                if (barrCallsign) barrCallsign.value = datos.jugador || ''; // Jugador → Callsign
+                if (barrRango) barrRango.value = datos.rango || '';
+                if (barrId) barrId.value = datos.tactico || '';
+                if (barrNotas) barrNotas.value = datos.notas || '';
+                
+                console.log('  ✅ Datos básicos cargados');
+                
+                // === PASO 2: CARGAR ATRIBUTOS ===
+                console.log('📊 Paso 2: Cargando atributos...');
+                
+                const barrFue = document.getElementById('barr-fue');
+                const barrDes = document.getElementById('barr-des');
+                const barrInt = document.getElementById('barr-int');
+                const barrCar = document.getElementById('barr-car');
+                
+                // Parsear y validar atributos (deben ser números)
+                const fue = parseInt(datos.str) || 0;
+                const des = parseInt(datos.dex) || 0;
+                const int = parseInt(datos.int) || 0;
+                const car = parseInt(datos.cha) || 0;
+                
+                if (barrFue) barrFue.value = fue;
+                if (barrDes) barrDes.value = des;
+                if (barrInt) barrInt.value = int;
+                if (barrCar) barrCar.value = car;
+                
+                console.log(`  ✅ Atributos cargados: FUE=${fue}, DES=${des}, INT=${int}, CAR=${car}`);
+                
+                // === PASO 3: CALCULAR MOV E INIT ===
+                console.log('🏃 Paso 3: Calculando MOV e INIT...');
+                
+                const barrMov = document.getElementById('barr-mov');
+                const barrInit = document.getElementById('barr-init');
+                
+                // MOV e INIT se basan en DES por defecto, pero se pueden guardar valores custom
+                if (barrMov) barrMov.value = datos.mov || des;
+                if (barrInit) barrInit.value = datos.init || des;
+                
+                console.log(`  ✅ MOV=${datos.mov || des}, INIT=${datos.init || des}`);
+                
+                // === PASO 4: GENERAR ESTADO FÍSICO ===
+                console.log('💔 Paso 4: Generando cuadrados de estado físico...');
+                
+                if (fue > 0) {
+                    generarEstadoFisicoBarracones(fue);
+                    console.log(`  ✅ ${fue * 3 + fue + Math.floor(fue * 2) + Math.ceil(fue * 2)} cuadrados HP generados`);
+                } else {
+                    console.warn('  ⚠️ FUE = 0, no se generan cuadrados HP');
                 }
                 
-                // 9. Restaurar mejoras de habilidades (cuadrados verdes)
-                if (datos.mejorasHabilidades) {
-                    restaurarMejorasHabilidades(datos.mejorasHabilidades);
-                }
+                // === PASO 5: GENERAR HABILIDADES ===
+                console.log('📚 Paso 5: Generando tabla de habilidades...');
+                generarHabilidadesBarracones(datos.estudios, datos.nobleSkill, datos.extraSkills);
+                console.log('  ✅ Tabla de habilidades generada');
                 
-                // 10. Recalcular TIR con niveles correctos
+                // === PASO 6: CALCULAR TIR INICIAL ===
+                console.log('🎯 Paso 6: Calculando TIR inicial...');
                 calcularTIRBarracones();
-            }, 100);
-            
-            // 11. Restaurar estado físico (daños)
-            if (datos.estadoFisico) {
-                // Dar tiempo para que se genere el estado físico
+                console.log('  ✅ TIR calculado');
+                
+                // === PASO 7: RESTAURAR MEJORAS DE ATRIBUTOS ===
+                console.log('⬆️ Paso 7: Restaurando mejoras de atributos...');
+                
+                if (datos.mejorasAtributos) {
+                    restaurarMejorasAtributos(datos.mejorasAtributos);
+                    console.log('  ✅ Mejoras de atributos restauradas:', datos.mejorasAtributos);
+                } else {
+                    console.log('  ℹ️ No hay mejoras de atributos para restaurar');
+                }
+                
+                // === PASOS 8-10: TIMEOUT PARA RENDERIZADO DE TABLA ===
+                // IMPORTANTE: Necesitamos esperar 100ms para que la tabla de habilidades
+                // se renderice completamente antes de modificar sus contenidos
                 setTimeout(() => {
-                    restaurarEstadoFisico(datos.estadoFisico);
-                }, 150);
-            }
-            
-            // 12. Restaurar armas
-            console.log('🔫 Verificando datos.armas:', datos.armas);
-            console.log('🔫 Tipo de datos.armas:', typeof datos.armas);
-            console.log('🔫 Es array?', Array.isArray(datos.armas));
-            
-            if (datos.armas) {
-                console.log('✅ datos.armas existe, llamando a restaurarArmas()');
-                restaurarArmas(datos.armas);
-            } else {
-                console.log('❌ datos.armas es undefined/null/false');
+                    console.log('⏱️ Timeout 100ms completado, continuando con pasos 8-10...');
+                    
+                    // === PASO 8: RESTAURAR NIVELES DE HABILIDADES ===
+                    console.log('📊 Paso 8: Restaurando niveles de habilidades...');
+                    
+                    if (datos.extraSkills) {
+                        restaurarNivelesHabilidades(datos.extraSkills);
+                        console.log('  ✅ Niveles de habilidades restaurados');
+                    } else {
+                        console.log('  ℹ️ No hay niveles de habilidades para restaurar');
+                    }
+                    
+                    // === PASO 9: RESTAURAR MEJORAS DE HABILIDADES ===
+                    console.log('⬆️ Paso 9: Restaurando mejoras de habilidades...');
+                    
+                    if (datos.mejorasHabilidades) {
+                        restaurarMejorasHabilidades(datos.mejorasHabilidades);
+                        console.log('  ✅ Mejoras de habilidades restauradas:', datos.mejorasHabilidades);
+                    } else {
+                        console.log('  ℹ️ No hay mejoras de habilidades para restaurar');
+                    }
+                    
+                    // === PASO 10: RECALCULAR TIR CON NIVELES CORRECTOS ===
+                    console.log('🎯 Paso 10: Recalculando TIR con niveles correctos...');
+                    calcularTIRBarracones();
+                    console.log('  ✅ TIR recalculado');
+                    
+                }, TIMING.SKILLS_TABLE_RENDER); // Tiempo para renderizado completo de tabla
+                
+                // === PASO 11: RESTAURAR ESTADO FÍSICO (DAÑOS) ===
+                // TIMEOUT de TIMING.HP_GENERATION (150ms) para dar tiempo a que se generen los cuadrados HP
+                if (datos.estadoFisico) {
+                    console.log('💔 Paso 11: Programando restauración de estado físico...');
+                    
+                    setTimeout(() => {
+                        console.log('  ⏱️ Timeout completado, restaurando daños...');
+                        restaurarEstadoFisico(datos.estadoFisico);
+                    }, TIMING.HP_GENERATION); // Tiempo para que generarEstadoFisicoBarracones() complete
+                } else {
+                    console.log('💔 Paso 11: No hay estado físico para restaurar');
+                }
+                
+                // === PASO 12: RESTAURAR ARMAS ===
+                console.log('🔫 Paso 12: Verificando y restaurando armas...');
+                console.log('  🔍 datos.armas:', datos.armas);
+                console.log('  🔍 Tipo:', typeof datos.armas);
+                console.log('  🔍 Es array?', Array.isArray(datos.armas));
+                
+                if (datos.armas) {
+                    console.log('  ✅ datos.armas existe, llamando a restaurarArmas()');
+                    restaurarArmas(datos.armas);
+                } else {
+                    console.warn('  ⚠️ datos.armas es undefined/null - No hay armas para restaurar');
+                }
+                
+                console.log('🎉 ===== CARGA DE PERSONAJE COMPLETADA =====');
+                
+            } catch (error) {
+                console.error('❌ ERROR CRÍTICO al cargar personaje:', error);
+                console.error('  - Mensaje:', error.message);
+                console.error('  - Stack:', error.stack);
+                alert('Error al cargar el personaje. Revisa la consola para más detalles.');
             }
         }
 
@@ -2860,6 +3390,55 @@
          * Limpia los datos de la ficha según la sección
          * @param {string} section - Sección a limpiar ('barracones' o 'generador')
          */
+        /**
+         * Limpia completamente los campos de una sección de la aplicación
+         * 
+         * Esta función resetea TODOS los campos, selectores, tablas y estado visual
+         * de la sección especificada, dejándola en su estado inicial como si
+         * fuera la primera vez que se abre.
+         * 
+         * SECCIONES SOPORTADAS:
+         * 
+         * 1. 'barracones': Limpia la interfaz de Barracones
+         *    - Datos personales (nombre, callsign, rango, ID táctico)
+         *    - Atributos (FUE, DES, INT, CAR, MOV, INIT)
+         *    - Cuadrados de mejora de atributos (remueve clase 'selected')
+         *    - Estado físico (remueve clase 'damaged' de cuadrados HP)
+         *    - Tabla de habilidades (elimina todas las filas excepto header)
+         *    - Armas (selectores, munición, daño, alcance)
+         *    - Notas
+         * 
+         * 2. 'generador': Limpia la interfaz del Generador de Personajes
+         *    - Contador de puntos (resetea a 150)
+         *    - Campos de personaje (nombre, jugador, edad, planeta, etc.)
+         *    - Campaña, década y año
+         *    - Atributos (resetea a 1)
+         *    - Origen y afiliación
+         *    - Estudios
+         *    - Habilidades extra (vacía array y UI)
+         *    - Habilidad noble
+         *    - Modificador de mech
+         * 
+         * IMPORTANTE: Esta función NO navega a otra sección, solo limpia los datos.
+         * La navegación se maneja en funciones separadas (goHomeFromBarracones, etc.)
+         * 
+         * @param {string} section - Sección a limpiar: 'barracones' o 'generador'
+         * 
+         * @returns {void}
+         * 
+         * @example
+         * // Limpiar Barracones antes de cargar un nuevo personaje
+         * limpiarFichaSeccion('barracones');
+         * cargarPersonajeEnBarracones(nuevoPersonaje);
+         * 
+         * @example
+         * // Limpiar Generador antes de crear un nuevo personaje
+         * limpiarFichaSeccion('generador');
+         * 
+         * @see goHomeFromBarracones() - Navega al menú con confirmación y limpia
+         * @see goHomeFromGenerador() - Navega al menú con confirmación y limpia
+         * @see showExitModal() - Modal que llama a esta función antes de navegar
+         */
         function limpiarFichaSeccion(section) {
             if (section === 'barracones') {
                 // Limpiar Barracones (usando campos reales)
@@ -3062,6 +3641,379 @@
                 
                 console.log('✅ Menú principal mostrado');
             });
+        }
+
+        /**
+         * Navega a la sección de Registro de Combate
+         * Esta sección permite registrar combates y distribuir recompensas (XP, dinero) de forma masiva
+         */
+        function goToRegistroCombate() {
+            console.log('🎯 Navegando a Registro de Combate...');
+            
+            // Ocultar todas las secciones
+            document.getElementById('landing-page').style.display = 'none';
+            document.getElementById('pre-generacion').style.display = 'none';
+            document.getElementById('ficha-container').style.display = 'none';
+            document.getElementById('barracones').style.display = 'none';
+            document.getElementById('points-counter').style.display = 'none';
+            
+            // Mostrar Registro de Combate
+            document.getElementById('registro-combate').style.display = 'block';
+            
+            console.log('✅ Registro de Combate mostrado');
+        }
+
+        /**
+         * Vuelve al menú principal desde Registro de Combate
+         * No requiere confirmación porque no hay datos que guardar
+         */
+        function goHomeFromRegistroCombate() {
+            console.log('🏠 Volviendo al menú desde Registro de Combate...');
+            
+            // Cerrar modal si está abierto
+            cerrarModalRecompensas();
+            
+            // Ocultar Registro de Combate
+            document.getElementById('registro-combate').style.display = 'none';
+            
+            // Mostrar menú principal
+            document.getElementById('landing-page').style.display = 'flex';
+            
+            console.log('✅ Menú principal mostrado');
+        }
+
+        /**
+         * Abre el modal de distribución de recompensas
+         */
+        function abrirModalRecompensas() {
+            console.log('💰 Abriendo modal de recompensas...');
+            
+            // Resetear el modal
+            document.getElementById('recompensas-buscar-jugador').value = '';
+            document.getElementById('recompensas-xp').value = '0';
+            document.getElementById('recompensas-dinero').value = '0';
+            document.getElementById('recompensas-lista-personajes').style.display = 'none';
+            document.getElementById('recompensas-inputs').style.display = 'none';
+            document.getElementById('recompensas-boton-aplicar').style.display = 'none';
+            document.getElementById('recompensas-estado').style.display = 'none';
+            
+            // Mostrar modal
+            document.getElementById('modal-recompensas').style.display = 'block';
+        }
+
+        /**
+         * Cierra el modal de distribución de recompensas
+         */
+        function cerrarModalRecompensas() {
+            console.log('✕ Cerrando modal de recompensas...');
+            document.getElementById('modal-recompensas').style.display = 'none';
+        }
+
+        // Variable global para cachear personajes encontrados
+        let personajesRecompensasCache = [];
+
+        /**
+         * Busca personajes de un jugador específico para distribuir recompensas
+         * Similar a buscarEnNubeBarracones() pero optimizado para selección múltiple
+         */
+        async function buscarPersonajesParaRecompensas() {
+            console.log('🔍 Buscando personajes para recompensas...');
+            
+            // Validar URL de Google Script
+            if (GOOGLE_SCRIPT_URL.includes("YOUR_GOOGLE_SCRIPT")) {
+                alert(ERROR_MESSAGES.GOOGLE_SCRIPT_NOT_CONFIGURED);
+                return;
+            }
+            
+            // Obtener nombre del jugador
+            const jugadorInput = document.getElementById('recompensas-buscar-jugador');
+            const jugador = jugadorInput.value.trim();
+            
+            if (!jugador) {
+                alert('Por favor ingresa el nombre del jugador (Callsign)');
+                return;
+            }
+            
+            // Mostrar estado de carga
+            const estadoDiv = document.getElementById('recompensas-estado');
+            estadoDiv.style.display = 'block';
+            estadoDiv.style.color = '#ffae00';
+            estadoDiv.innerHTML = '🔍 Buscando personajes...';
+            
+            try {
+                // Hacer request al Google Apps Script
+                const url = `${GOOGLE_SCRIPT_URL}?action=list&jugador=${encodeURIComponent(jugador)}`;
+                console.log('  📡 URL:', url);
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                console.log('  📦 Respuesta:', data);
+                
+                if (data.result === "success" && data.personajes && data.personajes.length > 0) {
+                    personajesRecompensasCache = data.personajes;
+                    mostrarPersonajesParaSeleccion(data.personajes);
+                    
+                    estadoDiv.style.display = 'none';
+                } else {
+                    estadoDiv.style.color = '#ff4444';
+                    estadoDiv.innerHTML = `❌ ${ERROR_MESSAGES.NO_RESULTS}`;
+                    
+                    // Ocultar lista si estaba visible
+                    document.getElementById('recompensas-lista-personajes').style.display = 'none';
+                    document.getElementById('recompensas-inputs').style.display = 'none';
+                    document.getElementById('recompensas-boton-aplicar').style.display = 'none';
+                }
+                
+            } catch (error) {
+                console.error('❌ Error al buscar personajes:', error);
+                estadoDiv.style.color = '#ff4444';
+                estadoDiv.innerHTML = `❌ ${ERROR_MESSAGES.CONNECTION_ERROR}: ${error.message}`;
+                
+                // Ocultar lista si estaba visible
+                document.getElementById('recompensas-lista-personajes').style.display = 'none';
+                document.getElementById('recompensas-inputs').style.display = 'none';
+                document.getElementById('recompensas-boton-aplicar').style.display = 'none';
+            }
+        }
+
+        /**
+         * Muestra los personajes encontrados con checkboxes para selección múltiple
+         * @param {Array} personajes - Array de objetos de personajes
+         */
+        function mostrarPersonajesParaSeleccion(personajes) {
+            console.log(`📋 Mostrando ${personajes.length} personajes para selección...`);
+            
+            const container = document.getElementById('recompensas-personajes-container');
+            
+            let html = '';
+            
+            personajes.forEach((p, index) => {
+                // Calcular XP actual y dinero actual
+                const xpActual = p.xpTotal || 0;
+                const dineroActual = p.dinero || 0;
+                
+                html += `
+                    <div style="
+                        display: flex;
+                        align-items: center;
+                        gap: 15px;
+                        background: rgba(0, 0, 0, 0.4);
+                        border: 1px solid #5c4200;
+                        padding: 15px;
+                        margin-bottom: 10px;
+                        transition: all 0.3s;
+                    " onmouseover="this.style.borderColor='#ffae00'" onmouseout="this.style.borderColor='#5c4200'">
+                        <input type="checkbox" id="recomp-check-${index}" class="recomp-checkbox" style="
+                            width: 20px;
+                            height: 20px;
+                            cursor: pointer;
+                        " onchange="actualizarSeleccionRecompensas()">
+                        <div style="flex: 1;">
+                            <div style="
+                                font-family: 'Share Tech Mono', monospace;
+                                color: #ffae00;
+                                font-size: 1.1em;
+                                font-weight: bold;
+                                margin-bottom: 5px;
+                            ">
+                                ${p.nombre}
+                            </div>
+                            <div style="
+                                font-family: 'Share Tech Mono', monospace;
+                                color: #888;
+                                font-size: 0.85em;
+                            ">
+                                XP Actual: ${xpActual} | C-Bills: ${dineroActual} | Campaña: ${p.campaign || 'N/A'}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            // Botón "Seleccionar Todos"
+            html = `
+                <div style="margin-bottom: 15px; text-align: center;">
+                    <button onclick="seleccionarTodosPersonajes(true)" style="
+                        background: rgba(0, 255, 65, 0.2);
+                        border: 1px solid #00ff41;
+                        color: #00ff41;
+                        font-family: 'Share Tech Mono', monospace;
+                        padding: 8px 20px;
+                        cursor: pointer;
+                        margin-right: 10px;
+                    ">
+                        ✓ Seleccionar Todos
+                    </button>
+                    <button onclick="seleccionarTodosPersonajes(false)" style="
+                        background: rgba(255, 68, 68, 0.2);
+                        border: 1px solid #ff4444;
+                        color: #ff4444;
+                        font-family: 'Share Tech Mono', monospace;
+                        padding: 8px 20px;
+                        cursor: pointer;
+                    ">
+                        ✕ Deseleccionar Todos
+                    </button>
+                </div>
+            ` + html;
+            
+            container.innerHTML = html;
+            
+            // Mostrar la lista
+            document.getElementById('recompensas-lista-personajes').style.display = 'block';
+            document.getElementById('recompensas-inputs').style.display = 'block';
+            document.getElementById('recompensas-boton-aplicar').style.display = 'block';
+        }
+
+        /**
+         * Selecciona o deselecciona todos los checkboxes de personajes
+         * @param {boolean} seleccionar - true para seleccionar, false para deseleccionar
+         */
+        function seleccionarTodosPersonajes(seleccionar) {
+            const checkboxes = document.querySelectorAll('.recomp-checkbox');
+            checkboxes.forEach(cb => {
+                cb.checked = seleccionar;
+            });
+            actualizarSeleccionRecompensas();
+        }
+
+        /**
+         * Actualiza la UI cuando cambia la selección de personajes
+         * Muestra cuántos personajes están seleccionados
+         */
+        function actualizarSeleccionRecompensas() {
+            const checkboxes = document.querySelectorAll('.recomp-checkbox:checked');
+            const count = checkboxes.length;
+            
+            console.log(`  ✓ ${count} personaje(s) seleccionado(s)`);
+            
+            // Mostrar/ocultar botón de aplicar según la selección
+            const botonAplicar = document.getElementById('recompensas-boton-aplicar');
+            if (count > 0) {
+                botonAplicar.style.display = 'block';
+            }
+        }
+
+        /**
+         * Aplica las recompensas (XP y dinero) a los personajes seleccionados
+         * Actualiza los valores en Google Sheets
+         */
+        async function aplicarRecompensas() {
+            console.log('✅ Aplicando recompensas...');
+            
+            // Validar URL de Google Script
+            if (GOOGLE_SCRIPT_URL.includes("YOUR_GOOGLE_SCRIPT")) {
+                alert(ERROR_MESSAGES.GOOGLE_SCRIPT_NOT_CONFIGURED);
+                return;
+            }
+            
+            // Obtener personajes seleccionados
+            const checkboxes = document.querySelectorAll('.recomp-checkbox:checked');
+            if (checkboxes.length === 0) {
+                alert('Por favor selecciona al menos un personaje');
+                return;
+            }
+            
+            // Obtener valores de recompensas
+            const xpAñadir = parseInt(document.getElementById('recompensas-xp').value) || 0;
+            const dineroAñadir = parseInt(document.getElementById('recompensas-dinero').value) || 0;
+            
+            if (xpAñadir === 0 && dineroAñadir === 0) {
+                alert('Por favor ingresa al menos XP o C-Bills para añadir');
+                return;
+            }
+            
+            // Confirmar acción
+            const confirmMsg = `¿Confirmas añadir?\n\n` +
+                              `XP: +${xpAñadir}\n` +
+                              `C-Bills: +${dineroAñadir}\n\n` +
+                              `A ${checkboxes.length} personaje(s) seleccionado(s)?`;
+            
+            if (!confirm(confirmMsg)) {
+                return;
+            }
+            
+            // Mostrar estado de procesamiento
+            const estadoDiv = document.getElementById('recompensas-estado');
+            estadoDiv.style.display = 'block';
+            estadoDiv.style.color = '#ffae00';
+            estadoDiv.innerHTML = `⏳ Procesando ${checkboxes.length} personaje(s)...`;
+            
+            // Deshabilitar botón
+            const botonAplicar = document.querySelector('#recompensas-boton-aplicar button');
+            const textoOriginal = botonAplicar.innerHTML;
+            botonAplicar.disabled = true;
+            botonAplicar.innerHTML = '⏳ PROCESANDO...';
+            
+            try {
+                let exitosos = 0;
+                let errores = 0;
+                
+                // Procesar cada personaje seleccionado
+                for (let i = 0; i < checkboxes.length; i++) {
+                    const checkbox = checkboxes[i];
+                    const index = parseInt(checkbox.id.replace('recomp-check-', ''));
+                    const personaje = personajesRecompensasCache[index];
+                    
+                    console.log(`  📦 Procesando: ${personaje.nombre}`);
+                    
+                    // Calcular nuevos valores
+                    const xpNuevo = (parseInt(personaje.xpTotal) || 0) + xpAñadir;
+                    const dineroNuevo = (parseInt(personaje.dinero) || 0) + dineroAñadir;
+                    
+                    // Crear objeto con datos actualizados
+                    // IMPORTANTE: Mantener todos los datos originales y solo actualizar XP y dinero
+                    const datosActualizados = {
+                        ...personaje,  // Spread de todos los datos originales
+                        xpTotal: xpNuevo,
+                        dinero: dineroNuevo
+                    };
+                    
+                    // Enviar a Google Sheets
+                    const response = await fetch(GOOGLE_SCRIPT_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(datosActualizados)
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.result === "success") {
+                        exitosos++;
+                        console.log(`    ✅ ${personaje.nombre}: XP ${personaje.xpTotal || 0} → ${xpNuevo}, Dinero ${personaje.dinero || 0} → ${dineroNuevo}`);
+                    } else {
+                        errores++;
+                        console.error(`    ❌ Error en ${personaje.nombre}:`, data.msg);
+                    }
+                    
+                    // Actualizar progreso
+                    estadoDiv.innerHTML = `⏳ Procesando... ${i + 1}/${checkboxes.length}`;
+                }
+                
+                // Mostrar resultado final
+                if (errores === 0) {
+                    estadoDiv.style.color = '#00ff41';
+                    estadoDiv.innerHTML = `✅ ¡Éxito! ${exitosos} personaje(s) actualizado(s) correctamente.`;
+                } else {
+                    estadoDiv.style.color = '#ff4444';
+                    estadoDiv.innerHTML = `⚠️ Completado con errores: ${exitosos} exitoso(s), ${errores} error(es).`;
+                }
+                
+                // Esperar 3 segundos y cerrar modal
+                setTimeout(() => {
+                    cerrarModalRecompensas();
+                }, 3000);
+                
+            } catch (error) {
+                console.error('❌ Error al aplicar recompensas:', error);
+                estadoDiv.style.color = '#ff4444';
+                estadoDiv.innerHTML = `❌ Error: ${error.message}`;
+            } finally {
+                // Restaurar botón
+                botonAplicar.disabled = false;
+                botonAplicar.innerHTML = textoOriginal;
+            }
         }
 
         function goToSheetDirectly() {
@@ -93556,7 +94508,7 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
             <button class="cyber-button" onclick="goToMechHangar()">Mech Hangar</button>
             <button class="cyber-button" onclick="goToVehicleDepot()">Deposito de Vehiculos</button>
             <button class="cyber-button" onclick="goToGalacticMap()">Galactic Map</button>
-            <button class="cyber-button disabled">Registro de Combate</button>
+            <button class="cyber-button" onclick="goToRegistroCombate()">Registro de Combate</button>
             <button class="cyber-button disabled">Lance Builder [WIP]</button>
             <button class="cyber-button disabled">Database Archive [WIP]</button>
         </div>
@@ -94165,6 +95117,280 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
             </div>
         </div>
     </div>
+
+    <!-- REGISTRO DE COMBATE SECTION -->
+    <div id="registro-combate" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #000000; background-image: linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.95)), repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255, 174, 0, 0.05) 2px, transparent 4px); background-size: 100% 100%, 100% 4px; z-index: 2000; overflow-y: auto; padding-top: 60px;">
+        <button class="back-to-home-btn no-print" onclick="goHomeFromRegistroCombate()" style="position: fixed; top: 20px; left: 20px;">⚠️ SALIR AL MENÚ</button>
+        
+        <div style="max-width: 1400px; margin: 0 auto; padding: 20px;">
+            <!-- Scanner Effect -->
+            <div style="position: fixed; top: 0; left: 0; width: 100%; height: 2px; background: linear-gradient(90deg, transparent, rgba(255, 140, 66, 0.5), transparent); animation: scanner-sweep 30s linear infinite alternate; z-index: 0;"></div>
+            
+            <!-- Header -->
+            <div style="text-align: center; margin-bottom: 40px;">
+                <h1 style="
+                    font-family: 'Share Tech Mono', monospace;
+                    color: #ffae00;
+                    font-size: 3em;
+                    text-transform: uppercase;
+                    letter-spacing: 8px;
+                    margin: 0;
+                    text-shadow: 0 0 20px rgba(255, 174, 0, 0.6), 0 0 40px rgba(255, 174, 0, 0.3);
+                    animation: flicker 3s infinite alternate;
+                ">
+                    [ REGISTRO DE COMBATE ]
+                </h1>
+                <p style="
+                    font-family: 'Share Tech Mono', monospace;
+                    color: #00ff41;
+                    font-size: 0.9em;
+                    letter-spacing: 3px;
+                    margin-top: 10px;
+                ">
+                    SISTEMA DE GESTIÓN POST-MISIÓN
+                </p>
+            </div>
+
+            <!-- Botón Principal de Distribución de Recompensas -->
+            <div style="text-align: center; margin-bottom: 40px;">
+                <button onclick="abrirModalRecompensas()" style="
+                    background: linear-gradient(135deg, #ffae00 0%, #ff8c42 100%);
+                    border: 2px solid #ffae00;
+                    color: #000;
+                    font-family: 'Share Tech Mono', monospace;
+                    font-size: 1.3em;
+                    font-weight: bold;
+                    padding: 20px 50px;
+                    cursor: pointer;
+                    text-transform: uppercase;
+                    letter-spacing: 3px;
+                    box-shadow: 0 0 20px rgba(255, 174, 0, 0.5), inset 0 0 20px rgba(255, 255, 255, 0.2);
+                    transition: all 0.3s;
+                    clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+                " onmouseover="this.style.boxShadow='0 0 30px rgba(255, 174, 0, 0.8), inset 0 0 30px rgba(255, 255, 255, 0.3)'; this.style.transform='scale(1.05)'" onmouseout="this.style.boxShadow='0 0 20px rgba(255, 174, 0, 0.5), inset 0 0 20px rgba(255, 255, 255, 0.2)'; this.style.transform='scale(1)'">
+                    💰 DISTRIBUIR RECOMPENSAS
+                </button>
+                <p style="
+                    font-family: 'Share Tech Mono', monospace;
+                    color: #888;
+                    font-size: 0.8em;
+                    margin-top: 10px;
+                ">
+                    Añadir XP y C-Bills a múltiples pilotos simultáneamente
+                </p>
+            </div>
+
+            <!-- Sección de Reportes Rápidos -->
+            <div style="margin-top: 60px;">
+                <h2 style="
+                    font-family: 'Share Tech Mono', monospace;
+                    color: #ffae00;
+                    font-size: 1.5em;
+                    text-transform: uppercase;
+                    letter-spacing: 4px;
+                    border-bottom: 2px solid #5c4200;
+                    padding-bottom: 10px;
+                    margin-bottom: 20px;
+                ">
+                    [ REPORTES RÁPIDOS ]
+                </h2>
+                
+                <p style="
+                    font-family: 'Share Tech Mono', monospace;
+                    color: #888;
+                    text-align: center;
+                    padding: 40px;
+                    font-style: italic;
+                ">
+                    Funcionalidad en desarrollo...
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Distribución de Recompensas -->
+    <div id="modal-recompensas" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); z-index: 3000; overflow-y: auto;">
+        <div style="max-width: 900px; margin: 50px auto; background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%); border: 2px solid #ffae00; border-radius: 0; padding: 30px; box-shadow: 0 0 50px rgba(255, 174, 0, 0.5); position: relative;">
+            
+            <!-- Botón Cerrar -->
+            <button onclick="cerrarModalRecompensas()" style="
+                position: absolute;
+                top: 15px;
+                right: 15px;
+                background: #ff4444;
+                border: 1px solid #ff0000;
+                color: #fff;
+                font-family: 'Share Tech Mono', monospace;
+                font-size: 1.2em;
+                font-weight: bold;
+                padding: 5px 15px;
+                cursor: pointer;
+                transition: all 0.3s;
+            " onmouseover="this.style.background='#ff0000'" onmouseout="this.style.background='#ff4444'">
+                ✕
+            </button>
+
+            <!-- Título del Modal -->
+            <h2 style="
+                font-family: 'Share Tech Mono', monospace;
+                color: #ffae00;
+                font-size: 2em;
+                text-transform: uppercase;
+                letter-spacing: 4px;
+                margin-bottom: 30px;
+                text-align: center;
+            ">
+                💰 DISTRIBUCIÓN DE RECOMPENSAS
+            </h2>
+
+            <!-- Paso 1: Buscar Jugador -->
+            <div style="margin-bottom: 30px;">
+                <h3 style="
+                    font-family: 'Share Tech Mono', monospace;
+                    color: #00ff41;
+                    font-size: 1.2em;
+                    margin-bottom: 15px;
+                ">
+                    PASO 1: BUSCAR PERSONAJES
+                </h3>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="recompensas-buscar-jugador" placeholder="Nombre del Jugador (Callsign)" style="
+                        flex: 1;
+                        background: rgba(0, 0, 0, 0.6);
+                        border: 1px solid #5c4200;
+                        color: #ffae00;
+                        font-family: 'Share Tech Mono', monospace;
+                        padding: 12px;
+                        font-size: 1em;
+                    " onkeypress="if(event.key==='Enter') buscarPersonajesParaRecompensas()">
+                    <button onclick="buscarPersonajesParaRecompensas()" style="
+                        background: linear-gradient(135deg, #0288d1 0%, #01579b 100%);
+                        border: 1px solid #00ff41;
+                        color: #ffffff;
+                        font-family: 'Share Tech Mono', monospace;
+                        font-weight: bold;
+                        padding: 12px 30px;
+                        cursor: pointer;
+                        transition: all 0.3s;
+                    " onmouseover="this.style.background='linear-gradient(135deg, #0277bd 0%, #004d7a 100%)'" onmouseout="this.style.background='linear-gradient(135deg, #0288d1 0%, #01579b 100%)'">
+                        🔍 BUSCAR
+                    </button>
+                </div>
+            </div>
+
+            <!-- Lista de Personajes Encontrados -->
+            <div id="recompensas-lista-personajes" style="margin-bottom: 30px; display: none;">
+                <h3 style="
+                    font-family: 'Share Tech Mono', monospace;
+                    color: #00ff41;
+                    font-size: 1.2em;
+                    margin-bottom: 15px;
+                ">
+                    PASO 2: SELECCIONAR PERSONAJES
+                </h3>
+                <div id="recompensas-personajes-container" style="
+                    background: rgba(0, 0, 0, 0.6);
+                    border: 1px solid #5c4200;
+                    padding: 20px;
+                    max-height: 300px;
+                    overflow-y: auto;
+                ">
+                    <!-- Aquí se llenarán los personajes dinámicamente -->
+                </div>
+            </div>
+
+            <!-- Inputs de Recompensas -->
+            <div id="recompensas-inputs" style="margin-bottom: 30px; display: none;">
+                <h3 style="
+                    font-family: 'Share Tech Mono', monospace;
+                    color: #00ff41;
+                    font-size: 1.2em;
+                    margin-bottom: 15px;
+                ">
+                    PASO 3: DEFINIR RECOMPENSAS
+                </h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div>
+                        <label style="
+                            font-family: 'Share Tech Mono', monospace;
+                            color: #ffae00;
+                            display: block;
+                            margin-bottom: 8px;
+                            font-size: 0.9em;
+                        ">
+                            XP A AÑADIR:
+                        </label>
+                        <input type="number" id="recompensas-xp" value="0" min="0" style="
+                            width: 100%;
+                            background: rgba(0, 0, 0, 0.6);
+                            border: 1px solid #5c4200;
+                            color: #ffae00;
+                            font-family: 'Share Tech Mono', monospace;
+                            padding: 12px;
+                            font-size: 1.2em;
+                            text-align: center;
+                        ">
+                    </div>
+                    <div>
+                        <label style="
+                            font-family: 'Share Tech Mono', monospace;
+                            color: #ffae00;
+                            display: block;
+                            margin-bottom: 8px;
+                            font-size: 0.9em;
+                        ">
+                            C-BILLS A AÑADIR:
+                        </label>
+                        <input type="number" id="recompensas-dinero" value="0" min="0" style="
+                            width: 100%;
+                            background: rgba(0, 0, 0, 0.6);
+                            border: 1px solid #5c4200;
+                            color: #ffae00;
+                            font-family: 'Share Tech Mono', monospace;
+                            padding: 12px;
+                            font-size: 1.2em;
+                            text-align: center;
+                        ">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botón Aplicar -->
+            <div id="recompensas-boton-aplicar" style="display: none; text-align: center;">
+                <button onclick="aplicarRecompensas()" style="
+                    background: linear-gradient(135deg, #00ff41 0%, #00cc33 100%);
+                    border: 2px solid #00ff41;
+                    color: #000;
+                    font-family: 'Share Tech Mono', monospace;
+                    font-size: 1.3em;
+                    font-weight: bold;
+                    padding: 15px 50px;
+                    cursor: pointer;
+                    text-transform: uppercase;
+                    letter-spacing: 3px;
+                    box-shadow: 0 0 20px rgba(0, 255, 65, 0.5);
+                    transition: all 0.3s;
+                " onmouseover="this.style.boxShadow='0 0 30px rgba(0, 255, 65, 0.8)'; this.style.transform='scale(1.05)'" onmouseout="this.style.boxShadow='0 0 20px rgba(0, 255, 65, 0.5)'; this.style.transform='scale(1)'">
+                    ✅ APLICAR RECOMPENSAS
+                </button>
+            </div>
+
+            <!-- Área de Estado -->
+            <div id="recompensas-estado" style="
+                margin-top: 20px;
+                padding: 15px;
+                background: rgba(0, 0, 0, 0.6);
+                border: 1px solid #5c4200;
+                font-family: 'Share Tech Mono', monospace;
+                color: #888;
+                text-align: center;
+                display: none;
+            ">
+                <!-- Mensajes de estado aparecerán aquí -->
+            </div>
+        </div>
+    </div>
+
     <!-- TRR UTILIDADES SECTION -->
     <div id="trr-utilities" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #0a0a0a; background-image: linear-gradient(rgba(15, 20, 25, 0.85), rgba(10, 10, 10, 0.95)), repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(74, 90, 106, 0.1) 2px, transparent 4px), repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(183, 28, 28, 0.08) 40px, rgba(183, 28, 28, 0.08) 41px), repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(183, 28, 28, 0.08) 40px, rgba(183, 28, 28, 0.08) 41px), radial-gradient(circle at center, #1a1a1a 0%, #000 100%); background-size: 100% 100%, 100% 4px, 100% 100%, 100% 100%, 100% 100%; z-index: 2000; overflow-y: auto; padding-top: 60px;">
         
