@@ -652,7 +652,7 @@
     <script>
         // --- CONFIGURACIÓN GOOGLE APPS SCRIPT ---
         // ¡IMPORTANTE! Reemplaza esta URL con la que obtengas al implementar tu script
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbybFNvC0HfYOO-JqJRFbdQKipM8CkuTGuxzpELleXvNuFyAbFJ7AjrsFJTeJxf540yg1A/exec";
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx5fkfIvoR_sQVc6G2Z886Qs06nhJ2pHxTCWEfCD9rZ8kSuA0aORE9vDVqPvbmZzgI0vw/exec";
 
         // ============================================================================
         // CONSTANTES DE CONFIGURACIÓN
@@ -3684,17 +3684,18 @@
 
         /**
          * Abre el modal de distribución de recompensas
+         * Versión SIMPLIFICADA: Solo añade fila a "Respuestas de formulario 1"
          */
         function abrirModalRecompensas() {
             console.log('💰 Abriendo modal de recompensas...');
             
-            // Resetear el modal
-            document.getElementById('recompensas-buscar-jugador').value = '';
-            document.getElementById('recompensas-xp').value = '0';
-            document.getElementById('recompensas-dinero').value = '0';
-            document.getElementById('recompensas-lista-personajes').style.display = 'none';
-            document.getElementById('recompensas-inputs').style.display = 'none';
-            document.getElementById('recompensas-boton-aplicar').style.display = 'none';
+            // Resetear todos los inputs
+            document.getElementById('xp-marcos').value = '0';
+            document.getElementById('xp-jaime').value = '0';
+            document.getElementById('xp-joan').value = '0';
+            document.getElementById('xp-juan').value = '0';
+            document.getElementById('recompensas-dinero-unidad').value = '0';
+            document.getElementById('recompensas-gastos-unidad').value = '0';
             document.getElementById('recompensas-estado').style.display = 'none';
             
             // Mostrar modal
@@ -3709,311 +3710,112 @@
             document.getElementById('modal-recompensas').style.display = 'none';
         }
 
-        // Variable global para cachear personajes encontrados
-        let personajesRecompensasCache = [];
-
         /**
-         * Busca personajes de un jugador específico para distribuir recompensas
-         * Similar a buscarEnNubeBarracones() pero optimizado para selección múltiple
+         * Registra una misión añadiendo UNA FILA a "Respuestas de formulario 1"
+         * Funciona EXACTAMENTE como Google Forms - no toca personajes directamente
+         * 
+         * Las fórmulas en la pestaña "Unidad" se encargan de sumar automáticamente
+         * 
+         * @async
          */
-        async function buscarPersonajesParaRecompensas() {
-            console.log('🔍 Buscando personajes para recompensas...');
+        async function registrarMision() {
+            console.log('✅ ===== REGISTRANDO MISIÓN =====');
             
-            // Validar URL de Google Script
+            // === VALIDACIÓN ===
             if (GOOGLE_SCRIPT_URL.includes("YOUR_GOOGLE_SCRIPT")) {
                 alert(ERROR_MESSAGES.GOOGLE_SCRIPT_NOT_CONFIGURED);
                 return;
             }
             
-            // Obtener nombre del jugador
-            const jugadorInput = document.getElementById('recompensas-buscar-jugador');
-            const jugador = jugadorInput.value.trim();
+            // === RECOPILAR DATOS ===
+            const xpMarcos = parseInt(document.getElementById('xp-marcos').value) || 0;
+            const xpJaime = parseInt(document.getElementById('xp-jaime').value) || 0;
+            const xpJoan = parseInt(document.getElementById('xp-joan').value) || 0;
+            const xpJuan = parseInt(document.getElementById('xp-juan').value) || 0;
+            const dineroGanado = parseInt(document.getElementById('recompensas-dinero-unidad').value) || 0;
+            const gastos = parseInt(document.getElementById('recompensas-gastos-unidad').value) || 0;
             
-            if (!jugador) {
-                alert('Por favor ingresa el nombre del jugador (Callsign)');
+            // Validar que hay algo que registrar
+            if (xpMarcos === 0 && xpJaime === 0 && xpJoan === 0 && xpJuan === 0 && 
+                dineroGanado === 0 && gastos === 0) {
+                alert('Por favor ingresa al menos un valor diferente de 0');
                 return;
             }
             
-            // Mostrar estado de carga
+            // === CREAR RESUMEN ===
+            let resumen = 'Se registrará la siguiente misión:\n\n';
+            resumen += `👤 Marcos: ${xpMarcos} XP\n`;
+            resumen += `👤 Jaime: ${xpJaime} XP\n`;
+            resumen += `👤 Joan: ${xpJoan} XP\n`;
+            resumen += `👤 Juan Palacios: ${xpJuan} XP\n\n`;
+            resumen += `💰 Dinero: ${dineroGanado} C-Bills\n`;
+            resumen += `💸 Gastos: ${gastos} C-Bills\n\n`;
+            resumen += `¿Confirmar?`;
+            
+            if (!confirm(resumen)) {
+                return;
+            }
+            
+            // === MOSTRAR ESTADO ===
             const estadoDiv = document.getElementById('recompensas-estado');
             estadoDiv.style.display = 'block';
             estadoDiv.style.color = '#ffae00';
-            estadoDiv.innerHTML = '🔍 Buscando personajes...';
-            
-            try {
-                // Hacer request al Google Apps Script
-                const url = `${GOOGLE_SCRIPT_URL}?action=list&jugador=${encodeURIComponent(jugador)}`;
-                console.log('  📡 URL:', url);
-                
-                const response = await fetch(url);
-                const data = await response.json();
-                
-                console.log('  📦 Respuesta:', data);
-                
-                if (data.result === "success" && data.personajes && data.personajes.length > 0) {
-                    personajesRecompensasCache = data.personajes;
-                    mostrarPersonajesParaSeleccion(data.personajes);
-                    
-                    estadoDiv.style.display = 'none';
-                } else {
-                    estadoDiv.style.color = '#ff4444';
-                    estadoDiv.innerHTML = `❌ ${ERROR_MESSAGES.NO_RESULTS}`;
-                    
-                    // Ocultar lista si estaba visible
-                    document.getElementById('recompensas-lista-personajes').style.display = 'none';
-                    document.getElementById('recompensas-inputs').style.display = 'none';
-                    document.getElementById('recompensas-boton-aplicar').style.display = 'none';
-                }
-                
-            } catch (error) {
-                console.error('❌ Error al buscar personajes:', error);
-                estadoDiv.style.color = '#ff4444';
-                estadoDiv.innerHTML = `❌ ${ERROR_MESSAGES.CONNECTION_ERROR}: ${error.message}`;
-                
-                // Ocultar lista si estaba visible
-                document.getElementById('recompensas-lista-personajes').style.display = 'none';
-                document.getElementById('recompensas-inputs').style.display = 'none';
-                document.getElementById('recompensas-boton-aplicar').style.display = 'none';
-            }
-        }
-
-        /**
-         * Muestra los personajes encontrados con checkboxes para selección múltiple
-         * @param {Array} personajes - Array de objetos de personajes
-         */
-        function mostrarPersonajesParaSeleccion(personajes) {
-            console.log(`📋 Mostrando ${personajes.length} personajes para selección...`);
-            
-            const container = document.getElementById('recompensas-personajes-container');
-            
-            let html = '';
-            
-            personajes.forEach((p, index) => {
-                // Calcular XP actual y dinero actual
-                const xpActual = p.xpTotal || 0;
-                const dineroActual = p.dinero || 0;
-                
-                html += `
-                    <div style="
-                        display: flex;
-                        align-items: center;
-                        gap: 15px;
-                        background: rgba(0, 0, 0, 0.4);
-                        border: 1px solid #5c4200;
-                        padding: 15px;
-                        margin-bottom: 10px;
-                        transition: all 0.3s;
-                    " onmouseover="this.style.borderColor='#ffae00'" onmouseout="this.style.borderColor='#5c4200'">
-                        <input type="checkbox" id="recomp-check-${index}" class="recomp-checkbox" style="
-                            width: 20px;
-                            height: 20px;
-                            cursor: pointer;
-                        " onchange="actualizarSeleccionRecompensas()">
-                        <div style="flex: 1;">
-                            <div style="
-                                font-family: 'Share Tech Mono', monospace;
-                                color: #ffae00;
-                                font-size: 1.1em;
-                                font-weight: bold;
-                                margin-bottom: 5px;
-                            ">
-                                ${p.nombre}
-                            </div>
-                            <div style="
-                                font-family: 'Share Tech Mono', monospace;
-                                color: #888;
-                                font-size: 0.85em;
-                            ">
-                                XP Actual: ${xpActual} | C-Bills: ${dineroActual} | Campaña: ${p.campaign || 'N/A'}
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            // Botón "Seleccionar Todos"
-            html = `
-                <div style="margin-bottom: 15px; text-align: center;">
-                    <button onclick="seleccionarTodosPersonajes(true)" style="
-                        background: rgba(0, 255, 65, 0.2);
-                        border: 1px solid #00ff41;
-                        color: #00ff41;
-                        font-family: 'Share Tech Mono', monospace;
-                        padding: 8px 20px;
-                        cursor: pointer;
-                        margin-right: 10px;
-                    ">
-                        ✓ Seleccionar Todos
-                    </button>
-                    <button onclick="seleccionarTodosPersonajes(false)" style="
-                        background: rgba(255, 68, 68, 0.2);
-                        border: 1px solid #ff4444;
-                        color: #ff4444;
-                        font-family: 'Share Tech Mono', monospace;
-                        padding: 8px 20px;
-                        cursor: pointer;
-                    ">
-                        ✕ Deseleccionar Todos
-                    </button>
-                </div>
-            ` + html;
-            
-            container.innerHTML = html;
-            
-            // Mostrar la lista
-            document.getElementById('recompensas-lista-personajes').style.display = 'block';
-            document.getElementById('recompensas-inputs').style.display = 'block';
-            document.getElementById('recompensas-boton-aplicar').style.display = 'block';
-        }
-
-        /**
-         * Selecciona o deselecciona todos los checkboxes de personajes
-         * @param {boolean} seleccionar - true para seleccionar, false para deseleccionar
-         */
-        function seleccionarTodosPersonajes(seleccionar) {
-            const checkboxes = document.querySelectorAll('.recomp-checkbox');
-            checkboxes.forEach(cb => {
-                cb.checked = seleccionar;
-            });
-            actualizarSeleccionRecompensas();
-        }
-
-        /**
-         * Actualiza la UI cuando cambia la selección de personajes
-         * Muestra cuántos personajes están seleccionados
-         */
-        function actualizarSeleccionRecompensas() {
-            const checkboxes = document.querySelectorAll('.recomp-checkbox:checked');
-            const count = checkboxes.length;
-            
-            console.log(`  ✓ ${count} personaje(s) seleccionado(s)`);
-            
-            // Mostrar/ocultar botón de aplicar según la selección
-            const botonAplicar = document.getElementById('recompensas-boton-aplicar');
-            if (count > 0) {
-                botonAplicar.style.display = 'block';
-            }
-        }
-
-        /**
-         * Aplica las recompensas (XP y dinero) a los personajes seleccionados
-         * Actualiza los valores en Google Sheets
-         */
-        async function aplicarRecompensas() {
-            console.log('✅ Aplicando recompensas...');
-            
-            // Validar URL de Google Script
-            if (GOOGLE_SCRIPT_URL.includes("YOUR_GOOGLE_SCRIPT")) {
-                alert(ERROR_MESSAGES.GOOGLE_SCRIPT_NOT_CONFIGURED);
-                return;
-            }
-            
-            // Obtener personajes seleccionados
-            const checkboxes = document.querySelectorAll('.recomp-checkbox:checked');
-            if (checkboxes.length === 0) {
-                alert('Por favor selecciona al menos un personaje');
-                return;
-            }
-            
-            // Obtener valores de recompensas
-            const xpAñadir = parseInt(document.getElementById('recompensas-xp').value) || 0;
-            const dineroAñadir = parseInt(document.getElementById('recompensas-dinero').value) || 0;
-            
-            if (xpAñadir === 0 && dineroAñadir === 0) {
-                alert('Por favor ingresa al menos XP o C-Bills para añadir');
-                return;
-            }
-            
-            // Confirmar acción
-            const confirmMsg = `¿Confirmas añadir?\n\n` +
-                              `XP: +${xpAñadir}\n` +
-                              `C-Bills: +${dineroAñadir}\n\n` +
-                              `A ${checkboxes.length} personaje(s) seleccionado(s)?`;
-            
-            if (!confirm(confirmMsg)) {
-                return;
-            }
-            
-            // Mostrar estado de procesamiento
-            const estadoDiv = document.getElementById('recompensas-estado');
-            estadoDiv.style.display = 'block';
-            estadoDiv.style.color = '#ffae00';
-            estadoDiv.innerHTML = `⏳ Procesando ${checkboxes.length} personaje(s)...`;
+            estadoDiv.innerHTML = '⏳ Registrando misión...';
             
             // Deshabilitar botón
-            const botonAplicar = document.querySelector('#recompensas-boton-aplicar button');
-            const textoOriginal = botonAplicar.innerHTML;
-            botonAplicar.disabled = true;
-            botonAplicar.innerHTML = '⏳ PROCESANDO...';
+            const botonRegistrar = document.querySelector('#recompensas-boton-aplicar button');
+            const textoOriginal = botonRegistrar.innerHTML;
+            botonRegistrar.disabled = true;
+            botonRegistrar.innerHTML = '⏳ REGISTRANDO...';
             
             try {
-                let exitosos = 0;
-                let errores = 0;
+                // === ENVIAR A GOOGLE SHEETS ===
+                // Esto añadirá UNA FILA a "Respuestas de formulario 1"
+                // Formato: [Timestamp, XP_Marcos, XP_Jaime, XP_Joan, XP_Juan, Dinero, Gastos]
                 
-                // Procesar cada personaje seleccionado
-                for (let i = 0; i < checkboxes.length; i++) {
-                    const checkbox = checkboxes[i];
-                    const index = parseInt(checkbox.id.replace('recomp-check-', ''));
-                    const personaje = personajesRecompensasCache[index];
-                    
-                    console.log(`  📦 Procesando: ${personaje.nombre}`);
-                    
-                    // Calcular nuevos valores
-                    const xpNuevo = (parseInt(personaje.xpTotal) || 0) + xpAñadir;
-                    const dineroNuevo = (parseInt(personaje.dinero) || 0) + dineroAñadir;
-                    
-                    // Crear objeto con datos actualizados
-                    // IMPORTANTE: Mantener todos los datos originales y solo actualizar XP y dinero
-                    const datosActualizados = {
-                        ...personaje,  // Spread de todos los datos originales
-                        xpTotal: xpNuevo,
-                        dinero: dineroNuevo
-                    };
-                    
-                    // Enviar a Google Sheets
-                    const response = await fetch(GOOGLE_SCRIPT_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(datosActualizados)
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (data.result === "success") {
-                        exitosos++;
-                        console.log(`    ✅ ${personaje.nombre}: XP ${personaje.xpTotal || 0} → ${xpNuevo}, Dinero ${personaje.dinero || 0} → ${dineroNuevo}`);
-                    } else {
-                        errores++;
-                        console.error(`    ❌ Error en ${personaje.nombre}:`, data.msg);
-                    }
-                    
-                    // Actualizar progreso
-                    estadoDiv.innerHTML = `⏳ Procesando... ${i + 1}/${checkboxes.length}`;
-                }
+                const response = await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'registrarMision',
+                        xpMarcos: xpMarcos,
+                        xpJaime: xpJaime,
+                        xpJoan: xpJoan,
+                        xpJuan: xpJuan,
+                        dineroGanado: dineroGanado,
+                        gastos: gastos
+                    })
+                });
                 
-                // Mostrar resultado final
-                if (errores === 0) {
+                const data = await response.json();
+                console.log('📦 Respuesta:', data);
+                
+                if (data.result === "success") {
                     estadoDiv.style.color = '#00ff41';
-                    estadoDiv.innerHTML = `✅ ¡Éxito! ${exitosos} personaje(s) actualizado(s) correctamente.`;
+                    estadoDiv.innerHTML = '✅ Misión registrada correctamente<br>Las fórmulas de "Unidad" se actualizarán automáticamente';
+                    
+                    console.log('✅ Misión registrada en "Respuestas de formulario 1"');
+                    
+                    // Esperar 3 segundos y cerrar modal
+                    setTimeout(() => {
+                        cerrarModalRecompensas();
+                    }, 3000);
                 } else {
                     estadoDiv.style.color = '#ff4444';
-                    estadoDiv.innerHTML = `⚠️ Completado con errores: ${exitosos} exitoso(s), ${errores} error(es).`;
+                    estadoDiv.innerHTML = `❌ Error al registrar: ${data.msg || 'Desconocido'}`;
                 }
                 
-                // Esperar 3 segundos y cerrar modal
-                setTimeout(() => {
-                    cerrarModalRecompensas();
-                }, 3000);
-                
             } catch (error) {
-                console.error('❌ Error al aplicar recompensas:', error);
+                console.error('❌ Error crítico al registrar misión:', error);
                 estadoDiv.style.color = '#ff4444';
-                estadoDiv.innerHTML = `❌ Error: ${error.message}`;
+                estadoDiv.innerHTML = `❌ Error crítico: ${error.message}`;
             } finally {
                 // Restaurar botón
-                botonAplicar.disabled = false;
-                botonAplicar.innerHTML = textoOriginal;
+                botonRegistrar.disabled = false;
+                botonRegistrar.innerHTML = textoOriginal;
             }
+            
+            console.log('✅ ===== PROCESO COMPLETADO =====');
         }
 
         function goToSheetDirectly() {
@@ -95243,71 +95045,150 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                 💰 DISTRIBUCIÓN DE RECOMPENSAS
             </h2>
 
-            <!-- Paso 1: Buscar Jugador -->
+            <!-- Inputs Fijos de XP por Jugador -->
             <div style="margin-bottom: 30px;">
                 <h3 style="
                     font-family: 'Share Tech Mono', monospace;
                     color: #00ff41;
                     font-size: 1.2em;
                     margin-bottom: 15px;
+                    text-align: center;
                 ">
-                    PASO 1: BUSCAR PERSONAJES
+                    📊 EXPERIENCIA POR JUGADOR
                 </h3>
-                <div style="display: flex; gap: 10px;">
-                    <input type="text" id="recompensas-buscar-jugador" placeholder="Nombre del Jugador (Callsign)" style="
-                        flex: 1;
-                        background: rgba(0, 0, 0, 0.6);
-                        border: 1px solid #5c4200;
-                        color: #ffae00;
-                        font-family: 'Share Tech Mono', monospace;
-                        padding: 12px;
-                        font-size: 1em;
-                    " onkeypress="if(event.key==='Enter') buscarPersonajesParaRecompensas()">
-                    <button onclick="buscarPersonajesParaRecompensas()" style="
-                        background: linear-gradient(135deg, #0288d1 0%, #01579b 100%);
-                        border: 1px solid #00ff41;
-                        color: #ffffff;
-                        font-family: 'Share Tech Mono', monospace;
-                        font-weight: bold;
-                        padding: 12px 30px;
-                        cursor: pointer;
-                        transition: all 0.3s;
-                    " onmouseover="this.style.background='linear-gradient(135deg, #0277bd 0%, #004d7a 100%)'" onmouseout="this.style.background='linear-gradient(135deg, #0288d1 0%, #01579b 100%)'">
-                        🔍 BUSCAR
-                    </button>
-                </div>
-            </div>
-
-            <!-- Lista de Personajes Encontrados -->
-            <div id="recompensas-lista-personajes" style="margin-bottom: 30px; display: none;">
-                <h3 style="
-                    font-family: 'Share Tech Mono', monospace;
-                    color: #00ff41;
-                    font-size: 1.2em;
-                    margin-bottom: 15px;
-                ">
-                    PASO 2: SELECCIONAR PERSONAJES
-                </h3>
-                <div id="recompensas-personajes-container" style="
-                    background: rgba(0, 0, 0, 0.6);
+                
+                <div style="
+                    display: grid;
+                    grid-template-columns: 1fr;
+                    gap: 15px;
+                    background: rgba(0, 0, 0, 0.3);
                     border: 1px solid #5c4200;
                     padding: 20px;
-                    max-height: 300px;
-                    overflow-y: auto;
                 ">
-                    <!-- Aquí se llenarán los personajes dinámicamente -->
+                    <!-- Marcos -->
+                    <div style="display: grid; grid-template-columns: 200px 1fr; gap: 15px; align-items: center;">
+                        <label style="
+                            font-family: 'Share Tech Mono', monospace;
+                            color: #ffae00;
+                            font-size: 1em;
+                            font-weight: bold;
+                        ">
+                            👤 MARCOS:
+                        </label>
+                        <input 
+                            type="number" 
+                            id="xp-marcos" 
+                            value="0" 
+                            min="0" 
+                            style="
+                                background: rgba(0, 0, 0, 0.6);
+                                border: 1px solid #00ff41;
+                                color: #00ff41;
+                                font-family: 'Share Tech Mono', monospace;
+                                padding: 12px;
+                                font-size: 1.1em;
+                                text-align: center;
+                                font-weight: bold;
+                            "
+                        >
+                    </div>
+                    
+                    <!-- Jaime -->
+                    <div style="display: grid; grid-template-columns: 200px 1fr; gap: 15px; align-items: center;">
+                        <label style="
+                            font-family: 'Share Tech Mono', monospace;
+                            color: #ffae00;
+                            font-size: 1em;
+                            font-weight: bold;
+                        ">
+                            👤 JAIME:
+                        </label>
+                        <input 
+                            type="number" 
+                            id="xp-jaime" 
+                            value="0" 
+                            min="0" 
+                            style="
+                                background: rgba(0, 0, 0, 0.6);
+                                border: 1px solid #00ff41;
+                                color: #00ff41;
+                                font-family: 'Share Tech Mono', monospace;
+                                padding: 12px;
+                                font-size: 1.1em;
+                                text-align: center;
+                                font-weight: bold;
+                            "
+                        >
+                    </div>
+                    
+                    <!-- Joan -->
+                    <div style="display: grid; grid-template-columns: 200px 1fr; gap: 15px; align-items: center;">
+                        <label style="
+                            font-family: 'Share Tech Mono', monospace;
+                            color: #ffae00;
+                            font-size: 1em;
+                            font-weight: bold;
+                        ">
+                            👤 JOAN:
+                        </label>
+                        <input 
+                            type="number" 
+                            id="xp-joan" 
+                            value="0" 
+                            min="0" 
+                            style="
+                                background: rgba(0, 0, 0, 0.6);
+                                border: 1px solid #00ff41;
+                                color: #00ff41;
+                                font-family: 'Share Tech Mono', monospace;
+                                padding: 12px;
+                                font-size: 1.1em;
+                                text-align: center;
+                                font-weight: bold;
+                            "
+                        >
+                    </div>
+                    
+                    <!-- Juan Palacios -->
+                    <div style="display: grid; grid-template-columns: 200px 1fr; gap: 15px; align-items: center;">
+                        <label style="
+                            font-family: 'Share Tech Mono', monospace;
+                            color: #ffae00;
+                            font-size: 1em;
+                            font-weight: bold;
+                        ">
+                            👤 JUAN PALACIOS:
+                        </label>
+                        <input 
+                            type="number" 
+                            id="xp-juan" 
+                            value="0" 
+                            min="0" 
+                            style="
+                                background: rgba(0, 0, 0, 0.6);
+                                border: 1px solid #00ff41;
+                                color: #00ff41;
+                                font-family: 'Share Tech Mono', monospace;
+                                padding: 12px;
+                                font-size: 1.1em;
+                                text-align: center;
+                                font-weight: bold;
+                            "
+                        >
+                    </div>
                 </div>
             </div>
 
-            <!-- Inputs de Recompensas -->
-            <div id="recompensas-inputs" style="margin-bottom: 30px; display: none;">
+            <!-- Inputs de Finanzas de la Unidad -->
+            <div style="margin-bottom: 30px;">
                 <h3 style="
                     font-family: 'Share Tech Mono', monospace;
                     color: #00ff41;
                     font-size: 1.2em;
                     margin-bottom: 15px;
+                    text-align: center;
                 ">
-                    PASO 3: DEFINIR RECOMPENSAS
+                    💰 FINANZAS DE LA UNIDAD
                 </h3>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                     <div>
@@ -95318,18 +95199,28 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                             margin-bottom: 8px;
                             font-size: 0.9em;
                         ">
-                            XP A AÑADIR:
+                            💰 DINERO GANADO (C-BILLS):
                         </label>
-                        <input type="number" id="recompensas-xp" value="0" min="0" style="
+                        <input type="number" id="recompensas-dinero-unidad" value="0" min="0" style="
                             width: 100%;
                             background: rgba(0, 0, 0, 0.6);
                             border: 1px solid #5c4200;
-                            color: #ffae00;
+                            color: #00ff41;
                             font-family: 'Share Tech Mono', monospace;
                             padding: 12px;
                             font-size: 1.2em;
                             text-align: center;
+                            font-weight: bold;
                         ">
+                        <p style="
+                            font-family: 'Share Tech Mono', monospace;
+                            color: #888;
+                            font-size: 0.75em;
+                            margin-top: 5px;
+                            text-align: center;
+                        ">
+                            Se añade a la cuenta de la Unidad
+                        </p>
                     </div>
                     <div>
                         <label style="
@@ -95339,25 +95230,35 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                             margin-bottom: 8px;
                             font-size: 0.9em;
                         ">
-                            C-BILLS A AÑADIR:
+                            💸 GASTOS (C-BILLS):
                         </label>
-                        <input type="number" id="recompensas-dinero" value="0" min="0" style="
+                        <input type="number" id="recompensas-gastos-unidad" value="0" min="0" style="
                             width: 100%;
                             background: rgba(0, 0, 0, 0.6);
                             border: 1px solid #5c4200;
-                            color: #ffae00;
+                            color: #ff4444;
                             font-family: 'Share Tech Mono', monospace;
                             padding: 12px;
                             font-size: 1.2em;
                             text-align: center;
+                            font-weight: bold;
                         ">
+                        <p style="
+                            font-family: 'Share Tech Mono', monospace;
+                            color: #888;
+                            font-size: 0.75em;
+                            margin-top: 5px;
+                            text-align: center;
+                        ">
+                            Se resta de la cuenta de la Unidad
+                        </p>
                     </div>
                 </div>
             </div>
 
             <!-- Botón Aplicar -->
-            <div id="recompensas-boton-aplicar" style="display: none; text-align: center;">
-                <button onclick="aplicarRecompensas()" style="
+            <div id="recompensas-boton-aplicar" style="text-align: center; margin-top: 30px;">
+                <button onclick="registrarMision()" style="
                     background: linear-gradient(135deg, #00ff41 0%, #00cc33 100%);
                     border: 2px solid #00ff41;
                     color: #000;
@@ -95371,7 +95272,7 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                     box-shadow: 0 0 20px rgba(0, 255, 65, 0.5);
                     transition: all 0.3s;
                 " onmouseover="this.style.boxShadow='0 0 30px rgba(0, 255, 65, 0.8)'; this.style.transform='scale(1.05)'" onmouseout="this.style.boxShadow='0 0 20px rgba(0, 255, 65, 0.5)'; this.style.transform='scale(1)'">
-                    ✅ APLICAR RECOMPENSAS
+                    ✅ REGISTRAR MISIÓN
                 </button>
             </div>
 
