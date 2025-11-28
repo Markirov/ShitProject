@@ -2503,7 +2503,9 @@
                 return {
                     nombre: '',
                     jugador: '',
-                    error: error.message
+                    error: error.message,
+                xpDisponible: document.getElementById('barr-xp-disponible')?.value || 0,
+                xpTotal: document.getElementById('barr-xp-total')?.value || 0
                 };
             }
         }
@@ -2573,9 +2575,7 @@
                 console.log('📊 Valor del campo barr-nombre:', document.getElementById('barr-nombre'));
                 console.log('📊 Valor actual:', document.getElementById('barr-nombre')?.value);
                 alert("El personaje necesita un nombre para guardarse.");
-                return Promise.resolve(false);,
-                xpDisponible: document.getElementById('barr-xp-disponible')?.value || 0,
-                xpTotal: document.getElementById('barr-xp-total')?.value || 0
+                return Promise.resolve(false);
             }
             
             // === ACTUALIZAR UI DEL BOTÓN ===
