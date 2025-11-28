@@ -1150,6 +1150,498 @@
                 }
             }
         }
+
+        // ============================================================================
+        // SISTEMA DE EXPERIENCIA (XP) - BARRACONES
+        // ============================================================================
+
+        /**
+         * Tablas de costos de XP
+         */
+        const XP_COSTS = {
+            // Costo de subir atributos [valorDestino][atributo]
+            atributos: {
+                6: { fue: 0, des: 0, int: 0, cha: 0 },
+                7: { fue: 1000, des: 1500, int: 2000, cha: 1000 },
+                8: { fue: 3000, des: 4500, int: 6000, cha: 3000 },
+                9: { fue: 7000, des: 9500, int: 12000, cha: 7000 },
+                10: { fue: 15000, des: 19500, int: 24500, cha: 15000 },
+                11: { fue: 30000, des: 39500, int: 49500, cha: 30000 },
+                12: { fue: 60000, des: 79500, int: 99500, cha: 60000 }
+            },
+    
+            // Costo de subir habilidades [nivelDestino]
+            habilidades: {
+                0: 0,
+                1: 750,
+                2: 1750,
+                3: 2500,
+                4: 3500,
+                5: 5000,
+                6: 7000,
+                7: 10000,
+                8: 14000,
+                9: 19000
+            },
+    
+            // Umbrales de nivel de veteranía
+            veterania: [
+                { min: 0, max: 5000, nombre: 'Novato', upgradesPermitidos: 0 },
+                { min: 5001, max: 30000, nombre: 'Regular', upgradesPermitidos: 1 },
+                { min: 30001, max: 65000, nombre: 'Veterano', upgradesPermitidos: 2 },
+                { min: 65001, max: 100000, nombre: 'Elite', upgradesPermitidos: 3 },
+                { min: 100001, max: Infinity, nombre: 'As', upgradesPermitidos: 4 }
+            ]
+        };
+
+        /**
+         * Lista completa de habilidades disponibles
+         */
+        const HABILIDADES_DISPONIBLES = [
+            "Admin. de Feudo", "Arco", "Astronavegación", "Comercio", "Demoliciones",
+            "Diplomacia", "Disparo Mech", "Equitación", "Espada", "Etiqueta",
+            "Falsificación", "Física", "Furtividad", "Historia", "Hurto",
+            "Idioma", "Informática", "Ingeniería", "Interrogatorio", "Intimidación",
+            "Investigación", "Liderazgo", "Matemáticas", "Mecánica", "Medicina",
+            "Navegación", "Negociación", "Orientación", "Percepción", "Persuasión",
+            "Pilotar Aeronave", "Pilotar Mech", "Pilotar Vehículo", "Pistola",
+            "Primeros Auxilios", "Rastreo", "Rifle", "Supervivencia", "Tácticas",
+            "Técnica Mech", "Thrown Weapons"
+        ];
+
+        /**
+         * Calcula el nivel de veteranía basado en XP total
+         */
+        function calcularNivelVeterania(xpTotal) {
+            for (const nivel of XP_COSTS.veterania) {
+                if (xpTotal >= nivel.min && xpTotal <= nivel.max) {
+                    return nivel;
+                }
+            }
+            return XP_COSTS.veterania[0];
+        }
+
+        /**
+         * Actualiza el display de XP y nivel de veteranía
+         */
+        function actualizarDisplayXP() {
+            const xpTotal = parseInt(document.getElementById('barr-xp-total')?.value) || 0;
+            const nivelVeterania = calcularNivelVeterania(xpTotal);
+    
+            const rangoInput = document.getElementById('barr-rango');
+            if (rangoInput) {
+                rangoInput.value = nivelVeterania.nombre.toUpperCase();
+            }
+    
+            actualizarBotonAñadirHabilidad();
+        }
+
+        /**
+         * Actualiza la visibilidad del botón + de habilidades
+         * Se oculta si número de habilidades >= INT
+         */
+        function actualizarBotonAñadirHabilidad() {
+            const intValue = parseInt(document.getElementById('barr-int')?.value) || 0;
+            const table = document.getElementById('barr-skills-table');
+            const numHabilidades = table ? table.rows.length - 1 : 0;
+    
+            const btnAdd = document.getElementById('btn-add-skill');
+            if (btnAdd) {
+                btnAdd.style.display = (numHabilidades >= intValue) ? 'none' : 'block';
+            }
+        }
+
+        /**
+         * Consume XP y actualiza el display
+         */
+        function consumirXP(cantidad) {
+            const inputDisponible = document.getElementById('barr-xp-disponible');
+            if (!inputDisponible) return false;
+    
+            const xpDisponible = parseInt(inputDisponible.value) || 0;
+    
+            if (xpDisponible < cantidad) {
+                alert(`❌ XP INSUFICIENTE\n\nNecesitas: ${cantidad} XP\nDisponibles: ${xpDisponible} XP\nFaltante: ${cantidad - xpDisponible} XP`);
+                return false;
+            }
+    
+            inputDisponible.value = xpDisponible - cantidad;
+            actualizarDisplayXP();
+            return true;
+        }
+
+        /**
+         * Devuelve XP cuando se desmarca una mejora
+         */
+        function devolverXP(cantidad) {
+            const inputDisponible = document.getElementById('barr-xp-disponible');
+            if (!inputDisponible) return;
+    
+            const xpDisponible = parseInt(inputDisponible.value) || 0;
+            inputDisponible.value = xpDisponible + cantidad;
+            actualizarDisplayXP();
+        }
+
+        /**
+         * Actualiza los estilos hover de los cuadrados de upgrade
+         */
+        function actualizarHoverUpgrades() {
+            const xpTotal = parseInt(document.getElementById('barr-xp-total')?.value) || 0;
+            const nivelVeterania = calcularNivelVeterania(xpTotal);
+    
+            // Atributos
+            document.querySelectorAll('.barracones-attr-upgrades').forEach(container => {
+                const squares = Array.from(container.querySelectorAll('.barracones-attr-upgrade'));
+                const selectedCount = squares.filter(sq => sq.classList.contains('selected')).length;
+        
+                squares.forEach((sq, index) => {
+                    // Remover listeners anteriores
+                    sq.onmouseover = null;
+                    sq.onmouseout = null;
+            
+                    const isUsed = sq.classList.contains('used-this-rank');
+                    const isNextInLine = index === selectedCount;
+            
+                    if (isUsed) {
+                        // Rojo - ya usado en este rango
+                        sq.onmouseover = () => {
+                            sq.style.borderColor = '#ff4444';
+                            sq.style.boxShadow = '0 0 10px rgba(255,68,68,0.5)';
+                        };
+                        sq.onmouseout = () => {
+                            sq.style.borderColor = '';
+                            sq.style.boxShadow = '';
+                        };
+                    } else if (isNextInLine && selectedCount < nivelVeterania.upgradesPermitidos) {
+                        // Naranja - disponible
+                        sq.onmouseover = () => {
+                            sq.style.borderColor = '#ffae00';
+                            sq.style.boxShadow = '0 0 10px rgba(255,174,0,0.5)';
+                        };
+                        sq.onmouseout = () => {
+                            sq.style.borderColor = '';
+                            sq.style.boxShadow = '';
+                        };
+                    }
+                });
+            });
+    
+            // Habilidades
+            document.querySelectorAll('.barracones-skill-upgrades').forEach(container => {
+                const squares = Array.from(container.querySelectorAll('.barracones-skill-upgrade'));
+                const selectedCount = squares.filter(sq => sq.classList.contains('selected')).length;
+        
+                squares.forEach((sq, index) => {
+                    sq.onmouseover = null;
+                    sq.onmouseout = null;
+            
+                    const isUsed = sq.classList.contains('used-this-rank');
+                    const isNextInLine = index === selectedCount;
+            
+                    if (isUsed) {
+                        sq.onmouseover = () => {
+                            sq.style.borderColor = '#ff4444';
+                            sq.style.boxShadow = '0 0 10px rgba(255,68,68,0.5)';
+                        };
+                        sq.onmouseout = () => {
+                            sq.style.borderColor = '';
+                            sq.style.boxShadow = '';
+                        };
+                    } else if (isNextInLine && selectedCount < nivelVeterania.upgradesPermitidos) {
+                        sq.onmouseover = () => {
+                            sq.style.borderColor = '#ffae00';
+                            sq.style.boxShadow = '0 0 10px rgba(255,174,0,0.5)';
+                        };
+                        sq.onmouseout = () => {
+                            sq.style.borderColor = '';
+                            sq.style.boxShadow = '';
+                        };
+                    }
+                });
+            });
+        }
+
+        /**
+         * REEMPLAZA toggleAttrUpgrade ORIGINAL
+         * Toggle de atributo con sistema de XP
+         */
+        function toggleAttrUpgrade(square, attrId) {
+            const container = square.parentElement;
+            const squares = Array.from(container.querySelectorAll('.barracones-attr-upgrade'));
+            const clickedIndex = squares.indexOf(square);
+            const input = document.getElementById(attrId);
+    
+            if (!input) return;
+    
+            const attrName = attrId.replace('barr-', '');
+            const currentValue = parseInt(input.value) || 0;
+            const selectedCount = squares.filter(sq => sq.classList.contains('selected')).length;
+            const xpTotal = parseInt(document.getElementById('barr-xp-total')?.value) || 0;
+            const nivelVeterania = calcularNivelVeterania(xpTotal);
+    
+            const isUsedThisRank = square.classList.contains('used-this-rank');
+    
+            // DESELECCIONAR
+            if (square.classList.contains('selected')) {
+                if (clickedIndex === selectedCount - 1 && !isUsedThisRank) {
+                    const newValue = currentValue - 1;
+                    const cost = XP_COSTS.atributos[currentValue]?.[attrName] || 0;
+            
+                    square.classList.remove('selected');
+                    input.value = Math.max(0, newValue);
+                    input.dispatchEvent(new Event('change'));
+            
+                    devolverXP(cost);
+                    actualizarHoverUpgrades();
+                }
+            } 
+            // SELECCIONAR
+            else {
+                if (clickedIndex === selectedCount) {
+                    const newValue = currentValue + 1;
+            
+                    if (newValue > 12) {
+                        alert('⚠️ El atributo no puede superar 12');
+                        return;
+                    }
+            
+                    if (selectedCount >= nivelVeterania.upgradesPermitidos) {
+                        alert(`⚠️ LÍMITE DE MEJORAS\n\nNivel ${nivelVeterania.nombre}: Máximo ${nivelVeterania.upgradesPermitidos} mejora(s) por atributo en este rango`);
+                        return;
+                    }
+            
+                    const cost = XP_COSTS.atributos[newValue]?.[attrName] || 0;
+            
+                    if (consumirXP(cost)) {
+                        square.classList.add('selected');
+                        square.classList.add('used-this-rank');
+                        input.value = newValue;
+                        input.dispatchEvent(new Event('change'));
+                
+                        if (attrName === 'int') {
+                            actualizarBotonAñadirHabilidad();
+                        }
+                
+                        actualizarHoverUpgrades();
+                    }
+                }
+            }
+        }
+
+        /**
+         * REEMPLAZA toggleSkillUpgrade ORIGINAL
+         * Toggle de habilidad con sistema de XP
+         */
+        function toggleSkillUpgrade(square, skillNvId) {
+            const container = square.parentElement;
+            const squares = Array.from(container.querySelectorAll('.barracones-skill-upgrade'));
+            const clickedIndex = squares.indexOf(square);
+            const input = document.getElementById(skillNvId);
+    
+            if (!input) return;
+    
+            const row = input.closest('tr');
+            const skillName = row?.cells[0]?.textContent || 'Habilidad';
+    
+            const currentLevel = parseInt(input.value) || 0;
+            const selectedCount = squares.filter(sq => sq.classList.contains('selected')).length;
+            const xpTotal = parseInt(document.getElementById('barr-xp-total')?.value) || 0;
+            const nivelVeterania = calcularNivelVeterania(xpTotal);
+    
+            const isUsedThisRank = square.classList.contains('used-this-rank');
+    
+            // DESELECCIONAR
+            if (square.classList.contains('selected')) {
+                if (clickedIndex === selectedCount - 1 && !isUsedThisRank) {
+                    const newLevel = currentLevel - 1;
+                    const cost = XP_COSTS.habilidades[currentLevel] || 0;
+            
+                    square.classList.remove('selected');
+                    input.value = Math.max(0, newLevel);
+                    input.dispatchEvent(new Event('change'));
+            
+                    devolverXP(cost);
+                    actualizarHoverUpgrades();
+                }
+            } 
+            // SELECCIONAR
+            else {
+                if (clickedIndex === selectedCount) {
+                    const newLevel = currentLevel + 1;
+            
+                    if (newLevel > 9) {
+                        alert('⚠️ La habilidad no puede superar nivel 9');
+                        return;
+                    }
+            
+                    if (selectedCount >= nivelVeterania.upgradesPermitidos) {
+                        alert(`⚠️ LÍMITE DE MEJORAS\n\nNivel ${nivelVeterania.nombre}: Máximo ${nivelVeterania.upgradesPermitidos} mejora(s) por habilidad en este rango`);
+                        return;
+                    }
+            
+                    const cost = XP_COSTS.habilidades[newLevel] || 0;
+            
+                    if (consumirXP(cost)) {
+                        square.classList.add('selected');
+                        square.classList.add('used-this-rank');
+                        input.value = newLevel;
+                        input.dispatchEvent(new Event('change'));
+                
+                        actualizarHoverUpgrades();
+                    }
+                }
+            }
+        }
+
+        // ============================================================================
+        // POPUP DE SELECCIÓN DE HABILIDADES
+        // ============================================================================
+
+        function abrirPopupHabilidad() {
+            const xpDisponible = parseInt(document.getElementById('barr-xp-disponible')?.value) || 0;
+            const costoMinimo = XP_COSTS.habilidades[1];
+    
+            if (xpDisponible < costoMinimo) {
+                alert(`❌ XP INSUFICIENTE\n\nNecesitas al menos ${costoMinimo} XP para adquirir una nueva habilidad.\nDisponibles: ${xpDisponible} XP`);
+                return;
+            }
+    
+            const table = document.getElementById('barr-skills-table');
+            const habilidadesActuales = [];
+    
+            if (table) {
+                for (let i = 1; i < table.rows.length; i++) {
+                    const skillName = table.rows[i].cells[0]?.textContent;
+                    if (skillName) habilidadesActuales.push(skillName);
+                }
+            }
+    
+            const habilidadesDisponibles = HABILIDADES_DISPONIBLES.filter(
+                h => !habilidadesActuales.includes(h)
+            );
+    
+            const popup = document.getElementById('popup-seleccion-habilidad');
+            const lista = document.getElementById('lista-habilidades-disponibles');
+            const mensaje = document.getElementById('mensaje-sin-habilidades');
+    
+            if (!popup || !lista || !mensaje) return;
+    
+            lista.innerHTML = '';
+    
+            if (habilidadesDisponibles.length === 0) {
+                mensaje.style.display = 'block';
+                lista.style.display = 'none';
+            } else {
+                mensaje.style.display = 'none';
+                lista.style.display = 'grid';
+        
+                habilidadesDisponibles.forEach(habilidad => {
+                    const btn = document.createElement('button');
+                    btn.textContent = habilidad;
+                    btn.style.cssText = `
+                        background:rgba(255,174,0,0.1);
+                        border:1px solid #ffae00;
+                        color:#ffae00;
+                        font-family:'Share Tech Mono',monospace;
+                        padding:15px;
+                        cursor:pointer;
+                        transition:all 0.3s;
+                        text-align:left;
+                        font-size:0.9em;
+                    `;
+                    btn.onmouseover = () => {
+                        btn.style.background='rgba(255,174,0,0.3)';
+                        btn.style.borderColor='#ffc850';
+                    };
+                    btn.onmouseout = () => {
+                        btn.style.background='rgba(255,174,0,0.1)';
+                        btn.style.borderColor='#ffae00';
+                    };
+                    btn.onclick = () => seleccionarHabilidad(habilidad);
+                    lista.appendChild(btn);
+                });
+            }
+    
+            popup.style.display = 'block';
+        }
+
+        function cerrarPopupHabilidad() {
+            const popup = document.getElementById('popup-seleccion-habilidad');
+            if (popup) popup.style.display = 'none';
+        }
+
+        function seleccionarHabilidad(nombreHabilidad) {
+            const costoInicial = XP_COSTS.habilidades[1];
+    
+            if (!consumirXP(costoInicial)) return;
+    
+            const table = document.getElementById('barr-skills-table');
+            if (!table) return;
+    
+            const skillIndex = table.rows.length - 1;
+            const row = table.insertRow(-1);
+    
+            // Nombre
+            const cellName = row.insertCell(0);
+            cellName.textContent = nombreHabilidad;
+    
+            // Nivel
+            const cellNv = row.insertCell(1);
+            const inputNv = document.createElement('input');
+            inputNv.type = 'number';
+            inputNv.id = 'barr-skill-' + skillIndex + '-nv';
+            inputNv.value = 1;
+            inputNv.onchange = calcularTIRBarracones;
+            cellNv.appendChild(inputNv);
+    
+            // TIR
+            const cellTir = row.insertCell(2);
+            const inputTir = document.createElement('input');
+            inputTir.type = 'number';
+            inputTir.id = 'barr-skill-' + skillIndex + '-tir';
+            inputTir.readOnly = true;
+            inputTir.style.background = 'transparent';
+            inputTir.style.color = '#00ff41';
+            cellTir.appendChild(inputTir);
+    
+            // Upgrades
+            const cellUpgrades = row.insertCell(3);
+            const upgradesContainer = document.createElement('div');
+            upgradesContainer.className = 'barracones-skill-upgrades';
+            upgradesContainer.id = 'barr-skill-' + skillIndex + '-upgrades';
+    
+            for (let i = 0; i < 4; i++) {
+                const upgrade = document.createElement('div');
+                upgrade.className = 'barracones-skill-upgrade';
+                if (i === 0) {
+                    upgrade.classList.add('selected');
+                    upgrade.classList.add('used-this-rank');
+                }
+                upgrade.onclick = () => toggleSkillUpgrade(upgrade, 'barr-skill-' + skillIndex + '-nv');
+                upgradesContainer.appendChild(upgrade);
+            }
+    
+            cellUpgrades.appendChild(upgradesContainer);
+    
+            calcularTIRBarracones();
+            actualizarBotonAñadirHabilidad();
+            actualizarHoverUpgrades();
+            cerrarPopupHabilidad();
+    
+            alert(`✅ HABILIDAD ADQUIRIDA\n\n${nombreHabilidad} - Nivel 1\n\nCosto: ${costoInicial} XP`);
+        }
+
+        // ============================================================================
+        // INICIALIZACIÓN
+        // ============================================================================
+
+        // Llamar cuando se carga un personaje o se cambia XP
+        function inicializarSistemaXP() {
+            actualizarDisplayXP();
+            actualizarHoverUpgrades();
+        }
+
+
         
         /**
          * Genera el estado físico (cuadrados de HP) basándose en FUE
@@ -1859,6 +2351,13 @@
                 console.error("Error en buscarEnNubeBarracones:", error);
                 alert("Error de conexión con la nube: " + error);
             });
+
+                // Cargar XP
+                document.getElementById('barr-xp-disponible').value = personaje.xpDisponible || 0;
+                document.getElementById('barr-xp-total').value = personaje.xpTotal || 0;
+                
+                // Inicializar sistema XP
+                setTimeout(inicializarSistemaXP, 100);
         }
 
         /**
@@ -2140,7 +2639,9 @@
                 console.log('📊 Valor del campo barr-nombre:', document.getElementById('barr-nombre'));
                 console.log('📊 Valor actual:', document.getElementById('barr-nombre')?.value);
                 alert("El personaje necesita un nombre para guardarse.");
-                return Promise.resolve(false);
+                return Promise.resolve(false);,
+                xpDisponible: document.getElementById('barr-xp-disponible')?.value || 0,
+                xpTotal: document.getElementById('barr-xp-total')?.value || 0
             }
             
             // === ACTUALIZAR UI DEL BOTÓN ===
