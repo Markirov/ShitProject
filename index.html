@@ -652,7 +652,7 @@
     <script>
         // --- CONFIGURACIÓN GOOGLE APPS SCRIPT ---
         // ¡IMPORTANTE! Reemplaza esta URL con la que obtengas al implementar tu script
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyohHFxGN2qu8iHtLZvVVIU_0ImjA2wL_88fcvB3BqlrQY7_1ARRqUBTNrmv3iXBylcXA/exec";
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbybFNvC0HfYOO-JqJRFbdQKipM8CkuTGuxzpELleXvNuFyAbFJ7AjrsFJTeJxf540yg1A/exec";
 
         // ============================================================================
         // CONSTANTES DE CONFIGURACIÓN
@@ -94690,14 +94690,13 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                             <input type="text" class="barracones-input" placeholder="Jugador" id="barr-callsign">
                             <input type="text" class="barracones-input" placeholder="Rango" style="width: 40%;" id="barr-rango" readonly>
                         </div>
-                        
-                    <div style="margin-top:5px; display:flex; gap:5px; align-items:center;">
-                        <span style="color:#ffae00; font-size:0.8em; font-family:'Share Tech Mono', monospace; flex-shrink:0;">XP:</span>
-                        <input type="number" class="barracones-input" placeholder="Disponible" id="barr-xp-disponible" readonly style="flex:1; background:rgba(0,255,65,0.1); color:#00ff41; font-weight:bold; text-align:center;">
-                        <span style="color:#888; font-size:0.8em;">/</span>
-                        <input type="number" class="barracones-input" placeholder="Total" id="barr-xp-total" readonly style="flex:1; background:rgba(255,174,0,0.1); color:#ffae00; text-align:center;">
+                        <div style="margin-top:5px; display:flex; gap:5px; align-items:center;">
+                            <span style="color:#ffae00; font-size:0.8em; font-family:'Share Tech Mono', monospace; flex-shrink:0;">XP:</span>
+                            <input type="number" class="barracones-input" placeholder="Disponible" id="barr-xp-disponible" readonly style="flex:1; background:rgba(0,255,65,0.1); color:#00ff41; font-weight:bold; text-align:center;">
+                            <span style="color:#888; font-size:0.8em;">/</span>
+                            <input type="number" class="barracones-input" placeholder="Total" id="barr-xp-total" readonly style="flex:1; background:rgba(255,174,0,0.1); color:#ffae00; text-align:center;">
+                        </div>
                     </div>
-                </div>
                     
                     <div class="barracones-panel">
                         <span class="barracones-panel-title">02 // ATRIBUTOS BASE</span>
@@ -94893,7 +94892,8 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                             </div>
                         </div>
                     </div>
-                                
+                </div>
+                
                 <!-- COLUMNA 3 -->
                 <div>
                     <div class="barracones-panel">
@@ -94920,24 +94920,27 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                         </div>
                     </div>
                 </div>
-            <!-- POPUP SELECCIÓN DE HABILIDAD -->
-                 <div id="popup-seleccion-habilidad" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:4000; overflow-y:auto;">
-                     <div style="max-width:800px; margin:50px auto; background:linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%); border:2px solid #ffae00; border-radius:0; padding:30px; box-shadow:0 0 50px rgba(255,174,0,0.5); position:relative;">
-                        <button onclick="cerrarPopupHabilidad()" style="position:absolute; top:15px; right:15px; background:#ff4444; border:1px solid #ff0000; color:#fff; font-family:'Share Tech Mono',monospace; font-size:1.2em; font-weight:bold; padding:5px 15px; cursor:pointer; transition:all 0.3s;" onmouseover="this.style.background='#ff0000'" onmouseout="this.style.background='#ff4444'">✕</button>
-            
-                        <h2 style="font-family:'Share Tech Mono',monospace; color:#ffae00; font-size:2em; text-transform:uppercase; letter-spacing:4px; margin-bottom:20px; text-align:center;">SELECCIONAR HABILIDAD</h2>
-            
-                        <div id="lista-habilidades-disponibles" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:20px;">
-                          <!-- Se genera dinámicamente -->
-                        </div>
-            
-                        <div id="mensaje-sin-habilidades" style="display:none; text-align:center; color:#888; font-family:'Share Tech Mono',monospace; padding:40px; font-size:1.1em;">
-                            NO HAY HABILIDADES DISPONIBLES<br>
-                            <span style="font-size:0.8em; color:#666; display:block; margin-top:10px;">Todas las habilidades ya han sido adquiridas o no tienes suficiente XP</span>
-                        </div>
-                    </div>
-                </div>
             </div>
+        </div>
+    </div>
+
+    <!-- POPUP SELECCIÓN DE HABILIDAD -->
+    <div id="popup-seleccion-habilidad" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:4000; overflow-y:auto;">
+        <div style="max-width:800px; margin:50px auto; background:linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%); border:2px solid #ffae00; border-radius:0; padding:30px; box-shadow:0 0 50px rgba(255,174,0,0.5); position:relative;">
+            <button onclick="cerrarPopupHabilidad()" style="position:absolute; top:15px; right:15px; background:#ff4444; border:1px solid #ff0000; color:#fff; font-family:'Share Tech Mono',monospace; font-size:1.2em; font-weight:bold; padding:5px 15px; cursor:pointer; transition:all 0.3s;" onmouseover="this.style.background='#ff0000'" onmouseout="this.style.background='#ff4444'">✕</button>
+            
+            <h2 style="font-family:'Share Tech Mono',monospace; color:#ffae00; font-size:2em; text-transform:uppercase; letter-spacing:4px; margin-bottom:20px; text-align:center;">SELECCIONAR HABILIDAD</h2>
+            
+            <div id="lista-habilidades-disponibles" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:20px;">
+                <!-- Se genera dinámicamente -->
+            </div>
+            
+            <div id="mensaje-sin-habilidades" style="display:none; text-align:center; color:#888; font-family:'Share Tech Mono',monospace; padding:40px; font-size:1.1em;">
+                NO HAY HABILIDADES DISPONIBLES<br>
+                <span style="font-size:0.8em; color:#666; display:block; margin-top:10px;">Todas las habilidades ya han sido adquiridas o no tienes suficiente XP</span>
+            </div>
+        </div>
+    </div>
 
     <!-- REGISTRO DE COMBATE SECTION -->
     <div id="registro-combate" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #000000; background-image: linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.95)), repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255, 174, 0, 0.05) 2px, transparent 4px); background-size: 100% 100%, 100% 4px; z-index: 2000; overflow-y: auto; padding-top: 60px;">
