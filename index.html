@@ -652,7 +652,7 @@
     <script>
         // --- CONFIGURACIÓN GOOGLE APPS SCRIPT ---
         // ¡IMPORTANTE! Reemplaza esta URL con la que obtengas al implementar tu script
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxT4fPsEDKBbajL_ZfVpgf647WsnNGBrypvS5sfnZ2euhIeNdPogti0nrJnieyrNuyjNg/exec";
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbybFNvC0HfYOO-JqJRFbdQKipM8CkuTGuxzpELleXvNuFyAbFJ7AjrsFJTeJxf540yg1A/exec";
 
         // ============================================================================
         // CONSTANTES DE CONFIGURACIÓN
@@ -3773,20 +3773,18 @@
                 // Esto añadirá UNA FILA a "Respuestas de formulario 1"
                 // Formato: [Timestamp, XP_Marcos, XP_Jaime, XP_Joan, XP_Juan, Dinero, Gastos]
                 
-                const response = await fetch(GOOGLE_SCRIPT_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        action: 'registrarMision',
-                        xpMarcos: xpMarcos,
-                        xpJaime: xpJaime,
-                        xpJoan: xpJoan,
-                        xpJuan: xpJuan,
-                        dineroGanado: dineroGanado,
-                        gastos: gastos
-                    })
+                // ⚡ USANDO GET PARA EVITAR CORS PREFLIGHT
+                const params = new URLSearchParams({
+                    action: 'registrarMision',
+                    xpMarcos: xpMarcos,
+                    xpJaime: xpJaime,
+                    xpJoan: xpJoan,
+                    xpJuan: xpJuan,
+                    dineroGanado: dineroGanado,
+                    gastos: gastos
                 });
                 
+                const response = await fetch(`${GOOGLE_SCRIPT_URL}?${params.toString()}`);
                 const data = await response.json();
                 console.log('📦 Respuesta:', data);
                 
