@@ -94688,12 +94688,16 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                         <input type="text" class="barracones-input" placeholder="Nombre del Personaje" id="barr-nombre">
                         <div style="display:flex; gap:5px; margin-top:5px;">
                             <input type="text" class="barracones-input" placeholder="Jugador" id="barr-callsign">
-                            <input type="text" class="barracones-input" placeholder="Rango" style="width: 40%;" id="barr-rango">
+                            <input type="text" class="barracones-input" placeholder="Rango" style="width: 40%;" id="barr-rango" readonly>
                         </div>
-                        <div style="margin-top:5px;">
-                            <input type="text" class="barracones-input" placeholder="ID Táctico" id="barr-id">
-                        </div>
+                        
+                    <div style="margin-top:5px; display:flex; gap:5px; align-items:center;">
+                        <span style="color:#ffae00; font-size:0.8em; font-family:'Share Tech Mono', monospace; flex-shrink:0;">XP:</span>
+                        <input type="number" class="barracones-input" placeholder="Disponible" id="barr-xp-disponible" readonly style="flex:1; background:rgba(0,255,65,0.1); color:#00ff41; font-weight:bold; text-align:center;">
+                        <span style="color:#888; font-size:0.8em;">/</span>
+                        <input type="number" class="barracones-input" placeholder="Total" id="barr-xp-total" readonly style="flex:1; background:rgba(255,174,0,0.1); color:#ffae00; text-align:center;">
                     </div>
+                </div>
                     
                     <div class="barracones-panel">
                         <span class="barracones-panel-title">02 // ATRIBUTOS BASE</span>
@@ -94889,12 +94893,14 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                             </div>
                         </div>
                     </div>
-                </div>
-                
+                                
                 <!-- COLUMNA 3 -->
                 <div>
                     <div class="barracones-panel">
-                        <span class="barracones-panel-title">05 // HABILIDADES</span>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span class="barracones-panel-title">05 // HABILIDADES</span>
+                            <button id="btn-add-skill" onclick="abrirPopupHabilidad()" style="background:rgba(255,174,0,0.2); border:1px solid #ffae00; color:#ffae00; font-size:1.2em; width:25px; height:25px; cursor:pointer; font-family:'Share Tech Mono',monospace; padding:0; line-height:1; transition:all 0.3s;" onmouseover="this.style.background='rgba(255,174,0,0.4)'" onmouseout="this.style.background='rgba(255,174,0,0.2)'">+</button>
+                        </div>
                         <table class="barracones-tech-table" id="barr-skills-table">
                             <tr><th>HABILIDAD</th> <th style="width:25px;">NV</th> <th style="width:25px;">TIR</th> <th style="width:28px;">↑</th></tr>
                             <!-- Las habilidades se generan dinámicamente desde extraSkills -->
@@ -94914,11 +94920,25 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                         </div>
                     </div>
                 </div>
+            <!-- POPUP SELECCIÓN DE HABILIDAD -->
+                 <div id="popup-seleccion-habilidad" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:4000; overflow-y:auto;">
+                     <div style="max-width:800px; margin:50px auto; background:linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%); border:2px solid #ffae00; border-radius:0; padding:30px; box-shadow:0 0 50px rgba(255,174,0,0.5); position:relative;">
+                        <button onclick="cerrarPopupHabilidad()" style="position:absolute; top:15px; right:15px; background:#ff4444; border:1px solid #ff0000; color:#fff; font-family:'Share Tech Mono',monospace; font-size:1.2em; font-weight:bold; padding:5px 15px; cursor:pointer; transition:all 0.3s;" onmouseover="this.style.background='#ff0000'" onmouseout="this.style.background='#ff4444'">✕</button>
+            
+                        <h2 style="font-family:'Share Tech Mono',monospace; color:#ffae00; font-size:2em; text-transform:uppercase; letter-spacing:4px; margin-bottom:20px; text-align:center;">SELECCIONAR HABILIDAD</h2>
+            
+                        <div id="lista-habilidades-disponibles" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:20px;">
+                          <!-- Se genera dinámicamente -->
+                        </div>
+            
+                        <div id="mensaje-sin-habilidades" style="display:none; text-align:center; color:#888; font-family:'Share Tech Mono',monospace; padding:40px; font-size:1.1em;">
+                            NO HAY HABILIDADES DISPONIBLES<br>
+                            <span style="font-size:0.8em; color:#666; display:block; margin-top:10px;">Todas las habilidades ya han sido adquiridas o no tienes suficiente XP</span>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
-                // Cargar XP 
-                document.getElementById('barr-xp-disponible').value = personaje.xpDisponible || 0; document.getElementById('barr-xp-total').value = personaje.xpTotal || 0; // Inicializar sistema XP setTimeout(inicializarSistemaXP, 100); xpDisponible: document.getElementById('barr-xp-disponible')?.value || 0, xpTotal: document.getElementById('barr-xp-total')?.value || 0,
+
     <!-- REGISTRO DE COMBATE SECTION -->
     <div id="registro-combate" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #000000; background-image: linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.95)), repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255, 174, 0, 0.05) 2px, transparent 4px); background-size: 100% 100%, 100% 4px; z-index: 2000; overflow-y: auto; padding-top: 60px;">
         <button class="back-to-home-btn no-print" onclick="goHomeFromRegistroCombate()" style="position: fixed; top: 20px; left: 20px;">⚠️ SALIR AL MENÚ</button>
