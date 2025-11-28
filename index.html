@@ -2896,6 +2896,13 @@
                 console.error('  - Stack:', error.stack);
                 alert('Error al cargar el personaje. Revisa la consola para más detalles.');
             }
+
+            // Cargar XP
+            document.getElementById('barr-xp-disponible').value = personaje.xpDisponible || 0;
+            document.getElementById('barr-xp-total').value = personaje.xpTotal || 0;
+            
+            // Inicializar sistema XP
+            setTimeout(inicializarSistemaXP, 100);
         }
 
         // --- FUNCIONES DE ARMAS ---
