@@ -1077,39 +1077,6 @@
          * @param {HTMLElement} square - El cuadrado clickeado
          * @param {string} attrId - ID del input de atributo (ej: 'barr-fue')
          */
-        function toggleAttrUpgrade(square, attrId) {
-            const container = square.parentElement;
-            const squares = Array.from(container.querySelectorAll('.barracones-attr-upgrade'));
-            const clickedIndex = squares.indexOf(square);
-            const input = document.getElementById(attrId);
-            
-            if (!input) return;
-            
-            // Contar cuántos están seleccionados
-            const selectedCount = squares.filter(sq => sq.classList.contains('selected')).length;
-            
-            // Si clickeamos un cuadrado seleccionado
-            if (square.classList.contains('selected')) {
-                // Solo permitir deseleccionar si es el último seleccionado
-                if (clickedIndex === selectedCount - 1) {
-                    square.classList.remove('selected');
-                    // Decrementar atributo
-                    input.value = Math.max(0, parseInt(input.value) - 1);
-                    // Trigger onchange
-                    input.dispatchEvent(new Event('change'));
-                }
-            } else {
-                // Si clickeamos un cuadrado no seleccionado
-                // Solo permitir seleccionar si todos los anteriores están seleccionados
-                if (clickedIndex === selectedCount) {
-                    square.classList.add('selected');
-                    // Incrementar atributo
-                    input.value = parseInt(input.value) + 1;
-                    // Trigger onchange
-                    input.dispatchEvent(new Event('change'));
-                }
-            }
-        }
         
         /**
          * Toggle cuadrado de mejora de habilidad
@@ -1117,39 +1084,6 @@
          * @param {HTMLElement} square - El cuadrado clickeado
          * @param {string} skillNvId - ID del input de nivel de habilidad (ej: 'barr-skill-0-nv')
          */
-        function toggleSkillUpgrade(square, skillNvId) {
-            const container = square.parentElement;
-            const squares = Array.from(container.querySelectorAll('.barracones-skill-upgrade'));
-            const clickedIndex = squares.indexOf(square);
-            const input = document.getElementById(skillNvId);
-            
-            if (!input) return;
-            
-            // Contar cuántos están seleccionados
-            const selectedCount = squares.filter(sq => sq.classList.contains('selected')).length;
-            
-            // Si clickeamos un cuadrado seleccionado
-            if (square.classList.contains('selected')) {
-                // Solo permitir deseleccionar si es el último seleccionado
-                if (clickedIndex === selectedCount - 1) {
-                    square.classList.remove('selected');
-                    // Decrementar nivel
-                    input.value = Math.max(0, parseInt(input.value) - 1);
-                    // Trigger onchange para recalcular TIR
-                    input.dispatchEvent(new Event('change'));
-                }
-            } else {
-                // Si clickeamos un cuadrado no seleccionado
-                // Solo permitir seleccionar si todos los anteriores están seleccionados
-                if (clickedIndex === selectedCount) {
-                    square.classList.add('selected');
-                    // Incrementar nivel
-                    input.value = parseInt(input.value) + 1;
-                    // Trigger onchange para recalcular TIR
-                    input.dispatchEvent(new Event('change'));
-                }
-            }
-        }
 
         // ============================================================================
         // SISTEMA DE EXPERIENCIA (XP) - BARRACONES
