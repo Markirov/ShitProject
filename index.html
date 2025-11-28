@@ -1999,7 +1999,7 @@
          */
         function buscarEnNubeBarracones() {
             // VALIDACIÓN: Verificar que Google Script está configurado
-            if (GOOGLE_SCRIPT_URL.includes("YOUR_GOOGLE_SCRIPT")) {
+            if (GOOGLE_SCRIPT_URL.includes("https://script.google.com/macros/s/AKfycbzEBozWGpueZ-JoYVrn7L7r7FWDOiSfn_rr91JeLe4CudnpFLQfD_0yTAt0AAMveZw/exec")) {
                 alert("¡Error! Debes configurar la variable GOOGLE_SCRIPT_URL en el código HTML primero.");
                 return;
             }
@@ -2150,17 +2150,7 @@
                 console.error("Error en buscarEnNubeBarracones:", error);
                 alert("Error de conexión con la nube: " + error);
             });
-
-
-        
-
-        // Cargar XP
-        document.getElementById('barr-xp-disponible').value = personaje.xpDisponible || 0;
-        document.getElementById('barr-xp-total').value = personaje.xpTotal || 0;
-        
-        // Inicializar sistema XP
-        setTimeout(inicializarSistemaXP, 100);
-                                                        }
+                                                          }
 
         /**
          * Recopila todos los datos del formulario de Barracones
