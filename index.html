@@ -2314,10 +2314,8 @@ async function registrarGastoXPEnNube(jugador, cantidad, descripcion) {
                 return {
                     nombre: '',
                     jugador: '',
-                    error: error.message,
-                xpDisponible: document.getElementById('barr-xp-disponible')?.value || 0,
-                xpTotal: document.getElementById('barr-xp-total')?.value || 0
-                };
+                    error: error.message
+                                                };
             }
         }
         /**
@@ -3760,6 +3758,340 @@ async function registrarGastoXPEnNube(jugador, cantidad, descripcion) {
                 // Mostrar modal
             document.getElementById('modal-recompensas').style.display = 'block';
         }
+
+/**
+ * ============================================================================
+ * SISTEMA DE GASTOS XP EN REGISTRO DE COMBATE
+ * ============================================================================
+ */
+
+// Configuración de niveles y rerolls
+const REROLL_CONFIG = {
+    'Novato': { max: 0, cost: 0 },
+    'Regular': { max: 2, cost: 750 },
+    'Veterano': { max: 3, cost: 1500 },
+    'Elite': { max: 4, cost: 3000 },
+    'As': { max: 6, cost: 6000 }
+};
+
+// Tracking de gastos por jugador
+const expenseTracker = {
+    'Marcos': { iniciativa: false, rerolls: 0, nivel: 'Novato' },
+    'Jaime': { iniciativa: false, rerolls: 0, nivel: 'Novato' },
+    'Joan': { iniciativa: false, rerolls: 0, nivel: 'Novato' },
+    'Juan': { iniciativa: false, rerolls: 0, nivel: 'Novato' }
+};
+
+// ============================================================================
+// INICIALIZACIÓN
+// ============================================================================
+
+/**
+ * Inicializa los controles de gastos XP al cargar Registro de Combate
+ */
+function inicializarGastosXP() {
+    console.log('🎮 Inicializando controles de gastos XP...');
+    
+    // Obtener niveles de personajes desde Google Sheets
+    obtenerNivelesPersonajes().then(() => {
+        // Generar botones de reroll según nivel
+        Object.keys(expenseTracker).forEach(jugador => {
+            generarBotonesReroll(jugador);
+            actualizarContadorRerolls(jugador);
+        });
+    });
+    
+    // Resetear totales
+    resetearGastosXP();
+}
+
+/**
+ * Obtiene los niveles de veteranía de cada personaje desde Google Sheets
+ */
+async function obtenerNivelesPersonajes() {
+    // TODO: Implementar llamada real a Google Sheets
+    // Por ahora, valores de ejemplo
+    expenseTracker['Marcos'].nivel = 'Veterano';
+    expenseTracker['Jaime'].nivel = 'Regular';
+    expenseTracker['Joan'].nivel = 'Elite';
+    expenseTracker['Juan'].nivel = 'Novato';
+    
+    console.log('📊 Niveles cargados:', expenseTracker);
+}
+
+/**
+ * Genera los botones de reroll según el nivel del jugador
+ */
+function generarBotonesReroll(jugador) {
+    const nivel = expenseTracker[jugador].nivel;
+    const config = REROLL_CONFIG[nivel];
+    const container = document.getElementById(`rerolls-${jugador}`);
+    
+    if (!container) return;
+    
+    // Limpiar botones existentes
+    container.innerHTML = '';
+    
+    if (config.max === 0) {
+        // Novato no tiene rerolls
+        container.innerHTML = '<span style="font-size: 10px; color: #666;">No disponible</span>';
+        return;
+    }
+    
+    // Crear botones de reroll
+    for (let i = 1; i <= config.max; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'xp-expense-btn';
+        btn.setAttribute('data-player', jugador);
+        btn.setAttribute('data-type', 'reroll');
+        btn.setAttribute('data-cost', config.cost);
+        btn.setAttribute('data-reroll-num', i);
+        btn.textContent = i;
+        btn.onclick = function() { toggleRerollButton(this); };
+        
+        container.appendChild(btn);
+    }
+}
+
+// ============================================================================
+// MANEJO DE BOTONES
+// ============================================================================
+
+/**
+ * Toggle del botón de Control de Iniciativa
+ */
+function toggleExpenseButton(button) {
+    const player = button.getAttribute('data-player');
+    const type = button.getAttribute('data-type');
+    const cost = parseInt(button.getAttribute('data-cost'));
+    
+    if (button.classList.contains('active')) {
+        // Desactivar
+        button.classList.remove('active');
+        expenseTracker[player][type] = false;
+    } else {
+        // Activar
+        button.classList.add('active');
+        expenseTracker[player][type] = true;
+    }
+    
+    actualizarTotalGastado(player);
+}
+
+/**
+ * Toggle de botones de reroll (se pueden activar múltiples)
+ */
+function toggleRerollButton(button) {
+    const player = button.getAttribute('data-player');
+    
+    if (button.classList.contains('active')) {
+        // Desactivar
+        button.classList.remove('active');
+        expenseTracker[player].rerolls--;
+    } else {
+        // Activar
+        button.classList.add('active');
+        expenseTracker[player].rerolls++;
+    }
+    
+    actualizarContadorRerolls(player);
+    actualizarTotalGastado(player);
+}
+
+/**
+ * Actualiza el contador de rerolls usados
+ */
+function actualizarContadorRerolls(player) {
+    const counter = document.querySelector(`[data-player-rerolls="${player}"]`);
+    const nivel = expenseTracker[player].nivel;
+    const config = REROLL_CONFIG[nivel];
+    const usado = expenseTracker[player].rerolls;
+    
+    if (counter) {
+        counter.textContent = `${usado}/${config.max}`;
+        
+        // Cambiar color según uso
+        if (usado >= config.max) {
+            counter.style.background = 'rgba(255, 0, 0, 0.3)';
+            counter.style.borderColor = '#ff4444';
+        } else if (usado > 0) {
+            counter.style.background = 'rgba(255, 174, 0, 0.3)';
+            counter.style.borderColor = '#ffae00';
+        } else {
+            counter.style.background = 'rgba(255, 174, 0, 0.2)';
+            counter.style.borderColor = '#ffae00';
+        }
+    }
+}
+
+/**
+ * Actualiza el total gastado por un jugador
+ */
+function actualizarTotalGastado(player) {
+    const tracker = expenseTracker[player];
+    const nivel = tracker.nivel;
+    const rerollConfig = REROLL_CONFIG[nivel];
+    
+    let total = 0;
+    
+    // Iniciativa
+    if (tracker.iniciativa) {
+        total += 100;
+    }
+    
+    // Rerolls
+    total += tracker.rerolls * rerollConfig.cost;
+    
+    // Actualizar display
+    const display = document.querySelector(`[data-total="${player}"]`);
+    if (display) {
+        display.textContent = `-${total} XP`;
+        
+        // Color según cantidad
+        if (total === 0) {
+            display.style.color = '#666';
+        } else if (total < 1000) {
+            display.style.color = '#ffae00';
+        } else {
+            display.style.color = '#ff4444';
+        }
+    }
+    
+    return total;
+}
+
+/**
+ * Resetea todos los gastos XP
+ */
+function resetearGastosXP() {
+    Object.keys(expenseTracker).forEach(player => {
+        expenseTracker[player].iniciativa = false;
+        expenseTracker[player].rerolls = 0;
+        
+        // Desactivar botones
+        document.querySelectorAll(`[data-player="${player}"].active`).forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        actualizarContadorRerolls(player);
+        actualizarTotalGastado(player);
+    });
+    
+    console.log('♻️ Gastos XP reseteados');
+}
+
+// ============================================================================
+// OBTENER DATOS PARA REGISTRO
+// ============================================================================
+
+/**
+ * Obtiene todos los gastos para enviar a Google Sheets
+ */
+function obtenerGastosParaRegistro() {
+    const gastos = [];
+    
+    Object.keys(expenseTracker).forEach(player => {
+        const tracker = expenseTracker[player];
+        const nivel = tracker.nivel;
+        const rerollConfig = REROLL_CONFIG[nivel];
+        
+        // Control de Iniciativa
+        if (tracker.iniciativa) {
+            gastos.push({
+                jugador: player,
+                tipo: 'iniciativa',
+                cantidad: 100,
+                descripcion: `${player}: Control de Iniciativa`
+            });
+        }
+        
+        // Rerolls (crear una entrada por cada reroll)
+        for (let i = 0; i < tracker.rerolls; i++) {
+            gastos.push({
+                jugador: player,
+                tipo: 'reroll',
+                cantidad: rerollConfig.cost,
+                descripcion: `${player}: Repetir Tirada (${nivel})`
+            });
+        }
+    });
+    
+    return gastos;
+}
+
+/**
+ * Obtiene el total gastado por jugador (para restar del XP ganado)
+ */
+function obtenerTotalesGastados() {
+    const totales = {};
+    
+    Object.keys(expenseTracker).forEach(player => {
+        totales[player] = actualizarTotalGastado(player);
+    });
+    
+    return totales;
+}
+
+// ============================================================================
+// INTEGRACIÓN CON REGISTRO DE MISIÓN
+// ============================================================================
+
+/**
+ * MODIFICACIÓN DE LA FUNCIÓN registrarMision()
+ * 
+ * Añadir esto ANTES de enviar a Google Sheets:
+ */
+async function registrarMisionConGastos() {
+    console.log('✅ ===== REGISTRANDO MISIÓN CON GASTOS =====');
+    
+    // 1. Registrar XP ganado (lo que ya existe)
+    const xpGanado = {
+        marcos: parseInt(document.getElementById('xp-marcos').value) || 0,
+        jaime: parseInt(document.getElementById('xp-jaime').value) || 0,
+        joan: parseInt(document.getElementById('xp-joan').value) || 0,
+        juan: parseInt(document.getElementById('xp-juan').value) || 0,
+        dinero: parseInt(document.getElementById('dinero-ganado').value) || 0,
+        gastos: parseInt(document.getElementById('gastos').value) || 0,
+        descripcion: 'Misión completada'
+    };
+    
+    // Enviar registro de misión (XP positivo)
+    await enviarRegistroMision(xpGanado);
+    
+    // 2. Registrar gastos individuales (XP negativo)
+    const gastos = obtenerGastosParaRegistro();
+    
+    for (const gasto of gastos) {
+        await registrarGastoXPEnNube(
+            gasto.jugador,
+            gasto.cantidad,
+            gasto.descripcion
+        );
+    }
+    
+    // 3. Resetear controles
+    resetearGastosXP();
+    
+    console.log('✅ ===== MISIÓN Y GASTOS REGISTRADOS =====');
+}
+
+// ============================================================================
+// EJEMPLO DE USO
+// ============================================================================
+
+/*
+// Al cargar Registro de Combate:
+document.addEventListener('DOMContentLoaded', () => {
+    if (document.getElementById('registro-combate')) {
+        inicializarGastosXP();
+    }
+});
+
+// Al hacer click en "REGISTRAR MISIÓN":
+document.getElementById('btn-registrar-mision').onclick = registrarMisionConGastos;
+*/
+
+
 
         /**
          * Cierra el modal de distribución de recompensas
