@@ -633,7 +633,7 @@
     <script>
         // --- CONFIGURACIÓN GOOGLE APPS SCRIPT ---
         // ¡IMPORTANTE! Reemplaza esta URL con la que obtengas al implementar tu script
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwI3oYxgzD7lAlnveK3TTn5JHBt0kN3rxguAd5SF6W1y6-veUjbYYt0F3j_AiHpiFeswg/exec";
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxjYGqeHlNiWYrZ3gU8Ey7hFh8MFDY5ytTd9DeAq-9vIV-tNHfn8F6LLxUREQpJ2CyFqg/exec";
 
         // ============================================================================
         // CONSTANTES DE CONFIGURACIÓN
@@ -1158,6 +1158,39 @@
             actualizarDisplayXP();
         }
 
+// ============================================================================
+// REGISTRO DE GASTOS EN LA NUBE
+// ============================================================================
+
+/**
+ * Registra un gasto de XP en Google Sheets
+ */
+async function registrarGastoXPEnNube(jugador, cantidad, descripcion) {
+    try {
+        const response = await fetch(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'registrarGastoXP',
+                jugador: jugador,
+                cantidad: cantidad,
+                descripcion: descripcion
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.result === 'success') {
+            console.log('✅ Gasto XP registrado:', descripcion, '-', cantidad, 'XP');
+        } else {
+            console.error('❌ Error al registrar gasto:', data.msg);
+        }
+    } catch (error) {
+        console.error('❌ Error al registrar gasto:', error);
+    }
+}
+
+
         /**
          * Actualiza los estilos hover de los cuadrados de upgrade
          */
@@ -1236,117 +1269,57 @@
          * Toggle de atributo con sistema de XP
          */
         function toggleAttrUpgrade(square, attrId) {
-            const container = square.parentElement;
-            const squares = Array.from(container.querySelectorAll('.barracones-attr-upgrade'));
-            const clickedIndex = squares.indexOf(square);
-            const input = document.getElementById(attrId);
+    const atributo = attrId.toUpperCase();
+    const baseValue = parseInt(document.getElementById(`barr-${attrId}`).value) || 6;
+    const marcados = document.querySelectorAll(`.upgrade-square[data-attr="${atributo}"].filled`).length;
     
-            if (!input) return;
+    const nivelAnterior = baseValue + marcados;
+    const estaActivo = square.classList.contains('filled');
+    const nivelNuevo = estaActivo ? nivelAnterior : nivelAnterior + 1;
+    const costo = XP_COSTS.atributos[atributo][nivelAnterior] || 0;
+    const jugador = document.getElementById('barr-callsign')?.value || 'Desconocido';
     
-            const attrName = attrId.replace('barr-', '');
-            const currentValue = parseInt(input.value) || 0;
-            const selectedCount = squares.filter(sq => sq.classList.contains('selected')).length;
-            const xpTotal = parseInt(document.getElementById('barr-xp-total')?.value) || 0;
-            const nivelVeterania = calcularNivelVeterania(xpTotal);
-    
-            const isUsedThisRank = square.classList.contains('used-this-rank');
-    
-            // DESELECCIONAR
-            if (square.classList.contains('selected')) {
-                if (clickedIndex === selectedCount - 1 && !isUsedThisRank) {
-                    const newValue = currentValue - 1;
-                    const cost = XP_COSTS.atributos[currentValue]?.[attrName] || 0;
-                        square.classList.remove('selected');
-                    input.value = Math.max(0, newValue);
-                    input.dispatchEvent(new Event('change'));
-                        devolverXP(cost);
-                    actualizarHoverUpgrades();
-                }
-            } 
-            // SELECCIONAR
-            else {
-                if (clickedIndex === selectedCount) {
-                    const newValue = currentValue + 1;
-                        if (newValue > 12) {
-                        alert('⚠️ El atributo no puede superar 12');
-                        return;
-                    }
-                        if (selectedCount >= nivelVeterania.upgradesPermitidos) {
-                        alert(`⚠️ LÍMITE DE MEJORAS\n\nNivel ${nivelVeterania.nombre}: Máximo ${nivelVeterania.upgradesPermitidos} mejora(s) por atributo en este rango`);
-                        return;
-                    }
-                        const cost = XP_COSTS.atributos[newValue]?.[attrName] || 0;
-                        if (consumirXP(cost)) {
-                        square.classList.add('selected');
-                        square.classList.add('used-this-rank');
-                        input.value = newValue;
-                        input.dispatchEvent(new Event('change'));
-                                if (attrName === 'int') {
-                            actualizarBotonAñadirHabilidad();
-                        }
-                                actualizarHoverUpgrades();
-                    }
-                }
-            }
+    if (estaActivo) {
+        square.classList.remove('filled');
+        devolverXP(costo);
+    } else {
+        if (consumirXP(costo)) {
+            square.classList.add('filled');
+            const descripcion = `${jugador}: ${atributo} ${nivelAnterior}→${nivelNuevo}`;
+            registrarGastoXPEnNube(jugador, costo, descripcion);
         }
+    }
+    
+    actualizarHoverUpgrades();
+}
 
         /**
          * REEMPLAZA toggleSkillUpgrade ORIGINAL
          * Toggle de habilidad con sistema de XP
          */
         function toggleSkillUpgrade(square, skillNvId) {
-            const container = square.parentElement;
-            const squares = Array.from(container.querySelectorAll('.barracones-skill-upgrade'));
-            const clickedIndex = squares.indexOf(square);
-            const input = document.getElementById(skillNvId);
+    const habilidadName = skillNvId.replace(/Nv\d+$/, '');
+    const nivelMatch = skillNvId.match(/Nv(\d+)$/);
+    if (!nivelMatch) return;
     
-            if (!input) return;
+    const nivel = parseInt(nivelMatch[1]);
+    const estaActivo = square.classList.contains('filled');
+    const costo = XP_COSTS.habilidades[nivel - 1] || 0;
+    const jugador = document.getElementById('barr-callsign')?.value || 'Desconocido';
     
-            const row = input.closest('tr');
-            const skillName = row?.cells[0]?.textContent || 'Habilidad';
-    
-            const currentLevel = parseInt(input.value) || 0;
-            const selectedCount = squares.filter(sq => sq.classList.contains('selected')).length;
-            const xpTotal = parseInt(document.getElementById('barr-xp-total')?.value) || 0;
-            const nivelVeterania = calcularNivelVeterania(xpTotal);
-    
-            const isUsedThisRank = square.classList.contains('used-this-rank');
-    
-            // DESELECCIONAR
-            if (square.classList.contains('selected')) {
-                if (clickedIndex === selectedCount - 1 && !isUsedThisRank) {
-                    const newLevel = currentLevel - 1;
-                    const cost = XP_COSTS.habilidades[currentLevel] || 0;
-                        square.classList.remove('selected');
-                    input.value = Math.max(0, newLevel);
-                    input.dispatchEvent(new Event('change'));
-                        devolverXP(cost);
-                    actualizarHoverUpgrades();
-                }
-            } 
-            // SELECCIONAR
-            else {
-                if (clickedIndex === selectedCount) {
-                    const newLevel = currentLevel + 1;
-                        if (newLevel > 9) {
-                        alert('⚠️ La habilidad no puede superar nivel 9');
-                        return;
-                    }
-                        if (selectedCount >= nivelVeterania.upgradesPermitidos) {
-                        alert(`⚠️ LÍMITE DE MEJORAS\n\nNivel ${nivelVeterania.nombre}: Máximo ${nivelVeterania.upgradesPermitidos} mejora(s) por habilidad en este rango`);
-                        return;
-                    }
-                        const cost = XP_COSTS.habilidades[newLevel] || 0;
-                        if (consumirXP(cost)) {
-                        square.classList.add('selected');
-                        square.classList.add('used-this-rank');
-                        input.value = newLevel;
-                        input.dispatchEvent(new Event('change'));
-                                actualizarHoverUpgrades();
-                    }
-                }
-            }
+    if (estaActivo) {
+        square.classList.remove('filled');
+        devolverXP(costo);
+    } else {
+        if (consumirXP(costo)) {
+            square.classList.add('filled');
+            const descripcion = `${jugador}: ${habilidadName} Nv${nivel-1}→${nivel}`;
+            registrarGastoXPEnNube(jugador, costo, descripcion);
         }
+    }
+    
+    actualizarHoverUpgrades();
+}
 
         // ============================================================================
         // POPUP DE SELECCIÓN DE HABILIDADES
