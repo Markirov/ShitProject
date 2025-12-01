@@ -1167,17 +1167,15 @@
  */
 async function registrarGastoXPEnNube(jugador, cantidad, descripcion) {
     try {
-        const response = await fetch(GOOGLE_SCRIPT_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'registrarGastoXP',
-                jugador: jugador,
-                cantidad: cantidad,
-                descripcion: descripcion
-            })
+        // Usar GET con parámetros igual que registrarMision
+        const params = new URLSearchParams({
+            action: 'registrarGastoXP',
+            jugador: jugador,
+            cantidad: cantidad,
+            descripcion: descripcion
         });
         
+        const response = await fetch(`${GOOGLE_SCRIPT_URL}?${params.toString()}`);
         const data = await response.json();
         
         if (data.result === 'success') {
@@ -4401,10 +4399,14 @@ document.getElementById('btn-registrar-mision').onclick = registrarMisionConGast
             const xpJuan = parseInt(document.getElementById('xp-juan').value) || 0;
             const dineroGanado = parseInt(document.getElementById('recompensas-dinero-unidad').value) || 0;
             const gastos = parseInt(document.getElementById('recompensas-gastos-unidad').value) || 0;
-                // Validar que hay algo que registrar
+            
+            // Obtener gastos de XP marcados (Control Iniciativa, Rerolls)
+            const gastosXP = obtenerGastosParaRegistro();
+            
+                // Validar que hay algo que registrar (XP ganado, dinero, gastos de unidad, o gastos de XP)
             if (xpMarcos === 0 && xpJaime === 0 && xpJoan === 0 && xpJuan === 0 && 
-                dineroGanado === 0 && gastos === 0) {
-                alert('Por favor ingresa al menos un valor diferente de 0');
+                dineroGanado === 0 && gastos === 0 && gastosXP.length === 0) {
+                alert('Por favor ingresa al menos un valor diferente de 0 o marca algún gasto de XP');
                 return;
             }
                 // === CREAR RESUMEN ===
@@ -4450,6 +4452,20 @@ document.getElementById('btn-registrar-mision').onclick = registrarMisionConGast
                     estadoDiv.style.color = '#00ff41';
                     estadoDiv.innerHTML = '✅ Misión registrada correctamente<br>Las fórmulas de "Unidad" se actualizarán automáticamente';
                                 console.log('✅ Misión registrada en "Respuestas de formulario 1"');
+                                
+                    // Registrar gastos de XP (Control Iniciativa, Rerolls)
+                    if (gastosXP.length > 0) {
+                        console.log(`📝 Registrando ${gastosXP.length} gasto(s) de XP...`);
+                        estadoDiv.innerHTML += '<br>⏳ Registrando gastos de XP...';
+                        
+                        for (const gasto of gastosXP) {
+                            await registrarGastoXPEnNube(gasto.jugador, gasto.cantidad, gasto.descripcion);
+                        }
+                        
+                        estadoDiv.innerHTML = '✅ Misión y gastos registrados correctamente<br>Las fórmulas de "Unidad" se actualizarán automáticamente';
+                        console.log('✅ Gastos de XP registrados correctamente');
+                    }
+                                
                                 // Esperar 3 segundos y cerrar modal
                     setTimeout(() => {
                         cerrarModalRecompensas();
@@ -6254,7 +6270,11 @@ document.getElementById('btn-registrar-mision').onclick = registrarMisionConGast
             }
         }
     </script>
-</head>
+
+    <!-- Librerías para generar PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    </head>
 <body>
 
     <!-- MODAL DE CONFIRMACIÓN DE SALIDA -->
@@ -97802,6 +97822,30 @@ z"/>
                         📂 SUBIR JSON
                     </button>
                 </div>
+                        <!-- SEPARADOR VERTICAL -->
+                <div style="width: 2px; height: 27px; background: linear-gradient(180deg, transparent, #5c4200, transparent);"></div>
+                        <!-- BOTÓN PDF -->
+                <button 
+                    onclick="generarPDFBarracones()" 
+                    style="
+                        padding: 7px 13px; 
+                        background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%); 
+                        border: 1px solid #00ff41; 
+                        color: #ffffff; 
+                        font-weight: bold; 
+                        font-size: 9px; 
+                        cursor: pointer; 
+                        font-family: 'Share Tech Mono', monospace;
+                        clip-path: polygon(5% 0, 100% 0, 100% 70%, 95% 100%, 0 100%, 0 30%);
+                        transition: all 0.3s;
+                        text-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+                        box-shadow: 0 0 10px rgba(76, 175, 80, 0.4);
+                    " 
+                    onmouseover="this.style.boxShadow='0 0 20px rgba(0, 255, 65, 0.8)'; this.style.transform='scale(1.05)'" 
+                    onmouseout="this.style.boxShadow='0 0 10px rgba(76, 175, 80, 0.4)'; this.style.transform='scale(1)'"
+                >
+                    📄 DESCARGAR PDF
+                </button>
             </div>
                 <!-- ÁREA DE RESULTADOS DE BÚSQUEDA -->
             <div id="cloud-search-results-barracones" style="margin-top: 7px;"></div>
@@ -97811,6 +97855,588 @@ z"/>
             </div>
         </div>
     </div>
+
+<script>
+/**
+ * ============================================================================
+ * GENERADOR DE PDF RÉPLICA EXACTA DE BARRACONES - MECHWARRIOR
+ * Sistema que genera PDF con diseño idéntico a la interfaz de Barracones
+ * ============================================================================
+ */
+
+/**
+ * Genera PDF con diseño exacto de Barracones
+ */
+async function generarPDFBarracones() {
+    console.log('📄 Generando PDF réplica de Barracones...');
+    
+    // Verificar librerías
+    if (typeof window.jspdf === 'undefined' || typeof html2canvas === 'undefined') {
+        alert('Error: Librerías no cargadas. Recarga la página.');
+        return;
+    }
+    
+    try {
+        // Obtener todos los datos
+        const datos = obtenerDatosCompletosBarracones();
+        
+        if (!datos.nombre) {
+            alert('No hay personaje cargado en Barracones');
+            return;
+        }
+        
+        // Crear contenedor temporal
+        const container = document.createElement('div');
+        container.style.position = 'absolute';
+        container.style.left = '-9999px';
+        container.style.width = '297mm'; // A4 landscape
+        container.style.height = '210mm';
+        container.style.background = '#000000';
+        document.body.appendChild(container);
+        
+        // Generar HTML réplica
+        container.innerHTML = generarHTMLBarracones(datos);
+        
+        // Esperar renderizado
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        // Capturar con html2canvas
+        const canvas = await html2canvas(container, {
+            scale: 3,
+            useCORS: true,
+            backgroundColor: '#000000',
+            width: container.offsetWidth,
+            height: container.offsetHeight
+        });
+        
+        // Crear PDF en landscape
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('l', 'mm', 'a4'); // landscape
+        
+        const imgData = canvas.toDataURL('image/png');
+        pdf.addImage(imgData, 'PNG', 0, 0, 297, 210);
+        
+        // Descargar
+        const fileName = `${datos.nombre.replace(/\s+/g, '_')}_Barracones.pdf`;
+        pdf.save(fileName);
+        
+        // Limpiar
+        document.body.removeChild(container);
+        
+        console.log('✅ PDF generado exitosamente');
+        
+    } catch (error) {
+        console.error('❌ Error al generar PDF:', error);
+        alert('Error al generar PDF: ' + error.message);
+    }
+}
+
+/**
+ * Obtiene todos los datos necesarios de Barracones
+ */
+function obtenerDatosCompletosBarracones() {
+    return {
+        // Datos personales
+        nombre: document.getElementById('barr-nombre')?.value || '',
+        jugador: document.getElementById('barr-jugador')?.value || '',
+        campaign: document.getElementById('barr-campaign')?.value || '',
+        xpTotal: parseInt(document.getElementById('barr-xp-total')?.value) || 0,
+        xpDisponible: parseInt(document.getElementById('barr-xp-disponible')?.value) || 0,
+        
+        // Atributos
+        str: parseInt(document.getElementById('barr-str')?.value) || 0,
+        dex: parseInt(document.getElementById('barr-dex')?.value) || 0,
+        int: parseInt(document.getElementById('barr-int')?.value) || 0,
+        cha: parseInt(document.getElementById('barr-cha')?.value) || 0,
+        
+        // Antecedentes
+        origen: document.getElementById('barr-origen')?.value || '',
+        afiliacion: document.getElementById('barr-afiliacion')?.value || '',
+        estudios: document.getElementById('barr-estudios')?.value || '',
+        
+        // Historia
+        historia: document.getElementById('barr-historia')?.value || '',
+        
+        // Armamento
+        armamento: obtenerArmamento(),
+        
+        // Habilidades
+        habilidades: obtenerHabilidadesCompletas(),
+        
+        // Armadura
+        armadura: obtenerArmadura(),
+        
+        // Puntos de vida
+        vida: obtenerEstadoVida()
+    };
+}
+
+/**
+ * Obtiene datos de armamento
+ */
+function obtenerArmamento() {
+    return {
+        primaria: {
+            nombre: document.getElementById('barr-arma-primaria')?.value || '-- Seleccionar Arma Princ --',
+            danio: document.getElementById('barr-arma-primaria-danio')?.value || '-',
+            al: document.getElementById('barr-arma-primaria-al')?.value || '-/-/-',
+            mun: document.getElementById('barr-arma-primaria-mun-actual')?.value || '0',
+            munMax: document.getElementById('barr-arma-primaria-mun-max')?.value || '0'
+        },
+        secundaria: {
+            nombre: document.getElementById('barr-arma-secundaria')?.value || '-- Secundaria --',
+            danio: document.getElementById('barr-arma-secundaria-danio')?.value || '-',
+            al: document.getElementById('barr-arma-secundaria-al')?.value || '-/-/-',
+            mun: document.getElementById('barr-arma-secundaria-mun-actual')?.value || '0',
+            munMax: document.getElementById('barr-arma-secundaria-mun-max')?.value || '0'
+        },
+        terciaria: {
+            nombre: document.getElementById('barr-arma-terciaria')?.value || '-- Terciaria --',
+            danio: document.getElementById('barr-arma-terciaria-danio')?.value || '-',
+            al: document.getElementById('barr-arma-terciaria-al')?.value || '-/-/-',
+            mun: document.getElementById('barr-arma-terciaria-mun-actual')?.value || '0',
+            munMax: document.getElementById('barr-arma-terciaria-mun-max')?.value || '0'
+        }
+    };
+}
+
+/**
+ * Obtiene habilidades con MV y MR
+ */
+function obtenerHabilidadesCompletas() {
+    const habilidades = [];
+    const containers = document.querySelectorAll('.barracones-skill-container');
+    
+    containers.forEach(container => {
+        const nombre = container.querySelector('.barracones-skill-name')?.textContent || '';
+        const nivel = container.querySelectorAll('.barracones-skill-square.selected').length;
+        
+        if (nombre && nivel > 0) {
+            // Calcular MV y MR según atributo asociado
+            const mv = nivel;
+            const mr = 6 - (nivel - 1); // Ejemplo simplificado
+            
+            habilidades.push({ nombre, nivel, mv, mr });
+        }
+    });
+    
+    return habilidades;
+}
+
+/**
+ * Obtiene armadura por zonas
+ */
+function obtenerArmadura() {
+    return {
+        cabeza: document.getElementById('barr-armadura-cabeza')?.value || '',
+        torso: document.getElementById('barr-armadura-torso')?.value || '',
+        brazos: document.getElementById('barr-armadura-brazos')?.value || '',
+        piernas: document.getElementById('barr-armadura-piernas')?.value || '',
+        tipo: 'Chaleco Flat...' // Obtener de algún campo si existe
+    };
+}
+
+/**
+ * Obtiene estado de vida con cuadrados marcados
+ */
+function obtenerEstadoVida() {
+    const str = parseInt(document.getElementById('barr-str')?.value) || 0;
+    const totalCuadrados = str * 6;
+    
+    // Distribución por secciones
+    const dist = {
+        cabeza: Math.max(1, Math.floor(str * 0.5)),
+        torso: Math.max(2, Math.floor(str * 2)),
+        brazoIzq: Math.max(1, Math.floor(str * 0.75)),
+        brazoDer: Math.max(1, Math.floor(str * 0.75)),
+        piernaIzq: Math.max(1, Math.floor(str)),
+        piernaDer: Math.max(1, Math.floor(str))
+    };
+    
+    // Obtener cuadrados marcados por sección
+    const marcados = {
+        cabeza: contarCuadradosMarcados('cabeza'),
+        torso: contarCuadradosMarcados('torso'),
+        brazoIzq: contarCuadradosMarcados('brazo-izq'),
+        brazoDer: contarCuadradosMarcados('brazo-der'),
+        piernaIzq: contarCuadradosMarcados('pierna-izq'),
+        piernaDer: contarCuadradosMarcados('pierna-der')
+    };
+    
+    return { distribucion: dist, marcados, total: totalCuadrados };
+}
+
+/**
+ * Cuenta cuadrados marcados en una sección
+ */
+function contarCuadradosMarcados(seccion) {
+    const selector = `.hit-point-square[data-section="${seccion}"].hit`;
+    return document.querySelectorAll(selector).length;
+}
+
+/**
+ * Genera HTML con diseño exacto de Barracones
+ */
+function generarHTMLBarracones(datos) {
+    const nivelVeterania = calcularNivelVeterania(datos.xpTotal);
+    
+    return `
+        <div style="
+            font-family: 'Share Tech Mono', 'Courier New', monospace;
+            background: #000000;
+            color: #00ff41;
+            padding: 30px;
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
+        ">
+            <!-- HEADER -->
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h1 style="
+                    margin: 0;
+                    font-size: 48px;
+                    color: #ffae00;
+                    text-shadow: 0 0 20px rgba(255, 174, 0, 0.8);
+                    letter-spacing: 8px;
+                    font-weight: bold;
+                ">MECHWARRIOR</h1>
+                <p style="
+                    margin: 5px 0 0 0;
+                    font-size: 11px;
+                    color: #5c4200;
+                    letter-spacing: 3px;
+                ">BARRACKS DATABASE SYSTEM // PERSONNEL RECORDS</p>
+            </div>
+            
+            <!-- MAIN GRID: 3 COLUMNAS -->
+            <div style="
+                display: grid;
+                grid-template-columns: 1fr 1fr 1fr;
+                gap: 30px;
+                height: calc(100% - 100px);
+            ">
+                <!-- COLUMNA 1: DATOS PERSONALES Y ARMAMENTO -->
+                <div>
+                    ${generarColumna1(datos, nivelVeterania)}
+                </div>
+                
+                <!-- COLUMNA 2: ESTADO FÍSICO -->
+                <div>
+                    ${generarColumna2(datos)}
+                </div>
+                
+                <!-- COLUMNA 3: HABILIDADES Y ARMADURA -->
+                <div>
+                    ${generarColumna3(datos)}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * COLUMNA 1: Datos personales, atributos y armamento
+ */
+function generarColumna1(datos, nivel) {
+    return `
+        <!-- 01 // DATOS PERSONALES -->
+        <div style="margin-bottom: 20px; border: 1px solid #00ff41; padding: 15px; background: rgba(0, 255, 65, 0.05);">
+            <h3 style="
+                margin: 0 0 10px 0;
+                font-size: 12px;
+                color: #00ff41;
+                border-bottom: 1px solid #00ff41;
+                padding-bottom: 5px;
+            ">01 // DATOS PERSONALES</h3>
+            
+            <div style="font-size: 16px; color: #ffae00; margin-bottom: 5px;">${datos.nombre}</div>
+            <div style="display: flex; justify-content: space-between; font-size: 11px;">
+                <span style="color: #ffffff;">${datos.jugador}</span>
+                <span style="color: #ffae00;">${nivel.nombre}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 11px; margin-top: 8px; color: #00ff41;">
+                <span>XP:</span>
+                <span>${datos.xpDisponible} / ${datos.xpTotal}</span>
+            </div>
+        </div>
+        
+        <!-- 02 // ATRIBUTOS BASE -->
+        <div style="margin-bottom: 20px; border: 1px solid #00ff41; padding: 15px; background: rgba(0, 255, 65, 0.05);">
+            <h3 style="
+                margin: 0 0 10px 0;
+                font-size: 12px;
+                color: #00ff41;
+                border-bottom: 1px solid #00ff41;
+                padding-bottom: 5px;
+            ">02 // ATRIBUTOS BASE</h3>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                ${generarAtributoBox('FUE', datos.str)}
+                ${generarAtributoBox('DES', datos.dex)}
+                ${generarAtributoBox('INT', datos.int)}
+                ${generarAtributoBox('CAR', datos.cha)}
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; font-size: 10px; padding-top: 10px; border-top: 1px dotted #5c4200;">
+                <span>MOV (m): <span style="color: #ffae00;">${datos.dex}</span></span>
+                <span>INIT: <span style="color: #ffae00;">${datos.dex}</span></span>
+            </div>
+        </div>
+        
+        <!-- 03 // ARMAMENTO PERSONAL -->
+        <div style="border: 1px solid #00ff41; padding: 15px; background: rgba(0, 255, 65, 0.05);">
+            <h3 style="
+                margin: 0 0 10px 0;
+                font-size: 12px;
+                color: #00ff41;
+                border-bottom: 1px solid #00ff41;
+                padding-bottom: 5px;
+            ">03 // ARMAMENTO PERSONAL</h3>
+            
+            ${generarArmaBox('Primaria', datos.armamento.primaria)}
+            ${generarArmaBox('Secundaria', datos.armamento.secundaria)}
+            ${generarArmaBox('Terciaria', datos.armamento.terciaria)}
+        </div>
+    `;
+}
+
+/**
+ * Genera box de atributo
+ */
+function generarAtributoBox(nombre, valor) {
+    return `
+        <div style="
+            border: 1px solid #ffae00;
+            padding: 8px;
+            text-align: center;
+            background: rgba(255, 174, 0, 0.05);
+        ">
+            <div style="font-size: 8px; color: #5c4200;">${nombre}</div>
+            <div style="font-size: 20px; color: #ffae00; font-weight: bold;">${valor}</div>
+        </div>
+    `;
+}
+
+/**
+ * Genera box de arma
+ */
+function generarArmaBox(tipo, arma) {
+    return `
+        <div style="margin-bottom: 12px; padding: 8px; border: 1px solid #5c4200; background: rgba(92, 66, 0, 0.1);">
+            <div style="font-size: 10px; color: #ffae00; margin-bottom: 5px;">-- ${arma.nombre} --</div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; font-size: 9px;">
+                <div>
+                    <span style="color: #888;">DAÑO:</span><br>
+                    <span style="color: #ffffff;">${arma.danio}</span>
+                </div>
+                <div>
+                    <span style="color: #888;">AL:</span><br>
+                    <span style="color: #ffffff;">${arma.al}</span>
+                </div>
+                <div>
+                    <span style="color: #888;">MUN:</span><br>
+                    <span style="color: ${arma.mun === '0' ? '#ff4444' : '#00ff41'};">${arma.mun}/${arma.munMax}</span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * COLUMNA 2: Estado físico con silueta
+ */
+function generarColumna2(datos) {
+    return `
+        <div style="border: 1px solid #00ff41; padding: 15px; background: rgba(0, 255, 65, 0.05); height: 100%;">
+            <h3 style="
+                margin: 0 0 15px 0;
+                font-size: 12px;
+                color: #00ff41;
+                border-bottom: 1px solid #00ff41;
+                padding-bottom: 5px;
+            ">04 // ESTADO FÍSICO</h3>
+            
+            ${generarSiluetaConCuadrados(datos.vida)}
+            
+            <div style="margin-top: 20px; padding: 10px; border: 1px solid #5c4200; background: rgba(92, 66, 0, 0.1);">
+                <div style="font-size: 9px; color: #5c4200;">DAÑO CRÍTICO/ESTADO</div>
+                <div style="font-size: 10px; color: #00ff41; margin-top: 5px;">&gt; Sistemas Nominales...</div>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Genera silueta con cuadrados integrados
+ */
+function generarSiluetaConCuadrados(vida) {
+    const { distribucion: dist, marcados } = vida;
+    
+    return `
+        <div style="position: relative; width: 100%; height: 500px;">
+            <!-- SVG de silueta con cuadrados integrados -->
+            <svg viewBox="0 0 300 500" width="100%" height="100%" style="position: absolute; top: 0; left: 0;">
+                <!-- CABEZA -->
+                <text x="150" y="20" text-anchor="middle" font-size="10" fill="#00ff41">CABEZA</text>
+                <ellipse cx="150" cy="45" rx="30" ry="35" fill="none" stroke="#00ff41" stroke-width="2"/>
+                ${generarCuadradosEnSVG(dist.cabeza, marcados.cabeza, 150, 45, 'horizontal')}
+                
+                <!-- TORSO -->
+                <rect x="110" y="80" width="80" height="150" rx="5" fill="none" stroke="#00ff41" stroke-width="2"/>
+                <text x="150" y="150" text-anchor="middle" font-size="10" fill="#00ff41">TORSO</text>
+                ${generarCuadradosEnSVG(dist.torso, marcados.torso, 150, 160, 'grid')}
+                
+                <!-- BRAZO IZQUIERDO -->
+                <text x="60" y="130" text-anchor="middle" font-size="8" fill="#00ff41">B.IZQ</text>
+                <path d="M 110 100 L 70 120 L 70 190 L 80 195 L 80 160 L 100 150 L 110 165" fill="none" stroke="#00ff41" stroke-width="2"/>
+                ${generarCuadradosEnSVG(dist.brazoIzq, marcados.brazoIzq, 80, 155, 'vertical')}
+                
+                <!-- BRAZO DERECHO -->
+                <text x="240" y="130" text-anchor="middle" font-size="8" fill="#00ff41">B.DER</text>
+                <path d="M 190 100 L 230 120 L 230 190 L 220 195 L 220 160 L 200 150 L 190 165" fill="none" stroke="#00ff41" stroke-width="2"/>
+                ${generarCuadradosEnSVG(dist.brazoDer, marcados.brazoDer, 220, 155, 'vertical')}
+                
+                <!-- PIERNA IZQUIERDA -->
+                <text x="125" y="470" text-anchor="middle" font-size="8" fill="#00ff41">P.IZQ</text>
+                <path d="M 125 230 L 120 350 L 115 410 L 120 445 L 130 445 L 135 410 L 140 350 L 135 230" fill="none" stroke="#00ff41" stroke-width="2"/>
+                ${generarCuadradosEnSVG(dist.piernaIzq, marcados.piernaIzq, 127, 340, 'vertical')}
+                
+                <!-- PIERNA DERECHA -->
+                <text x="175" y="470" text-anchor="middle" font-size="8" fill="#00ff41">P.DER</text>
+                <path d="M 175 230 L 180 350 L 185 410 L 180 445 L 170 445 L 165 410 L 160 350 L 165 230" fill="none" stroke="#00ff41" stroke-width="2"/>
+                ${generarCuadradosEnSVG(dist.piernaDer, marcados.piernaDer, 173, 340, 'vertical')}
+            </svg>
+        </div>
+    `;
+}
+
+/**
+ * Genera cuadrados en SVG con layout específico
+ */
+function generarCuadradosEnSVG(total, marcados, centerX, centerY, layout) {
+    const cuadrados = [];
+    const size = 12;
+    const spacing = 3;
+    
+    if (layout === 'horizontal') {
+        const totalWidth = total * (size + spacing) - spacing;
+        const startX = centerX - totalWidth / 2;
+        for (let i = 0; i < total; i++) {
+            const x = startX + i * (size + spacing);
+            const fill = i < marcados ? '#ff4444' : '#003300';
+            cuadrados.push(`<rect x="${x}" y="${centerY - size/2}" width="${size}" height="${size}" fill="${fill}" stroke="#00ff41" stroke-width="1.5"/>`);
+        }
+    } else if (layout === 'vertical') {
+        const totalHeight = total * (size + spacing) - spacing;
+        const startY = centerY - totalHeight / 2;
+        for (let i = 0; i < total; i++) {
+            const y = startY + i * (size + spacing);
+            const fill = i < marcados ? '#ff4444' : '#003300';
+            cuadrados.push(`<rect x="${centerX - size/2}" y="${y}" width="${size}" height="${size}" fill="${fill}" stroke="#00ff41" stroke-width="1.5"/>`);
+        }
+    } else if (layout === 'grid') {
+        const cols = 3;
+        const rows = Math.ceil(total / cols);
+        const totalWidth = cols * (size + spacing) - spacing;
+        const totalHeight = rows * (size + spacing) - spacing;
+        const startX = centerX - totalWidth / 2;
+        const startY = centerY - totalHeight / 2;
+        
+        for (let i = 0; i < total; i++) {
+            const row = Math.floor(i / cols);
+            const col = i % cols;
+            const x = startX + col * (size + spacing);
+            const y = startY + row * (size + spacing);
+            const fill = i < marcados ? '#ff4444' : '#003300';
+            cuadrados.push(`<rect x="${x}" y="${y}" width="${size}" height="${size}" fill="${fill}" stroke="#00ff41" stroke-width="1.5"/>`);
+        }
+    }
+    
+    return cuadrados.join('');
+}
+
+/**
+ * COLUMNA 3: Habilidades y armadura
+ */
+function generarColumna3(datos) {
+    return `
+        <!-- 05 // HABILIDADES -->
+        <div style="margin-bottom: 20px; border: 1px solid #00ff41; padding: 15px; background: rgba(0, 255, 65, 0.05);">
+            <h3 style="
+                margin: 0 0 10px 0;
+                font-size: 12px;
+                color: #00ff41;
+                border-bottom: 1px solid #00ff41;
+                padding-bottom: 5px;
+            ">05 // HABILIDADES</h3>
+            
+            <div style="font-size: 9px; display: grid; grid-template-columns: 2fr 0.5fr 0.5fr 1fr; gap: 5px; margin-bottom: 5px; color: #888;">
+                <span>HABILIDAD</span>
+                <span>MV</span>
+                <span>MR</span>
+                <span></span>
+            </div>
+            
+            ${datos.habilidades.map(hab => `
+                <div style="display: grid; grid-template-columns: 2fr 0.5fr 0.5fr 1fr; gap: 5px; font-size: 10px; padding: 4px 0; border-bottom: 1px solid rgba(0, 255, 65, 0.1);">
+                    <span style="color: #ffffff;">${hab.nombre}</span>
+                    <span style="color: #ffae00;">${hab.mv}</span>
+                    <span style="color: #ffae00;">${hab.mr}</span>
+                    <span style="color: #00ff41;">${'█'.repeat(hab.nivel)}</span>
+                </div>
+            `).join('')}
+        </div>
+        
+        <!-- 06 // ARMADURA (SP) -->
+        <div style="border: 1px solid #00ff41; padding: 15px; background: rgba(0, 255, 65, 0.05);">
+            <h3 style="
+                margin: 0 0 10px 0;
+                font-size: 12px;
+                color: #00ff41;
+                border-bottom: 1px solid #00ff41;
+                padding-bottom: 5px;
+            ">06 // ARMADURA (SP)</h3>
+            
+            ${generarArmaduraBox('CABEZA', datos.armadura.cabeza)}
+            ${generarArmaduraBox('TORSO', datos.armadura.torso)}
+            ${generarArmaduraBox('BRAZOS', datos.armadura.brazos)}
+            ${generarArmaduraBox('PIERNAS', datos.armadura.piernas)}
+            
+            <div style="font-size: 9px; color: #5c4200; margin-top: 10px; font-style: italic;">
+                *Tipo: ${datos.armadura.tipo}
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Genera box de armadura
+ */
+function generarArmaduraBox(zona, valor) {
+    return `
+        <div style="
+            display: flex;
+            justify-content: space-between;
+            padding: 6px;
+            margin-bottom: 5px;
+            border: 1px solid #5c4200;
+            background: rgba(92, 66, 0, 0.1);
+            font-size: 10px;
+        ">
+            <span style="color: #ffffff;">${zona}</span>
+            <span style="
+                color: #ffae00;
+                border: 1px solid #ffae00;
+                padding: 0 8px;
+                background: rgba(255, 174, 0, 0.1);
+            ">${valor || '—'}</span>
+        </div>
+    `;
+}
+
+console.log('✅ Generador PDF réplica Barracones cargado');
+
+</script>
 
 </body>
 </html>
