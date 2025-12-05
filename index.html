@@ -78,25 +78,96 @@
 
         /* CIRCULOS DE VIDA */
         .hp-box { 
-            width: 8px; height: 8px; border: 1px solid #000; background-color: white; 
+            width: 12px; height: 12px; border: 1.5px solid #333; background-color: white; 
             display: inline-block; margin: 1px; border-radius: 50%; cursor: pointer;
+            box-sizing: border-box;
         }
-        .hp-box.checked { background-color: #d32f2f !important; border-color: #d32f2f; }
+        .hp-box.checked { background-color: #555 !important; border-color: #333; }
         .v-box-container { display: flex; flex-direction: column; gap: 2px; }
-        /* TRACKER SVG */
-        .health-tracker { text-align: center; height: 660px; width: 264px; margin: 0 auto; position: relative; }
+        
+        /* TRACKER SVG - Tamaño aumentado */
+        .health-tracker { 
+            text-align: center; 
+            height: 600px; 
+            width: 240px; 
+            margin: 0 auto; 
+            position: relative; 
+        }
         .health-tracker svg { height: 100%; width: 100%; display: block; }
 
-        /* OVERLAY PUNTOS DE VIDA */
-        .hp-location-box { position: absolute; display: flex; flex-wrap: wrap; justify-content: center; align-content: flex-start;  z-index: 10; pointer-events: none; }
+        /* OVERLAY PUNTOS DE VIDA - Posicionados con % relativo al SVG viewBox (400x1024) */
+        /* Silueta real: Y=303 (cabeza) a Y=913 (pies), X=53 a X=378 */
+        .hp-location-box { 
+            position: absolute; 
+            display: flex; 
+            flex-wrap: wrap; 
+            justify-content: center; 
+            align-content: center;
+            z-index: 10; 
+            pointer-events: none;
+        }
         .hp-location-box > .hp-box { pointer-events: auto; }
 
-        #hp-head { top: 79px; left: 50%; transform: translateX(-36%); width: 50px; height: 60px; }
-        #hp-torso { top: 165px; left: 50%; transform: translateX(-35%); width: 70px; height: 140px; padding-top: 5px; }
-        #hp-arm-l { top: 158px; left: 13px; width: 45px; height: 140px; }
-        #hp-arm-r { top: 158px; right: 13px; width: 45px; height: 140px; }
-        #hp-leg-l { top: 350px; left: 68px; width: 16px; height: 180px; display: flex; flex-direction: column; flex-wrap: wrap; align-content: flex-start; }
-        #hp-leg-r { top: 350px; right: 59px; width: 16px; height: 180px; display: flex; flex-direction: column; flex-wrap: wrap; align-content: flex-start; }
+        /* CABEZA - Y=303-400 en SVG → 29.5%-39% */
+        #hp-head { 
+            top: 31%;
+            left: 50%; 
+            transform: translateX(-50%); 
+            width: 14%; 
+            height: 5%;
+        }
+        
+        /* TORSO - Y=440-620 en SVG → 43%-60% */
+        #hp-torso { 
+            top: 43%;
+            left: 50%; 
+            transform: translateX(-50%); 
+            width: 20%; 
+            height: 15%;
+            padding: 2px;
+        }
+        
+        /* BRAZO IZQUIERDO - X=53-100, Y=420-580 → left=13%, top=41% */
+        #hp-arm-l { 
+            top: 42%;
+            left: 16%; 
+            width: 10%; 
+            height: 14%;
+            flex-direction: column;
+        }
+        
+        /* BRAZO DERECHO - X=300-378, Y=420-580 → right=13%, top=41% */
+        #hp-arm-r { 
+            top: 42%;
+            right: 16%; 
+            width: 10%; 
+            height: 14%;
+            flex-direction: column;
+        }
+        
+        /* PIERNA IZQUIERDA - X=120-180, Y=620-880 → left=35%, top=61% */
+        #hp-leg-l { 
+            top: 60%;
+            left: 35%; 
+            width: 10%; 
+            height: 22%; 
+            display: flex; 
+            flex-direction: column; 
+            flex-wrap: wrap; 
+            align-content: center;
+        }
+        
+        /* PIERNA DERECHA - X=220-280, Y=620-880 → right=35%, top=61% */
+        #hp-leg-r { 
+            top: 60%;
+            right: 35%; 
+            width: 10%; 
+            height: 22%; 
+            display: flex; 
+            flex-direction: column; 
+            flex-wrap: wrap; 
+            align-content: center;
+        }
         /* TABLAS */
         .skill-table, .weapon-table { width: 100%; border-collapse: collapse; font-size: 10pt; }
         .skill-table th, .weapon-table th { background-color: #eee; border: 1px solid #999; padding: 4px; text-align: left; font-size: 10px; text-transform: uppercase; }
@@ -2176,28 +2247,58 @@ async function registrarGastoXPEnNube(jugador, cantidad, descripcion) {
         function recogerDatosBarracones() {
             console.log('📦 Recopilando datos de Barracones...');
                 try {
+                // === PRESERVAR DATOS ORIGINALES DEL GENERADOR ===
+                const datosOriginales = datosPersonajeBarracones || {};
+                
                 // === DATOS PERSONALES ===
-                // Recopilar campos básicos del personaje usando operador de encadenamiento opcional (?.)
-                // para evitar errores si los elementos no existen
                 const datos = {
+                    // ========== DATOS DEL GENERADOR (PRESERVADOS) ==========
+                    campaign: datosOriginales.campaign || '',
+                    decade: datosOriginales.decade || '',
+                    year: datosOriginales.year || '',
+                    mechMod: datosOriginales.mechMod || '',
+                    mechRoll: datosOriginales.mechRoll || 0,
+                    origen: datosOriginales.origen || '',
+                    afiliacion: datosOriginales.afiliacion || '',
+                    estudios: datosOriginales.estudios || '',
+                    nobleSkill: datosOriginales.nobleSkill || '',
+                    ageRoll: datosOriginales.ageRoll || '',
+                    altura: datosOriginales.altura || '',
+                    peso: datosOriginales.peso || '',
+                    pelo: datosOriginales.pelo || '',
+                    sexo: datosOriginales.sexo || '',
+                    ojos: datosOriginales.ojos || '',
+                    cbills: datosOriginales.cbills || '',
+                    salary: datosOriginales.salary || '',
+                    xpBase: datosOriginales.xpBase || '',
+                    merits: datosOriginales.merits || [],
+                    demerits: datosOriginales.demerits || [],
+                    historia: datosOriginales.historia || '',
+                    mech: datosOriginales.mech || '',
+                    
+                    // ========== DATOS DE BARRACONES (ACTUALES) ==========
                     // Identificación del personaje
                     nombre: document.getElementById('barr-nombre')?.value || '',
-                    jugador: document.getElementById('barr-callsign')?.value || '', // Callsign se usa como campo de Jugador
+                    jugador: document.getElementById('barr-callsign')?.value || '',
                     rango: document.getElementById('barr-rango')?.value || '',
                     tactico: document.getElementById('barr-id')?.value || '',
-                                // === ATRIBUTOS BÁSICOS ===
-                    // Valores por defecto '0' para atributos que deben ser numéricos
+                    
+                    // Atributos básicos
                     str: document.getElementById('barr-fue')?.value || '0',
                     dex: document.getElementById('barr-des')?.value || '0',
                     int: document.getElementById('barr-int')?.value || '0',
                     cha: document.getElementById('barr-car')?.value || '0',
-                                // === STATS DE COMBATE ===
-                    // MOV e INIT se calculan automáticamente desde DES
+                    
+                    // Stats de combate
                     mov: document.getElementById('barr-mov')?.value || '',
                     init: document.getElementById('barr-init')?.value || '',
-                                // === ARMAS EQUIPADAS ===
-                    // Array de 3 armas posibles (Principal, Secundaria, Terciaria)
-                    // Cada arma guarda: índice del selector (select) y munición actual (munActual)
+                    
+                    // XP (desde Barracones)
+                    xpTotal: document.getElementById('barr-xp-total')?.value || '0',
+                    xpDisponible: document.getElementById('barr-xp-disponible')?.value || '0',
+                    xpAvail: document.getElementById('barr-xp-disponible')?.value || '0',
+                    
+                    // Armas equipadas
                     armas: [
                         {
                             select: document.getElementById('barr-arma1-select')?.value || '',
@@ -2212,18 +2313,14 @@ async function registrarGastoXPEnNube(jugador, cantidad, descripcion) {
                             munActual: document.getElementById('barr-arma3-mun-actual')?.value || ''
                         }
                     ],
-                                // === OTROS DATOS ===
+                    
+                    // Otros datos
                     notas: document.getElementById('barr-notas')?.value || '',
-                                // === ARRAYS INICIALES ===
-                    // Estos se rellenan en las secciones siguientes
-                    extraSkills: [],              // Se rellena desde la tabla de habilidades
-                    mejorasAtributos: {           // Se rellena contando cuadrados seleccionados
-                        fue: 0,
-                        des: 0,
-                        int: 0,
-                        car: 0
-                    },
-                    mejorasHabilidades: {}        // Se rellena desde los cuadrados de mejora de habilidades
+                    
+                    // Arrays para habilidades y mejoras
+                    extraSkills: [],
+                    mejorasAtributos: { fue: 0, des: 0, int: 0, car: 0 },
+                    mejorasHabilidades: {}
                 };
                         // === RECOPILAR MEJORAS DE ATRIBUTOS ===
                 // Contar cuántos cuadrados de mejora están seleccionados para cada atributo
@@ -97922,38 +98019,89 @@ async function generarPDFPersonaje() {
     }
     
     try {
-        // Obtener datos del personaje actual
-        const personaje = obtenerDatosPersonajeActual();
+        // DETECTAR ORIGEN: Generador o Barracones
+        const fichaContainer = document.getElementById('ficha-container');
+        const fichaVisible = fichaContainer && fichaContainer.style.display !== 'none';
+        const barraconesVisible = document.getElementById('barracones')?.style.display === 'block';
         
-        if (!personaje) {
-            alert('No hay personaje cargado');
+        let elementToCapture;
+        let wasHidden = false;
+        let originalDisplay = '';
+        
+        if (fichaVisible) {
+            // CASO 1: Estamos en el Generador - capturar directamente ficha-container
+            console.log('📍 Capturando desde Generador (ficha-container)');
+            elementToCapture = fichaContainer;
+            
+        } else if (barraconesVisible) {
+            // CASO 2: Estamos en Barracones - necesitamos mostrar ficha-container temporalmente
+            console.log('📍 Capturando desde Barracones');
+            
+            // Verificar que hay datos cargados
+            if (!datosPersonajeBarracones) {
+                alert('No hay personaje cargado. Carga un personaje primero.');
+                return;
+            }
+            
+            // IMPORTANTE: Actualizar datosPersonajeBarracones con el estado ACTUAL del DOM
+            // Esto captura los daños marcados, XP gastado, etc. desde que se cargó
+            const datosActuales = recogerDatosBarracones();
+            // Mergear datos actuales con los originales (los actuales tienen prioridad)
+            datosPersonajeBarracones = { ...datosPersonajeBarracones, ...datosActuales };
+            console.log('📦 Datos actualizados para PDF:', datosPersonajeBarracones);
+            console.log('💔 Estado físico actual:', datosPersonajeBarracones.estadoFisico);
+            
+            // Ocultar Barracones temporalmente
+            const barracones = document.getElementById('barracones');
+            const toolbar = document.getElementById('barracones-toolbar');
+            barracones.style.display = 'none';
+            if (toolbar) toolbar.style.display = 'none';
+            
+            // Mostrar ficha-container
+            originalDisplay = fichaContainer.style.display;
+            fichaContainer.style.display = 'block';
+            wasHidden = true;
+            
+            // Rellenar la ficha con los datos de Barracones
+            rellenarFichaDesdeBarracones(datosPersonajeBarracones);
+            
+            elementToCapture = fichaContainer;
+            
+        } else {
+            alert('No hay personaje visible. Genera o carga un personaje primero.');
             return;
         }
+        
+        // Ocultar botones de la ficha antes de capturar
+        const noprints = elementToCapture.querySelectorAll('.no-print');
+        noprints.forEach(el => el.style.display = 'none');
         
         // Mostrar mensaje de progreso
         alert('Generando PDF... Esto puede tardar unos segundos.');
         
-        // Crear contenedor temporal para renderizar
-        const container = document.createElement('div');
-        container.style.position = 'absolute';
-        container.style.left = '-9999px';
-        container.style.width = '210mm'; // A4 width
-        container.style.background = 'white';
-        container.style.padding = '20px';
-        document.body.appendChild(container);
-        
-        // Generar HTML del PDF
-        container.innerHTML = generarHTMLParaPDF(personaje);
-        
-        // Esperar a que se rendericen las imágenes SVG
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Esperar un momento para que se renderice todo
+        await new Promise(resolve => setTimeout(resolve, 500));
         
         // Usar html2canvas para capturar
-        const canvas = await html2canvas(container, {
+        const canvas = await html2canvas(elementToCapture, {
             scale: 2,
             useCORS: true,
-            backgroundColor: '#ffffff'
+            backgroundColor: '#ffffff',
+            logging: false,
+            windowWidth: 900,
+            width: 900
         });
+        
+        // Restaurar botones
+        noprints.forEach(el => el.style.display = '');
+        
+        // Si estábamos en Barracones, restaurar la vista
+        if (wasHidden) {
+            fichaContainer.style.display = originalDisplay || 'none';
+            document.getElementById('barracones').style.display = 'block';
+            const toolbar = document.getElementById('barracones-toolbar');
+            if (toolbar) toolbar.style.display = 'block';
+        }
         
         // Crear PDF
         const { jsPDF } = window.jspdf;
@@ -97963,21 +98111,329 @@ async function generarPDFPersonaje() {
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
         
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        // Calcular proporciones para ajustar al A4
+        const canvasRatio = canvas.height / canvas.width;
+        const pageRatio = pdfHeight / pdfWidth;
+        
+        let imgWidth = pdfWidth;
+        let imgHeight = pdfWidth * canvasRatio;
+        
+        // Si la imagen es más alta que la página, ajustar
+        if (imgHeight > pdfHeight) {
+            imgHeight = pdfHeight;
+            imgWidth = pdfHeight / canvasRatio;
+        }
+        
+        // Centrar en la página
+        const xOffset = (pdfWidth - imgWidth) / 2;
+        const yOffset = 0;
+        
+        pdf.addImage(imgData, 'PNG', xOffset, yOffset, imgWidth, imgHeight);
+        
+        // Obtener nombre del personaje
+        const nombreField = document.getElementById('nombre-field');
+        const barrNombre = document.getElementById('barr-nombre');
+        const nombre = nombreField?.value || barrNombre?.value || 'Personaje';
         
         // Descargar
-        const fileName = `${personaje.nombre.replace(/\s+/g, '_')}_Ficha.pdf`;
+        const fileName = `${nombre.replace(/\s+/g, '_')}_Ficha.pdf`;
         pdf.save(fileName);
-        
-        // Limpiar
-        document.body.removeChild(container);
         
         console.log('✅ PDF generado exitosamente');
         
     } catch (error) {
         console.error('❌ Error al generar PDF:', error);
         alert('Error al generar PDF: ' + error.message);
+        
+        // Intentar restaurar la vista en caso de error
+        const fichaContainer = document.getElementById('ficha-container');
+        const barracones = document.getElementById('barracones');
+        if (barracones && fichaContainer) {
+            if (document.getElementById('barracones-toolbar')?.style.display === 'none') {
+                fichaContainer.style.display = 'none';
+                barracones.style.display = 'block';
+                document.getElementById('barracones-toolbar').style.display = 'block';
+            }
+        }
     }
+}
+
+/**
+ * Rellena ficha-container con datos desde Barracones/datosPersonajeBarracones
+ * para poder capturarla como PDF
+ * NO recalcula nada - usa los datos tal cual están guardados
+ */
+function rellenarFichaDesdeBarracones(datos) {
+    console.log('📋 Rellenando ficha desde datos de Barracones...');
+    console.log('📦 Datos recibidos:', datos);
+    
+    // Datos personales - usar tal cual vienen del JSON
+    const nombreField = document.getElementById('nombre-field');
+    const jugadorField = document.getElementById('jugador-field');
+    const origenOutput = document.getElementById('origen-output');
+    const estudiosOutput = document.getElementById('estudios-output');
+    const factionOutput = document.getElementById('faction-output');
+    const mechOutput = document.getElementById('mech-output');
+    
+    if (nombreField) nombreField.value = datos.nombre || '';
+    if (jugadorField) jugadorField.value = datos.jugador || '';
+    if (origenOutput) origenOutput.value = datos.origen || '';
+    if (estudiosOutput) estudiosOutput.value = datos.estudios || '';
+    if (factionOutput) factionOutput.value = datos.afiliacion || '';
+    if (mechOutput) mechOutput.value = datos.mech || ''; // Usar el mech guardado directamente
+    
+    // Datos físicos - usar tal cual
+    const edadField = document.getElementById('edad-field');
+    const sexoField = document.getElementById('sexo-field');
+    const alturaField = document.getElementById('altura-field');
+    const ojosField = document.getElementById('ojos-field');
+    const peloField = document.getElementById('pelo-field');
+    const pesoField = document.getElementById('peso-field');
+    
+    // Año de nacimiento desde decade + year
+    let edadText = '';
+    if (datos.decade) {
+        edadText = datos.decade.toString().substring(0, 3) + (datos.year || '0');
+    }
+    
+    if (edadField) edadField.value = edadText;
+    if (sexoField) sexoField.value = datos.sexo || '';
+    if (alturaField) alturaField.value = datos.altura || '';
+    if (ojosField) ojosField.value = datos.ojos || '';
+    if (peloField) peloField.value = datos.pelo || '';
+    if (pesoField) pesoField.value = datos.peso || '';
+    
+    // Atributos - usar valores actuales de Barracones (pueden haber subido)
+    const attrStr = document.getElementById('attr-str');
+    const attrDex = document.getElementById('attr-dex');
+    const attrInt = document.getElementById('attr-int');
+    const attrCha = document.getElementById('attr-cha');
+    
+    if (attrStr) attrStr.textContent = datos.str || '0';
+    if (attrDex) attrDex.textContent = datos.dex || '0';
+    if (attrInt) attrInt.textContent = datos.int || '0';
+    if (attrCha) attrCha.textContent = datos.cha || '0';
+    
+    // XP - usar valores actuales de Barracones
+    const sheetXpTotal = document.getElementById('sheet-xp-total');
+    const sheetXpAvail = document.getElementById('sheet-xp-avail');
+    if (sheetXpTotal) sheetXpTotal.value = datos.xpTotal || '0';
+    if (sheetXpAvail) sheetXpAvail.value = datos.xpDisponible || datos.xpAvail || '0';
+    
+    // C-Bills y Salario
+    const sheetCbills = document.getElementById('sheet-cbills');
+    const sheetSalary = document.getElementById('sheet-salary');
+    if (sheetCbills) sheetCbills.value = datos.cbills || '';
+    if (sheetSalary) sheetSalary.value = datos.salary || '';
+    
+    // Habilidades - usar las del JSON (con niveles actualizados)
+    // SIN botón de añadir habilidad (es para PDF)
+    const skillContainer = document.getElementById('skill-list-container');
+    if (skillContainer && datos.extraSkills && datos.extraSkills.length > 0) {
+        let skillHTML = `
+            <table class="skill-table" id="skills-display-table">
+                <thead>
+                    <tr>
+                        <th style="width: 35px;">↑</th>
+                        <th>HABILIDAD</th>
+                        <th style="width: 50px;">NIVEL</th>
+                        <th style="width: 60px;">CARACT.</th>
+                        <th style="width: 50px;">TIRADA</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        
+        datos.extraSkills.forEach(skill => {
+            if (skill && (skill.name || skill.nombre)) {
+                const nombre = skill.name || skill.nombre;
+                const nivel = parseInt(skill.level) || parseInt(skill.nivel) || 0;
+                const tir = 7 - nivel;
+                if (nivel > 0) {
+                    skillHTML += `
+                        <tr>
+                            <td class="skill-xp-col">
+                                <div class="q-box-container">
+                                    <div class="chk-box"></div>
+                                    <div class="chk-box"></div>
+                                </div>
+                            </td>
+                            <td>${nombre}</td>
+                            <td class="skill-level-col">${nivel}</td>
+                            <td class="skill-attr-col">7</td>
+                            <td class="skill-roll-col">${tir}</td>
+                        </tr>
+                    `;
+                }
+            }
+        });
+        
+        skillHTML += `
+                </tbody>
+            </table>
+        `;
+        // NO añadir botón "+ Añadir Habilidad" - esto es para PDF
+        
+        skillContainer.innerHTML = skillHTML;
+    }
+    
+    // === ARMAS PERSONALES ===
+    // Cargar armas desde datos.armas en la tabla weapon-table
+    // El select guarda el ÍNDICE en INFANTRY_WEAPON_TABLE, no el nombre
+    const weaponTable = document.querySelector('#ficha-container .weapon-table tbody');
+    if (weaponTable && datos.armas && datos.armas.length > 0) {
+        const rows = weaponTable.querySelectorAll('tr');
+        
+        datos.armas.forEach((arma, index) => {
+            if (index < rows.length && arma.select !== '' && arma.select !== undefined) {
+                const row = rows[index];
+                const cells = row.querySelectorAll('td');
+                
+                // El select guarda el índice en INFANTRY_WEAPON_TABLE
+                const weaponIndex = parseInt(arma.select);
+                
+                if (!isNaN(weaponIndex) && weaponIndex >= 0 && weaponIndex < INFANTRY_WEAPON_TABLE.length) {
+                    const weaponData = INFANTRY_WEAPON_TABLE[weaponIndex];
+                    
+                    if (cells.length >= 8 && weaponData) {
+                        // Celda 0: Nombre del arma
+                        const selectOrInput = cells[0].querySelector('select, input');
+                        if (selectOrInput) {
+                            if (selectOrInput.tagName === 'SELECT') {
+                                selectOrInput.innerHTML = `<option value="${weaponIndex}">${weaponData.name}</option>`;
+                                selectOrInput.value = weaponIndex;
+                            } else {
+                                selectOrInput.value = weaponData.name;
+                            }
+                        }
+                        
+                        // Celda 1: Daño
+                        const dmgInput = cells[1].querySelector('input');
+                        if (dmgInput) dmgInput.value = weaponData.dmg || '';
+                        
+                        // Celda 2: Alcance C (corto)
+                        const sInput = cells[2].querySelector('input');
+                        if (sInput) sInput.value = weaponData.s || '';
+                        
+                        // Celda 3: Alcance M (medio)
+                        const mInput = cells[3].querySelector('input');
+                        if (mInput) mInput.value = weaponData.m || '';
+                        
+                        // Celda 4: Alcance L (largo)
+                        const lInput = cells[4].querySelector('input');
+                        if (lInput) lInput.value = weaponData.l || '';
+                        
+                        // Celda 5: CAR (cargador)
+                        const carInput = cells[5].querySelector('input');
+                        if (carInput) carInput.value = weaponData.car || '';
+                        
+                        // Celda 6: REC (retroceso)
+                        const recInput = cells[6].querySelector('input');
+                        if (recInput) recInput.value = weaponData.rec || '';
+                        
+                        // Celda 7: PESO
+                        const wInput = cells[7].querySelector('input');
+                        if (wInput) wInput.value = weaponData.w || '';
+                        
+                        console.log(`🔫 Arma ${index + 1}: ${weaponData.name} (índice ${weaponIndex})`);
+                    }
+                }
+            }
+        });
+        
+        console.log('🔫 Armas cargadas en tabla desde índices:', datos.armas);
+    }
+    
+    // Méritos - usar tal cual del JSON
+    const meritContainer = document.getElementById('merit-container');
+    if (meritContainer) {
+        let meritHTML = '';
+        if (datos.merits && datos.merits.length > 0) {
+            datos.merits.forEach(m => {
+                if (m) meritHTML += `<div class="field">${m}</div>`;
+            });
+        }
+        meritContainer.innerHTML = meritHTML || '';
+    }
+    
+    // Deméritos - usar tal cual del JSON
+    const demeritContainer = document.getElementById('demerit-container');
+    if (demeritContainer) {
+        let demeritHTML = '';
+        if (datos.demerits && datos.demerits.length > 0) {
+            datos.demerits.forEach(d => {
+                if (d) demeritHTML += `<div class="field">${d}</div>`;
+            });
+        }
+        demeritContainer.innerHTML = demeritHTML || '';
+    }
+    
+    // Generar puntos de vida en la silueta basándose en FUE actual
+    // Incluir estado de daño (cuadrados marcados)
+    const str = parseInt(datos.str) || 0;
+    if (str > 0) {
+        generarPuntosVidaParaFicha(str, datos.estadoFisico);
+    }
+    
+    console.log('✅ Ficha rellenada desde Barracones');
+}
+
+/**
+ * Genera los puntos de vida en la silueta de ficha-container
+ * @param {number} str - Valor de Fuerza
+ * @param {Array} estadoFisico - Array de {index, damaged} con estado de cada cuadrado
+ */
+function generarPuntosVidaParaFicha(str, estadoFisico) {
+    // Distribución según fórmula
+    const distribucion = {
+        cabeza: str,
+        torso: str * 3,
+        brazoIzq: Math.floor(str * 2),
+        brazoDer: Math.floor(str * 2),
+        piernaIzq: Math.ceil(str * 2),
+        piernaDer: Math.ceil(str * 2)
+    };
+    
+    // Crear set de índices dañados para búsqueda rápida
+    const dañados = new Set();
+    if (estadoFisico && Array.isArray(estadoFisico)) {
+        estadoFisico.forEach(estado => {
+            if (estado.damaged) {
+                dañados.add(estado.index);
+            }
+        });
+    }
+    
+    let indexGlobal = 0;
+    
+    // Función helper para crear cuadrados HP con estado de daño
+    const crearCuadrados = (cantidad) => {
+        let html = '';
+        for (let i = 0; i < cantidad; i++) {
+            const checked = dañados.has(indexGlobal) ? ' checked' : '';
+            html += `<div class="hp-box${checked}"></div>`;
+            indexGlobal++;
+        }
+        return html;
+    };
+    
+    // Rellenar cada localización EN EL MISMO ORDEN QUE BARRACONES:
+    // CABEZA → B.IZQ → TORSO → B.DER → P.IZQ → P.DER
+    const hpHead = document.getElementById('hp-head');
+    const hpArmL = document.getElementById('hp-arm-l');
+    const hpTorso = document.getElementById('hp-torso');
+    const hpArmR = document.getElementById('hp-arm-r');
+    const hpLegL = document.getElementById('hp-leg-l');
+    const hpLegR = document.getElementById('hp-leg-r');
+    
+    if (hpHead) hpHead.innerHTML = crearCuadrados(distribucion.cabeza);
+    if (hpArmL) hpArmL.innerHTML = crearCuadrados(distribucion.brazoIzq);
+    if (hpTorso) hpTorso.innerHTML = crearCuadrados(distribucion.torso);
+    if (hpArmR) hpArmR.innerHTML = crearCuadrados(distribucion.brazoDer);
+    if (hpLegL) hpLegL.innerHTML = crearCuadrados(distribucion.piernaIzq);
+    if (hpLegR) hpLegR.innerHTML = crearCuadrados(distribucion.piernaDer);
+    
+    console.log(`💔 HP generados: ${indexGlobal} cuadrados, ${dañados.size} dañados`);
 }
 
 /**
