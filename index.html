@@ -636,6 +636,16 @@
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwd7_H9GAj16JcYQIhZSGPnU8xhHKbbO9D9nK9OnlI-zf_xeFluYFqMDk4g_scE8hDQCA/exec";
 
         // ============================================================================
+        // VARIABLE GLOBAL PARA PERSONAJE ACTUAL EN BARRACONES
+        // ============================================================================
+        /**
+         * Almacena los datos completos del personaje cargado en Barracones
+         * Se actualiza cada vez que se carga un personaje via cargarPersonajeEnBarracones()
+         * Usado por generarPDFPersonaje() para acceder a datos que no están en inputs
+         */
+        let datosPersonajeBarracones = null;
+
+        // ============================================================================
         // CONSTANTES DE CONFIGURACIÓN
         // ============================================================================
         /**
@@ -2744,7 +2754,12 @@ async function registrarGastoXPEnNube(jugador, cantidad, descripcion) {
                 console.error('❌ cargarPersonajeEnBarracones: datos es null/undefined');
                 return;
             }
-                console.log('🎯 ===== INICIANDO CARGA DE PERSONAJE =====');
+            
+            // ✅ GUARDAR EN VARIABLE GLOBAL PARA PDF
+            datosPersonajeBarracones = datos;
+            console.log('💾 Datos guardados en variable global para PDF');
+            
+            console.log('🎯 ===== INICIANDO CARGA DE PERSONAJE =====');
             console.log('📦 Datos recibidos:', datos);
                 try {
                 // === PASO 1: CARGAR DATOS BÁSICOS ===
@@ -3757,6 +3772,36 @@ async function registrarGastoXPEnNube(jugador, cantidad, descripcion) {
             document.getElementById('modal-recompensas').style.display = 'block';
             inicializarGastosXP();
             cargarXPDisponible();
+        }
+
+        /**
+         * Abre el modal de recompensas CON XP del Battle Tracker
+         * NO resetea los valores de XP ganado
+         */
+        function abrirModalRecompensasConXP(xpArray) {
+            console.log('💰 Abriendo modal de recompensas con XP del Battle Tracker...');
+            
+            // Resetear solo dinero y gastos (NO resetear XP)
+            document.getElementById('recompensas-dinero-unidad').value = '0';
+            document.getElementById('recompensas-gastos-unidad').value = '0';
+            document.getElementById('recompensas-estado').style.display = 'none';
+            
+            // Copiar XP del Battle Tracker
+            const inputIds = ['xp-marcos', 'xp-jaime', 'xp-joan', 'xp-juan'];
+            inputIds.forEach((id, idx) => {
+                const input = document.getElementById(id);
+                if (input && xpArray[idx] !== undefined) {
+                    input.value = xpArray[idx];
+                    console.log(`✓ ${id}: ${xpArray[idx]} XP`);
+                }
+            });
+            
+            // Mostrar modal
+            document.getElementById('modal-recompensas').style.display = 'block';
+            inicializarGastosXP();
+            cargarXPDisponible();
+            
+            console.log('✅ Modal abierto con XP del Battle Tracker');
         }
 
 /**
@@ -94813,7 +94858,7 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
             <button class="cyber-button" onclick="goToVehicleDepot()">Deposito de Vehiculos</button>
             <button class="cyber-button" onclick="goToGalacticMap()">Galactic Map</button>
             <button class="cyber-button" onclick="goToRegistroCombate()">Registro de Combate</button>
-            <button class="cyber-button disabled">Lance Builder [WIP]</button>
+            <button class="cyber-button" onclick="goToBattleTracker()">🎯 Seguimiento de Combate</button>
             <button class="cyber-button disabled">Database Archive [WIP]</button>
         </div>
     </div>
@@ -97386,7 +97431,7 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
         <button class="back-to-home-btn no-print" onclick="goHome()">⚠️ SALIR AL MENÚ</button>
         <button class="edit-mode-btn no-print" onclick="volverAEdicion()">⬅ VOLVER A EDICIÓN</button>
         <div class="no-print" style="text-align: center; margin: 10px 0 20px 0;">
-            <button id="print-button" onclick="window.print()">🖨️ Imprimir o Guardar como PDF</button>
+            <button id="print-button" onclick="generarPDFPersonaje()" style="padding: 10px 20px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold;">📄 DESCARGAR PDF</button>
         </div>
 
         <div class="container">
@@ -97826,7 +97871,7 @@ z"/>
                 <div style="width: 2px; height: 27px; background: linear-gradient(180deg, transparent, #5c4200, transparent);"></div>
                         <!-- BOTÓN PDF -->
                 <button 
-                    onclick="generarPDFBarracones()" 
+                    onclick="generarPDFPersonaje()" 
                     style="
                         padding: 7px 13px; 
                         background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%); 
@@ -97859,65 +97904,69 @@ z"/>
 <script>
 /**
  * ============================================================================
- * GENERADOR DE PDF RÉPLICA EXACTA DE BARRACONES - MECHWARRIOR
- * Sistema que genera PDF con diseño idéntico a la interfaz de Barracones
+ * GENERADOR DE PDF PARA BARRACONES - MECHWARRIOR
+ * Sistema completo para crear PDF en B/N con silueta y cuadrados de vida
  * ============================================================================
  */
 
 /**
- * Genera PDF con diseño exacto de Barracones
+ * Genera el PDF de la ficha del personaje
  */
-async function generarPDFBarracones() {
-    console.log('📄 Generando PDF réplica de Barracones...');
+async function generarPDFPersonaje() {
+    console.log('📄 Iniciando generación de PDF...');
     
-    // Verificar librerías
-    if (typeof window.jspdf === 'undefined' || typeof html2canvas === 'undefined') {
-        alert('Error: Librerías no cargadas. Recarga la página.');
+    // Verificar que jsPDF esté cargado
+    if (typeof window.jspdf === 'undefined') {
+        alert('Error: Librería jsPDF no cargada. Recarga la página.');
         return;
     }
     
     try {
-        // Obtener todos los datos
-        const datos = obtenerDatosCompletosBarracones();
+        // Obtener datos del personaje actual
+        const personaje = obtenerDatosPersonajeActual();
         
-        if (!datos.nombre) {
-            alert('No hay personaje cargado en Barracones');
+        if (!personaje) {
+            alert('No hay personaje cargado');
             return;
         }
         
-        // Crear contenedor temporal
+        // Mostrar mensaje de progreso
+        alert('Generando PDF... Esto puede tardar unos segundos.');
+        
+        // Crear contenedor temporal para renderizar
         const container = document.createElement('div');
         container.style.position = 'absolute';
         container.style.left = '-9999px';
-        container.style.width = '297mm'; // A4 landscape
-        container.style.height = '210mm';
-        container.style.background = '#000000';
+        container.style.width = '210mm'; // A4 width
+        container.style.background = 'white';
+        container.style.padding = '20px';
         document.body.appendChild(container);
         
-        // Generar HTML réplica
-        container.innerHTML = generarHTMLBarracones(datos);
+        // Generar HTML del PDF
+        container.innerHTML = generarHTMLParaPDF(personaje);
         
-        // Esperar renderizado
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        // Esperar a que se rendericen las imágenes SVG
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Capturar con html2canvas
+        // Usar html2canvas para capturar
         const canvas = await html2canvas(container, {
-            scale: 3,
+            scale: 2,
             useCORS: true,
-            backgroundColor: '#000000',
-            width: container.offsetWidth,
-            height: container.offsetHeight
+            backgroundColor: '#ffffff'
         });
         
-        // Crear PDF en landscape
+        // Crear PDF
         const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF('l', 'mm', 'a4'); // landscape
+        const pdf = new jsPDF('p', 'mm', 'a4');
         
         const imgData = canvas.toDataURL('image/png');
-        pdf.addImage(imgData, 'PNG', 0, 0, 297, 210);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
         
         // Descargar
-        const fileName = `${datos.nombre.replace(/\s+/g, '_')}_Barracones.pdf`;
+        const fileName = `${personaje.nombre.replace(/\s+/g, '_')}_Ficha.pdf`;
         pdf.save(fileName);
         
         // Limpiar
@@ -97932,202 +97981,416 @@ async function generarPDFBarracones() {
 }
 
 /**
- * Obtiene todos los datos necesarios de Barracones
+ * Obtiene los datos del personaje actual en Barracones
  */
-function obtenerDatosCompletosBarracones() {
-    return {
-        // Datos personales
-        nombre: document.getElementById('barr-nombre')?.value || '',
-        jugador: document.getElementById('barr-jugador')?.value || '',
-        campaign: document.getElementById('barr-campaign')?.value || '',
-        xpTotal: parseInt(document.getElementById('barr-xp-total')?.value) || 0,
-        xpDisponible: parseInt(document.getElementById('barr-xp-disponible')?.value) || 0,
-        
-        // Atributos
-        str: parseInt(document.getElementById('barr-str')?.value) || 0,
-        dex: parseInt(document.getElementById('barr-dex')?.value) || 0,
-        int: parseInt(document.getElementById('barr-int')?.value) || 0,
-        cha: parseInt(document.getElementById('barr-cha')?.value) || 0,
-        
-        // Antecedentes
-        origen: document.getElementById('barr-origen')?.value || '',
-        afiliacion: document.getElementById('barr-afiliacion')?.value || '',
-        estudios: document.getElementById('barr-estudios')?.value || '',
-        
-        // Historia
-        historia: document.getElementById('barr-historia')?.value || '',
-        
-        // Armamento
-        armamento: obtenerArmamento(),
-        
-        // Habilidades
-        habilidades: obtenerHabilidadesCompletas(),
-        
-        // Armadura
-        armadura: obtenerArmadura(),
-        
-        // Puntos de vida
-        vida: obtenerEstadoVida()
-    };
-}
 
 /**
- * Obtiene datos de armamento
+ * CORRECCIÓN COMPLETA - Captura de habilidades, vida y antecedentes
  */
-function obtenerArmamento() {
-    return {
-        primaria: {
-            nombre: document.getElementById('barr-arma-primaria')?.value || '-- Seleccionar Arma Princ --',
-            danio: document.getElementById('barr-arma-primaria-danio')?.value || '-',
-            al: document.getElementById('barr-arma-primaria-al')?.value || '-/-/-',
-            mun: document.getElementById('barr-arma-primaria-mun-actual')?.value || '0',
-            munMax: document.getElementById('barr-arma-primaria-mun-max')?.value || '0'
-        },
-        secundaria: {
-            nombre: document.getElementById('barr-arma-secundaria')?.value || '-- Secundaria --',
-            danio: document.getElementById('barr-arma-secundaria-danio')?.value || '-',
-            al: document.getElementById('barr-arma-secundaria-al')?.value || '-/-/-',
-            mun: document.getElementById('barr-arma-secundaria-mun-actual')?.value || '0',
-            munMax: document.getElementById('barr-arma-secundaria-mun-max')?.value || '0'
-        },
-        terciaria: {
-            nombre: document.getElementById('barr-arma-terciaria')?.value || '-- Terciaria --',
-            danio: document.getElementById('barr-arma-terciaria-danio')?.value || '-',
-            al: document.getElementById('barr-arma-terciaria-al')?.value || '-/-/-',
-            mun: document.getElementById('barr-arma-terciaria-mun-actual')?.value || '0',
-            munMax: document.getElementById('barr-arma-terciaria-mun-max')?.value || '0'
-        }
-    };
-}
 
-/**
- * Obtiene habilidades con MV y MR
- */
-function obtenerHabilidadesCompletas() {
+// ========== FUNCIÓN CORREGIDA: HABILIDADES ==========
+function obtenerHabilidadesParaPDF() {
     const habilidades = [];
-    const containers = document.querySelectorAll('.barracones-skill-container');
+    const table = document.getElementById('barr-skills-table');
     
-    containers.forEach(container => {
-        const nombre = container.querySelector('.barracones-skill-name')?.textContent || '';
-        const nivel = container.querySelectorAll('.barracones-skill-square.selected').length;
+    if (!table) {
+        console.warn('⚠ Tabla de habilidades no encontrada');
+        return habilidades;
+    }
+    
+    // Empezar desde fila 1 para saltar el header (fila 0)
+    for (let i = 1; i < table.rows.length; i++) {
+        const row = table.rows[i];
+        const index = i - 1; // Índice para IDs (0, 1, 2...)
         
+        // ESTRUCTURA REAL:
+        // Celda 0: textContent con nombre de habilidad
+        // Celda 1: input con id barr-skill-{index}-nv
+        // Celda 2: input con id barr-skill-{index}-tir
+        
+        const nombre = row.cells[0]?.textContent?.trim();
+        const nvInput = document.getElementById(`barr-skill-${index}-nv`);
+        const tirInput = document.getElementById(`barr-skill-${index}-tir`);
+        
+        if (!nombre) continue;
+        
+        const nivel = parseInt(nvInput?.value) || 0;
+        const tir = parseInt(tirInput?.value) || 0;
+        
+        // Solo añadir si tiene nombre y nivel > 0
         if (nombre && nivel > 0) {
-            // Calcular MV y MR según atributo asociado
-            const mv = nivel;
-            const mr = 6 - (nivel - 1); // Ejemplo simplificado
-            
-            habilidades.push({ nombre, nivel, mv, mr });
+            habilidades.push({ 
+                nombre, 
+                nivel,
+                tir
+            });
+            console.log(`  ✓ Habilidad: ${nombre} (Nivel ${nivel}, TIR ${tir})`);
         }
-    });
+    }
     
+    console.log(`✅ Total habilidades capturadas: ${habilidades.length}`);
     return habilidades;
 }
 
-/**
- * Obtiene armadura por zonas
- */
-function obtenerArmadura() {
+// ========== FUNCIÓN CORREGIDA: PUNTOS DE VIDA ==========
+function calcularPuntosVidaParaPDF() {
+    // FÓRMULA CORRECTA:
+    // CABEZA: FUE
+    // TORSO: FUE × 3
+    // BRAZOS: FUE × 2 cada uno (floor si no es exacto)
+    // PIERNAS: FUE × 2 cada una (ceil si no es exacto)
+    
+    const fue = parseInt(document.getElementById('barr-fue')?.value) || 0;
+    
+    const distribucion = {
+        cabeza: fue,
+        torso: fue * 3,
+        brazoIzq: Math.floor(fue * 2),
+        brazoDer: Math.floor(fue * 2),
+        piernaIzq: Math.ceil(fue * 2),
+        piernaDer: Math.ceil(fue * 2)
+    };
+    
+    const totalCuadrados = distribucion.cabeza + distribucion.torso + 
+                          distribucion.brazoIzq + distribucion.brazoDer + 
+                          distribucion.piernaIzq + distribucion.piernaDer;
+    
+    // Contar cuadrados marcados como heridos
+    const cuadradosMarcados = document.querySelectorAll('.hit-point-square.hit').length;
+    
+    console.log(`💓 Puntos de vida: ${totalCuadrados - cuadradosMarcados} / ${totalCuadrados}`);
+    console.log(`   Distribución (FUE=${fue}):`);
+    console.log(`   - CABEZA: ${distribucion.cabeza}`);
+    console.log(`   - TORSO: ${distribucion.torso}`);
+    console.log(`   - B.IZQ: ${distribucion.brazoIzq}`);
+    console.log(`   - B.DER: ${distribucion.brazoDer}`);
+    console.log(`   - P.IZQ: ${distribucion.piernaIzq}`);
+    console.log(`   - P.DER: ${distribucion.piernaDer}`);
+    
     return {
-        cabeza: document.getElementById('barr-armadura-cabeza')?.value || '',
-        torso: document.getElementById('barr-armadura-torso')?.value || '',
-        brazos: document.getElementById('barr-armadura-brazos')?.value || '',
-        piernas: document.getElementById('barr-armadura-piernas')?.value || '',
-        tipo: 'Chaleco Flat...' // Obtener de algún campo si existe
+        total: totalCuadrados,
+        usados: cuadradosMarcados,
+        restantes: totalCuadrados - cuadradosMarcados
     };
 }
 
-/**
- * Obtiene estado de vida con cuadrados marcados
- */
-function obtenerEstadoVida() {
-    const str = parseInt(document.getElementById('barr-str')?.value) || 0;
-    const totalCuadrados = str * 6;
+// ========== FUNCIÓN PRINCIPAL CORREGIDA ==========
+function obtenerDatosPersonajeActual() {
+    console.log('📋 ====== CAPTURANDO DATOS COMPLETOS ======');
     
-    // Distribución por secciones
-    const dist = {
-        cabeza: Math.max(1, Math.floor(str * 0.5)),
-        torso: Math.max(2, Math.floor(str * 2)),
-        brazoIzq: Math.max(1, Math.floor(str * 0.75)),
-        brazoDer: Math.max(1, Math.floor(str * 0.75)),
-        piernaIzq: Math.max(1, Math.floor(str)),
-        piernaDer: Math.max(1, Math.floor(str))
+    // DETECTAR ORIGEN: Generador (ficha-container) o Barracones
+    const fichaVisible = document.getElementById('ficha-container')?.style.display !== 'none';
+    const barraconesVisible = document.getElementById('barracones')?.style.display === 'block';
+    
+    let nombre, jugador, campaign, str, dex, int, cha, origen, afiliacion, estudios, historia;
+    let habilidades = [];
+    let puntosVida = { total: 0, usados: 0, restantes: 0 };
+    let xpTotal = 0, xpDisponible = 0;
+    
+    if (fichaVisible) {
+        // LEER DESDE GENERADOR (ficha-container)
+        console.log('📍 Origen: GENERADOR DE PERSONAJES');
+        
+        nombre = document.getElementById('nombre-field')?.value || '';
+        jugador = document.getElementById('jugador-field')?.value || '';
+        campaign = ''; // No hay campaign en generador
+        
+        // Atributos (divs, no inputs)
+        str = parseInt(document.getElementById('attr-str')?.textContent) || 0;
+        dex = parseInt(document.getElementById('attr-dex')?.textContent) || 0;
+        int = parseInt(document.getElementById('attr-int')?.textContent) || 0;
+        cha = parseInt(document.getElementById('attr-cha')?.textContent) || 0;
+        
+        origen = document.getElementById('origen-output')?.value || '';
+        afiliacion = document.getElementById('faction-output')?.value || '';
+        estudios = document.getElementById('estudios-output')?.value || '';
+        historia = ''; // No hay historia en generador
+        
+        // Habilidades desde tabla skills-display-table
+        const skillTable = document.getElementById('skills-display-table');
+        if (skillTable) {
+            const rows = skillTable.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length >= 4) {
+                    const nombre = cells[1]?.textContent?.trim();
+                    const nivel = parseInt(cells[2]?.textContent) || 0;
+                    const tir = parseInt(cells[3]?.textContent) || 0;
+                    if (nombre && nivel > 0) {
+                        habilidades.push({ nombre, nivel, tir });
+                    }
+                }
+            });
+        }
+        
+        // Puntos de vida con fórmula correcta
+        puntosVida = {
+            total: str * 12,
+            usados: 0, // No podemos saber heridas desde el generador
+            restantes: str * 12
+        };
+        
+        // XP desde generador
+        xpTotal = parseInt(document.getElementById('xp-display')?.textContent) || 0;
+        xpDisponible = xpTotal; // Sin gastar en generador
+        
+    } else if (barraconesVisible) {
+        // LEER DESDE BARRACONES
+        console.log('📍 Origen: BARRACONES');
+        
+        nombre = document.getElementById('barr-nombre')?.value || '';
+        jugador = document.getElementById('barr-callsign')?.value || ''; // ← CORREGIDO: barr-callsign, no barr-jugador
+        campaign = ''; // No existe en Barracones
+        
+        // Atributos desde inputs
+        str = parseInt(document.getElementById('barr-fue')?.value) || 0;
+        dex = parseInt(document.getElementById('barr-des')?.value) || 0;
+        int = parseInt(document.getElementById('barr-int')?.value) || 0;
+        cha = parseInt(document.getElementById('barr-car')?.value) || 0;
+        
+        // LEER DESDE VARIABLE GLOBAL (datos históricos que no están en inputs)
+        if (datosPersonajeBarracones) {
+            console.log('📦 Usando datos históricos desde variable global');
+            origen = datosPersonajeBarracones.origen || '';
+            afiliacion = datosPersonajeBarracones.afiliacion || '';
+            estudios = datosPersonajeBarracones.estudios || '';
+            historia = datosPersonajeBarracones.historia || '';
+        } else {
+            console.warn('⚠️ No hay datos históricos disponibles (datosPersonajeBarracones es null)');
+            origen = '';
+            afiliacion = '';
+            estudios = '';
+            historia = '';
+        }
+        
+        // Habilidades desde Barracones
+        habilidades = obtenerHabilidadesParaPDF();
+        
+        // Puntos de vida con heridas marcadas
+        puntosVida = calcularPuntosVidaParaPDF();
+        
+        // XP desde Barracones
+        xpTotal = parseInt(document.getElementById('barr-xp-total')?.value) || 0;
+        xpDisponible = parseInt(document.getElementById('barr-xp-disponible')?.value) || 0;
+        
+    } else {
+        console.warn('⚠ No hay personaje visible');
+        return null;
+    }
+    
+    if (!nombre) {
+        console.warn('⚠ No hay personaje cargado');
+        return null;
+    }
+    
+    console.log(`👤 Personaje: ${nombre} (${jugador})`);
+    console.log(`📊 FUE=${str}, DES=${dex}, INT=${int}, CHA=${cha}`);
+    console.log(`💓 Vida: ${puntosVida.restantes} / ${puntosVida.total}`);
+    console.log(`🎯 Habilidades: ${habilidades.length}`);
+    
+    const datos = {
+        nombre: nombre,
+        jugador: jugador,
+        campaign: campaign,
+        str: str,
+        dex: dex,
+        int: int,
+        cha: cha,
+        origen: origen,
+        afiliacion: afiliacion,
+        estudios: estudios,
+        historia: historia,
+        habilidades: habilidades,
+        puntosVida: puntosVida,
+        xpTotal: xpTotal,
+        xpDisponible: xpDisponible
     };
     
-    // Obtener cuadrados marcados por sección
-    const marcados = {
-        cabeza: contarCuadradosMarcados('cabeza'),
-        torso: contarCuadradosMarcados('torso'),
-        brazoIzq: contarCuadradosMarcados('brazo-izq'),
-        brazoDer: contarCuadradosMarcados('brazo-der'),
-        piernaIzq: contarCuadradosMarcados('pierna-izq'),
-        piernaDer: contarCuadradosMarcados('pierna-der')
-    };
+    console.log('✅ ====== CAPTURA COMPLETA ======');
     
-    return { distribucion: dist, marcados, total: totalCuadrados };
+    return datos;
 }
 
-/**
- * Cuenta cuadrados marcados en una sección
- */
-function contarCuadradosMarcados(seccion) {
-    const selector = `.hit-point-square[data-section="${seccion}"].hit`;
-    return document.querySelectorAll(selector).length;
-}
+
 
 /**
- * Genera HTML con diseño exacto de Barracones
+ * Genera el HTML completo para el PDF (FORMATO CORRECTO DEL GENERADOR)
  */
-function generarHTMLBarracones(datos) {
-    const nivelVeterania = calcularNivelVeterania(datos.xpTotal);
+function generarHTMLParaPDF(personaje) {
+    // Generar HTML de habilidades
+    let habilidadesHTML = '';
+    if (personaje.habilidades && personaje.habilidades.length > 0) {
+        personaje.habilidades.forEach((hab) => {
+            const caract = 7; // Por defecto FUE
+            const tirada = hab.tir || (7 - hab.nivel);
+            habilidadesHTML += `
+                <tr>
+                    <td style="padding: 8px; border: 1px solid black; text-align: center;">
+                        <div style="display: flex; gap: 4px; justify-content: center;">
+                            <div style="width: 14px; height: 14px; border: 2px solid black;"></div>
+                            <div style="width: 14px; height: 14px; border: 2px solid black;"></div>
+                        </div>
+                    </td>
+                    <td style="padding: 8px; border: 1px solid black; font-weight: bold;">${hab.nombre}</td>
+                    <td style="padding: 8px; border: 1px solid black; text-align: center; font-weight: bold;">${hab.nivel}</td>
+                    <td style="padding: 8px; border: 1px solid black; text-align: center;">${caract}</td>
+                    <td style="padding: 8px; border: 1px solid black; text-align: center; font-weight: bold;">${tirada}</td>
+                </tr>
+            `;
+        });
+    } else {
+        habilidadesHTML = '<tr><td colspan="5" style="padding: 20px; text-align: center; color: #999;">Sin habilidades</td></tr>';
+    }
+    
+    // Generar filas de armas personales
+    const armasHTML = Array(6).fill(0).map(() => 
+        '<tr><td style="padding: 6px; border: 1px solid black;">-- Arma --</td><td style="padding: 6px; border: 1px solid black;"></td><td style="padding: 6px; border: 1px solid black;"></td></tr>'
+    ).join('');
     
     return `
-        <div style="
-            font-family: 'Share Tech Mono', 'Courier New', monospace;
-            background: #000000;
-            color: #00ff41;
-            padding: 30px;
-            width: 100%;
-            height: 100%;
-            box-sizing: border-box;
-        ">
-            <!-- HEADER -->
-            <div style="text-align: center; margin-bottom: 20px;">
-                <h1 style="
-                    margin: 0;
-                    font-size: 48px;
-                    color: #ffae00;
-                    text-shadow: 0 0 20px rgba(255, 174, 0, 0.8);
-                    letter-spacing: 8px;
-                    font-weight: bold;
-                ">MECHWARRIOR</h1>
-                <p style="
-                    margin: 5px 0 0 0;
-                    font-size: 11px;
-                    color: #5c4200;
-                    letter-spacing: 3px;
-                ">BARRACKS DATABASE SYSTEM // PERSONNEL RECORDS</p>
+        <div style="font-family: Arial, sans-serif; max-width: 900px; margin: 0 auto; padding: 20px; background: white;">
+            <div style="text-align: center; border: 3px solid black; padding: 15px; margin-bottom: 20px; background: #f5f5f5;">
+                <h1 style="margin: 0; font-size: 24px; font-weight: bold; letter-spacing: 1px;">REGISTRO DE LA CABALLERÍA LIGERA DE ERIDANI</h1>
             </div>
             
-            <!-- MAIN GRID: 3 COLUMNAS -->
-            <div style="
-                display: grid;
-                grid-template-columns: 1fr 1fr 1fr;
-                gap: 30px;
-                height: calc(100% - 100px);
-            ">
-                <!-- COLUMNA 1: DATOS PERSONALES Y ARMAMENTO -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
                 <div>
-                    ${generarColumna1(datos, nivelVeterania)}
+                    <div style="border: 2px solid black; padding: 15px; margin-bottom: 10px;">
+                        <div style="margin-bottom: 10px;">
+                            <div style="font-size: 11px; font-weight: bold; margin-bottom: 3px;">NOMBRE DEL PERSONAJE:</div>
+                            <div style="font-size: 16px; font-weight: bold;">${personaje.nombre}</div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                            <div>
+                                <div style="font-size: 10px; font-weight: bold; margin-bottom: 3px;">JUGADOR:</div>
+                                <div style="font-size: 13px;">${personaje.jugador}</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 10px; font-weight: bold; margin-bottom: 3px;">LUGAR DE NACIMIENTO:</div>
+                                <div style="font-size: 13px;">${personaje.origen}</div>
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div>
+                                <div style="font-size: 10px; font-weight: bold; margin-bottom: 3px;">FORMACIÓN:</div>
+                                <div style="font-size: 13px;">${personaje.estudios}</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 10px; font-weight: bold; margin-bottom: 3px;">AFILIACIÓN:</div>
+                                <div style="font-size: 13px;">${personaje.afiliacion}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="border: 2px solid black; padding: 10px;">
+                        <h3 style="margin: 0 0 10px 0; font-size: 14px; font-weight: bold; text-align: center; border-bottom: 1px solid black; padding-bottom: 5px;">ATRIBUTOS</h3>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div style="border: 2px solid black; padding: 8px; text-align: center;">
+                                <div style="display: flex; gap: 3px; justify-content: center; margin-bottom: 5px;">
+                                    <div style="width: 12px; height: 12px; border: 2px solid black;"></div>
+                                    <div style="width: 12px; height: 12px; border: 2px solid black;"></div>
+                                </div>
+                                <div style="font-size: 11px; font-weight: bold; margin-bottom: 5px;">Fuerza (FUE)</div>
+                                <div style="font-size: 24px; font-weight: bold;">${personaje.str}</div>
+                            </div>
+                            <div style="border: 2px solid black; padding: 8px; text-align: center;">
+                                <div style="display: flex; gap: 3px; justify-content: center; margin-bottom: 5px;">
+                                    <div style="width: 12px; height: 12px; border: 2px solid black;"></div>
+                                    <div style="width: 12px; height: 12px; border: 2px solid black;"></div>
+                                </div>
+                                <div style="font-size: 11px; font-weight: bold; margin-bottom: 5px;">Destreza (DES)</div>
+                                <div style="font-size: 24px; font-weight: bold;">${personaje.dex}</div>
+                            </div>
+                            <div style="border: 2px solid black; padding: 8px; text-align: center;">
+                                <div style="display: flex; gap: 3px; justify-content: center; margin-bottom: 5px;">
+                                    <div style="width: 12px; height: 12px; border: 2px solid black;"></div>
+                                    <div style="width: 12px; height: 12px; border: 2px solid black;"></div>
+                                </div>
+                                <div style="font-size: 11px; font-weight: bold; margin-bottom: 5px;">Inteligencia (INT)</div>
+                                <div style="font-size: 24px; font-weight: bold;">${personaje.int}</div>
+                            </div>
+                            <div style="border: 2px solid black; padding: 8px; text-align: center;">
+                                <div style="display: flex; gap: 3px; justify-content: center; margin-bottom: 5px;">
+                                    <div style="width: 12px; height: 12px; border: 2px solid black;"></div>
+                                    <div style="width: 12px; height: 12px; border: 2px solid black;"></div>
+                                </div>
+                                <div style="font-size: 11px; font-weight: bold; margin-bottom: 5px;">Carisma (CAR)</div>
+                                <div style="font-size: 24px; font-weight: bold;">${personaje.cha}</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
-                <!-- COLUMNA 2: ESTADO FÍSICO -->
-                <div>
-                    ${generarColumna2(datos)}
+                <div style="border: 2px solid black; padding: 10px;">
+                    ${generarSiluetaConVida(personaje)}
+                    <div style="text-align: center; margin-top: 10px; font-size: 14px; font-weight: bold;">
+                        Vida Restante: ${personaje.puntosVida.restantes} / ${personaje.puntosVida.total}
+                    </div>
+                </div>
+            </div>
+            
+            <div style="border: 2px solid black; padding: 10px; margin-bottom: 20px;">
+                <h3 style="margin: 0 0 10px 0; font-size: 14px; font-weight: bold; text-align: center; border-bottom: 1px solid black; padding-bottom: 5px;">HABILIDADES</h3>
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                    <thead>
+                        <tr style="background: #e0e0e0;">
+                            <th style="padding: 6px; border: 1px solid black; width: 50px;">↑</th>
+                            <th style="padding: 6px; border: 1px solid black; text-align: left;">HABILIDAD</th>
+                            <th style="padding: 6px; border: 1px solid black; width: 60px;">NIVEL</th>
+                            <th style="padding: 6px; border: 1px solid black; width: 80px;">CARACT.</th>
+                            <th style="padding: 6px; border: 1px solid black; width: 70px;">TIRADA</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${habilidadesHTML}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                <div style="border: 2px solid black; padding: 10px;">
+                    <h3 style="margin: 0 0 10px 0; font-size: 12px; font-weight: bold; text-align: center; border-bottom: 1px solid black; padding-bottom: 5px;">FINANZAS Y EQUIPO</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 10px;">
+                        <div>
+                            <div style="font-weight: bold;">C-BILLS:</div>
+                            <div style="border: 1px solid black; padding: 4px; min-height: 20px;"></div>
+                        </div>
+                        <div>
+                            <div style="font-weight: bold;">SALARIO/INGRESOS:</div>
+                            <div style="border: 1px solid black; padding: 4px; min-height: 20px;"></div>
+                        </div>
+                        <div>
+                            <div style="font-weight: bold;">PX TOTALES:</div>
+                            <div style="border: 1px solid black; padding: 4px; text-align: center;">${personaje.xpTotal}</div>
+                        </div>
+                        <div>
+                            <div style="font-weight: bold;">PX DISP.:</div>
+                            <div style="border: 1px solid black; padding: 4px; text-align: center;">${personaje.xpDisponible}</div>
+                        </div>
+                    </div>
                 </div>
                 
-                <!-- COLUMNA 3: HABILIDADES Y ARMADURA -->
-                <div>
-                    ${generarColumna3(datos)}
+                <div style="border: 2px solid black; padding: 10px;">
+                    <h3 style="margin: 0 0 10px 0; font-size: 12px; font-weight: bold; text-align: center; border-bottom: 1px solid black; padding-bottom: 5px;">ARMAS PERSONALES</h3>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 9px;">
+                        <thead>
+                            <tr style="background: #e0e0e0;">
+                                <th style="padding: 3px; border: 1px solid black;">ARMA</th>
+                                <th style="padding: 3px; border: 1px solid black; width: 40px;">DAÑO</th>
+                                <th style="padding: 3px; border: 1px solid black;">ALCANCE</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${armasHTML}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div style="border: 2px solid black; padding: 10px;">
+                <h3 style="margin: 0 0 10px 0; font-size: 12px; font-weight: bold; text-align: center; border-bottom: 1px solid black; padding-bottom: 5px;">TRASFONDO Y NOTAS</h3>
+                <div style="min-height: 80px; font-size: 11px; line-height: 1.4;">
+                    ${personaje.historia || ''}
                 </div>
             </div>
         </div>
@@ -98135,307 +98398,718 @@ function generarHTMLBarracones(datos) {
 }
 
 /**
- * COLUMNA 1: Datos personales, atributos y armamento
+ * Genera la silueta con los cuadrados de vida posicionados
+ * FÓRMULA CORRECTA:
+ * - CABEZA: FUE
+ * - TORSO: FUE × 3
+ * - BRAZOS: FUE × 2 (cada uno, redondear hacia ABAJO si no es exacto)
+ * - PIERNAS: FUE × 2 (cada una, redondear hacia ARRIBA si no es exacto)
  */
-function generarColumna1(datos, nivel) {
-    return `
-        <!-- 01 // DATOS PERSONALES -->
-        <div style="margin-bottom: 20px; border: 1px solid #00ff41; padding: 15px; background: rgba(0, 255, 65, 0.05);">
-            <h3 style="
-                margin: 0 0 10px 0;
-                font-size: 12px;
-                color: #00ff41;
-                border-bottom: 1px solid #00ff41;
-                padding-bottom: 5px;
-            ">01 // DATOS PERSONALES</h3>
-            
-            <div style="font-size: 16px; color: #ffae00; margin-bottom: 5px;">${datos.nombre}</div>
-            <div style="display: flex; justify-content: space-between; font-size: 11px;">
-                <span style="color: #ffffff;">${datos.jugador}</span>
-                <span style="color: #ffae00;">${nivel.nombre}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; font-size: 11px; margin-top: 8px; color: #00ff41;">
-                <span>XP:</span>
-                <span>${datos.xpDisponible} / ${datos.xpTotal}</span>
-            </div>
-        </div>
-        
-        <!-- 02 // ATRIBUTOS BASE -->
-        <div style="margin-bottom: 20px; border: 1px solid #00ff41; padding: 15px; background: rgba(0, 255, 65, 0.05);">
-            <h3 style="
-                margin: 0 0 10px 0;
-                font-size: 12px;
-                color: #00ff41;
-                border-bottom: 1px solid #00ff41;
-                padding-bottom: 5px;
-            ">02 // ATRIBUTOS BASE</h3>
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
-                ${generarAtributoBox('FUE', datos.str)}
-                ${generarAtributoBox('DES', datos.dex)}
-                ${generarAtributoBox('INT', datos.int)}
-                ${generarAtributoBox('CAR', datos.cha)}
-            </div>
-            
-            <div style="display: flex; justify-content: space-between; font-size: 10px; padding-top: 10px; border-top: 1px dotted #5c4200;">
-                <span>MOV (m): <span style="color: #ffae00;">${datos.dex}</span></span>
-                <span>INIT: <span style="color: #ffae00;">${datos.dex}</span></span>
-            </div>
-        </div>
-        
-        <!-- 03 // ARMAMENTO PERSONAL -->
-        <div style="border: 1px solid #00ff41; padding: 15px; background: rgba(0, 255, 65, 0.05);">
-            <h3 style="
-                margin: 0 0 10px 0;
-                font-size: 12px;
-                color: #00ff41;
-                border-bottom: 1px solid #00ff41;
-                padding-bottom: 5px;
-            ">03 // ARMAMENTO PERSONAL</h3>
-            
-            ${generarArmaBox('Primaria', datos.armamento.primaria)}
-            ${generarArmaBox('Secundaria', datos.armamento.secundaria)}
-            ${generarArmaBox('Terciaria', datos.armamento.terciaria)}
-        </div>
-    `;
-}
-
-/**
- * Genera box de atributo
- */
-function generarAtributoBox(nombre, valor) {
-    return `
-        <div style="
-            border: 1px solid #ffae00;
-            padding: 8px;
-            text-align: center;
-            background: rgba(255, 174, 0, 0.05);
-        ">
-            <div style="font-size: 8px; color: #5c4200;">${nombre}</div>
-            <div style="font-size: 20px; color: #ffae00; font-weight: bold;">${valor}</div>
-        </div>
-    `;
-}
-
-/**
- * Genera box de arma
- */
-function generarArmaBox(tipo, arma) {
-    return `
-        <div style="margin-bottom: 12px; padding: 8px; border: 1px solid #5c4200; background: rgba(92, 66, 0, 0.1);">
-            <div style="font-size: 10px; color: #ffae00; margin-bottom: 5px;">-- ${arma.nombre} --</div>
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; font-size: 9px;">
-                <div>
-                    <span style="color: #888;">DAÑO:</span><br>
-                    <span style="color: #ffffff;">${arma.danio}</span>
-                </div>
-                <div>
-                    <span style="color: #888;">AL:</span><br>
-                    <span style="color: #ffffff;">${arma.al}</span>
-                </div>
-                <div>
-                    <span style="color: #888;">MUN:</span><br>
-                    <span style="color: ${arma.mun === '0' ? '#ff4444' : '#00ff41'};">${arma.mun}/${arma.munMax}</span>
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-/**
- * COLUMNA 2: Estado físico con silueta
- */
-function generarColumna2(datos) {
-    return `
-        <div style="border: 1px solid #00ff41; padding: 15px; background: rgba(0, 255, 65, 0.05); height: 100%;">
-            <h3 style="
-                margin: 0 0 15px 0;
-                font-size: 12px;
-                color: #00ff41;
-                border-bottom: 1px solid #00ff41;
-                padding-bottom: 5px;
-            ">04 // ESTADO FÍSICO</h3>
-            
-            ${generarSiluetaConCuadrados(datos.vida)}
-            
-            <div style="margin-top: 20px; padding: 10px; border: 1px solid #5c4200; background: rgba(92, 66, 0, 0.1);">
-                <div style="font-size: 9px; color: #5c4200;">DAÑO CRÍTICO/ESTADO</div>
-                <div style="font-size: 10px; color: #00ff41; margin-top: 5px;">&gt; Sistemas Nominales...</div>
-            </div>
-        </div>
-    `;
-}
-
-/**
- * Genera silueta con cuadrados integrados
- */
-function generarSiluetaConCuadrados(vida) {
-    const { distribucion: dist, marcados } = vida;
+function generarSiluetaConVida(personaje) {
+    const str = personaje.str;
+    
+    // Distribución según fórmula correcta
+    const distribucion = {
+        cabeza: str,
+        torso: str * 3,
+        brazoIzq: Math.floor(str * 2),
+        brazoDer: Math.floor(str * 2),
+        piernaIzq: Math.ceil(str * 2),
+        piernaDer: Math.ceil(str * 2)
+    };
+    
+    const totalCuadrados = distribucion.cabeza + distribucion.torso + 
+                          distribucion.brazoIzq + distribucion.brazoDer + 
+                          distribucion.piernaIzq + distribucion.piernaDer;
+    
+    console.log(`📊 Distribución de vida (FUE=${str}):`);
+    console.log(`   CABEZA: ${distribucion.cabeza}`);
+    console.log(`   TORSO: ${distribucion.torso}`);
+    console.log(`   B.IZQ: ${distribucion.brazoIzq}`);
+    console.log(`   B.DER: ${distribucion.brazoDer}`);
+    console.log(`   P.IZQ: ${distribucion.piernaIzq}`);
+    console.log(`   P.DER: ${distribucion.piernaDer}`);
+    console.log(`   TOTAL: ${totalCuadrados}`);
     
     return `
-        <div style="position: relative; width: 100%; height: 500px;">
-            <!-- SVG de silueta con cuadrados integrados -->
-            <svg viewBox="0 0 300 500" width="100%" height="100%" style="position: absolute; top: 0; left: 0;">
+        <div style="position: relative; width: 250px; height: 500px; margin: 0 auto;">
+            <!-- Silueta SVG -->
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 400" width="250" height="500" style="position: absolute; top: 0; left: 0;">
                 <!-- CABEZA -->
-                <text x="150" y="20" text-anchor="middle" font-size="10" fill="#00ff41">CABEZA</text>
-                <ellipse cx="150" cy="45" rx="30" ry="35" fill="none" stroke="#00ff41" stroke-width="2"/>
-                ${generarCuadradosEnSVG(dist.cabeza, marcados.cabeza, 150, 45, 'horizontal')}
+                <ellipse cx="100" cy="30" rx="22" ry="28" fill="none" stroke="black" stroke-width="3"/>
                 
                 <!-- TORSO -->
-                <rect x="110" y="80" width="80" height="150" rx="5" fill="none" stroke="#00ff41" stroke-width="2"/>
-                <text x="150" y="150" text-anchor="middle" font-size="10" fill="#00ff41">TORSO</text>
-                ${generarCuadradosEnSVG(dist.torso, marcados.torso, 150, 160, 'grid')}
+                <rect x="68" y="55" width="64" height="125" rx="5" fill="none" stroke="black" stroke-width="3"/>
                 
                 <!-- BRAZO IZQUIERDO -->
-                <text x="60" y="130" text-anchor="middle" font-size="8" fill="#00ff41">B.IZQ</text>
-                <path d="M 110 100 L 70 120 L 70 190 L 80 195 L 80 160 L 100 150 L 110 165" fill="none" stroke="#00ff41" stroke-width="2"/>
-                ${generarCuadradosEnSVG(dist.brazoIzq, marcados.brazoIzq, 80, 155, 'vertical')}
+                <path d="M 68 70 L 35 80 L 35 145 L 45 150 L 45 115 L 58 110 L 68 125" fill="none" stroke="black" stroke-width="3"/>
                 
                 <!-- BRAZO DERECHO -->
-                <text x="240" y="130" text-anchor="middle" font-size="8" fill="#00ff41">B.DER</text>
-                <path d="M 190 100 L 230 120 L 230 190 L 220 195 L 220 160 L 200 150 L 190 165" fill="none" stroke="#00ff41" stroke-width="2"/>
-                ${generarCuadradosEnSVG(dist.brazoDer, marcados.brazoDer, 220, 155, 'vertical')}
+                <path d="M 132 70 L 165 80 L 165 145 L 155 150 L 155 115 L 142 110 L 132 125" fill="none" stroke="black" stroke-width="3"/>
                 
                 <!-- PIERNA IZQUIERDA -->
-                <text x="125" y="470" text-anchor="middle" font-size="8" fill="#00ff41">P.IZQ</text>
-                <path d="M 125 230 L 120 350 L 115 410 L 120 445 L 130 445 L 135 410 L 140 350 L 135 230" fill="none" stroke="#00ff41" stroke-width="2"/>
-                ${generarCuadradosEnSVG(dist.piernaIzq, marcados.piernaIzq, 127, 340, 'vertical')}
+                <path d="M 78 180 L 73 275 L 68 330 L 73 360 L 85 360 L 92 330 L 97 275 L 90 180" fill="none" stroke="black" stroke-width="3"/>
                 
                 <!-- PIERNA DERECHA -->
-                <text x="175" y="470" text-anchor="middle" font-size="8" fill="#00ff41">P.DER</text>
-                <path d="M 175 230 L 180 350 L 185 410 L 180 445 L 170 445 L 165 410 L 160 350 L 165 230" fill="none" stroke="#00ff41" stroke-width="2"/>
-                ${generarCuadradosEnSVG(dist.piernaDer, marcados.piernaDer, 173, 340, 'vertical')}
+                <path d="M 122 180 L 127 275 L 132 330 L 127 360 L 115 360 L 108 330 L 103 275 L 110 180" fill="none" stroke="black" stroke-width="3"/>
+                
+                <!-- Etiquetas de sección -->
+                <text x="100" y="20" text-anchor="middle" font-size="12" font-family="monospace" fill="black" font-weight="bold">CABEZA</text>
+                <text x="100" y="120" text-anchor="middle" font-size="12" font-family="monospace" fill="black" font-weight="bold">TORSO</text>
+                <text x="30" y="115" text-anchor="middle" font-size="10" font-family="monospace" fill="black" font-weight="bold">B.IZQ</text>
+                <text x="170" y="115" text-anchor="middle" font-size="10" font-family="monospace" fill="black" font-weight="bold">B.DER</text>
+                <text x="73" y="380" text-anchor="middle" font-size="10" font-family="monospace" fill="black" font-weight="bold">P.IZQ</text>
+                <text x="127" y="380" text-anchor="middle" font-size="10" font-family="monospace" fill="black" font-weight="bold">P.DER</text>
+            </svg>
+            
+            <!-- Cuadrados de vida -->
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 400" width="250" height="500" style="position: absolute; top: 0; left: 0;">
+                ${generarCuadradosSeccionSVG('cabeza', distribucion.cabeza, 100, 30, personaje.puntosVida, 0)}
+                ${generarCuadradosSeccionSVG('torso', distribucion.torso, 100, 117, personaje.puntosVida, distribucion.cabeza)}
+                ${generarCuadradosSeccionSVG('brazoIzq', distribucion.brazoIzq, 50, 110, personaje.puntosVida, distribucion.cabeza + distribucion.torso)}
+                ${generarCuadradosSeccionSVG('brazoDer', distribucion.brazoDer, 150, 110, personaje.puntosVida, distribucion.cabeza + distribucion.torso + distribucion.brazoIzq)}
+                ${generarCuadradosSeccionSVG('piernaIzq', distribucion.piernaIzq, 83, 270, personaje.puntosVida, distribucion.cabeza + distribucion.torso + distribucion.brazoIzq + distribucion.brazoDer)}
+                ${generarCuadradosSeccionSVG('piernaDer', distribucion.piernaDer, 117, 270, personaje.puntosVida, distribucion.cabeza + distribucion.torso + distribucion.brazoIzq + distribucion.brazoDer + distribucion.piernaIzq)}
             </svg>
         </div>
     `;
 }
 
 /**
- * Genera cuadrados en SVG con layout específico
+ * Genera cuadrados de vida en formato SVG para una sección
+ * MEJORADO: Muestra cuadrados heridos en rojo
+ * 
+ * @param {string} seccion - Nombre de la sección
+ * @param {number} cantidad - Cantidad de cuadrados en esta sección
+ * @param {number} centerX - Posición X central
+ * @param {number} centerY - Posición Y central  
+ * @param {object} puntosVida - Objeto con total, usados, restantes
+ * @param {number} offset - Offset para calcular qué cuadrados están heridos
  */
-function generarCuadradosEnSVG(total, marcados, centerX, centerY, layout) {
+function generarCuadradosSeccionSVG(seccion, cantidad, centerX, centerY, puntosVida = null, offset = 0) {
     const cuadrados = [];
-    const size = 12;
-    const spacing = 3;
+    const size = 8; // Reducido de 10 a 8 para acomodar más cuadrados
+    const spacing = 1.5; // Reducido de 2 a 1.5
     
-    if (layout === 'horizontal') {
-        const totalWidth = total * (size + spacing) - spacing;
-        const startX = centerX - totalWidth / 2;
-        for (let i = 0; i < total; i++) {
-            const x = startX + i * (size + spacing);
-            const fill = i < marcados ? '#ff4444' : '#003300';
-            cuadrados.push(`<rect x="${x}" y="${centerY - size/2}" width="${size}" height="${size}" fill="${fill}" stroke="#00ff41" stroke-width="1.5"/>`);
-        }
-    } else if (layout === 'vertical') {
-        const totalHeight = total * (size + spacing) - spacing;
-        const startY = centerY - totalHeight / 2;
-        for (let i = 0; i < total; i++) {
-            const y = startY + i * (size + spacing);
-            const fill = i < marcados ? '#ff4444' : '#003300';
-            cuadrados.push(`<rect x="${centerX - size/2}" y="${y}" width="${size}" height="${size}" fill="${fill}" stroke="#00ff41" stroke-width="1.5"/>`);
-        }
-    } else if (layout === 'grid') {
-        const cols = 3;
-        const rows = Math.ceil(total / cols);
-        const totalWidth = cols * (size + spacing) - spacing;
-        const totalHeight = rows * (size + spacing) - spacing;
-        const startX = centerX - totalWidth / 2;
-        const startY = centerY - totalHeight / 2;
+    // Calcular filas y columnas para mejor distribución
+    let cols, rows;
+    if (cantidad <= 3) {
+        cols = cantidad;
+        rows = 1;
+    } else if (cantidad <= 6) {
+        cols = 3;
+        rows = 2;
+    } else if (cantidad <= 9) {
+        cols = 3;
+        rows = 3;
+    } else if (cantidad <= 16) {
+        cols = 4;
+        rows = Math.ceil(cantidad / 4);
+    } else {
+        // Para cantidades grandes (torso, brazos, piernas)
+        cols = 5;
+        rows = Math.ceil(cantidad / 5);
+    }
+    
+    const totalWidth = cols * (size + spacing) - spacing;
+    const totalHeight = rows * (size + spacing) - spacing;
+    const startX = centerX - totalWidth / 2;
+    const startY = centerY - totalHeight / 2;
+    
+    for (let i = 0; i < cantidad; i++) {
+        const row = Math.floor(i / cols);
+        const col = i % cols;
+        const x = startX + col * (size + spacing);
+        const y = startY + row * (size + spacing);
         
-        for (let i = 0; i < total; i++) {
-            const row = Math.floor(i / cols);
-            const col = i % cols;
-            const x = startX + col * (size + spacing);
-            const y = startY + row * (size + spacing);
-            const fill = i < marcados ? '#ff4444' : '#003300';
-            cuadrados.push(`<rect x="${x}" y="${y}" width="${size}" height="${size}" fill="${fill}" stroke="#00ff41" stroke-width="1.5"/>`);
+        // Determinar si este cuadrado está herido
+        let fill = "white";
+        let strokeColor = "black";
+        
+        if (puntosVida && puntosVida.usados > 0) {
+            // Los cuadrados se marcan de izquierda a derecha, arriba a abajo
+            // offset indica cuántos cuadrados previos hay
+            const globalIndex = offset + i;
+            if (globalIndex < puntosVida.usados) {
+                fill = "#ff0000"; // Rojo para herido
+                strokeColor = "#990000";
+            }
         }
+        
+        cuadrados.push(`<rect x="${x}" y="${y}" width="${size}" height="${size}" fill="${fill}" stroke="${strokeColor}" stroke-width="1.5"/>`);
     }
     
     return cuadrados.join('');
 }
 
 /**
- * COLUMNA 3: Habilidades y armadura
+ * Genera la lista de habilidades
  */
-function generarColumna3(datos) {
-    return `
-        <!-- 05 // HABILIDADES -->
-        <div style="margin-bottom: 20px; border: 1px solid #00ff41; padding: 15px; background: rgba(0, 255, 65, 0.05);">
-            <h3 style="
-                margin: 0 0 10px 0;
-                font-size: 12px;
+function generarListaHabilidades(habilidades) {
+    if (habilidades.length === 0) {
+        return '<p style="text-align: center; color: #666; grid-column: 1 / -1;">Sin habilidades</p>';
+    }
+    
+    return habilidades.map(hab => `
+        <div style="padding: 10px; border: 2px solid black; display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 14px;">${hab.nombre}</span>
+            <span style="font-size: 16px; font-weight: bold;">${hab.nivel}</span>
+        </div>
+    `).join('');
+}
+
+console.log('✅ Generador de PDF integrado correctamente');
+</script>
+
+</body>
+</html>
+<!-- ============================================================================
+     BATTLE TRACKER - VERSIÓN SIMPLIFICADA SIN REACT
+     ============================================================================ -->
+
+<!-- ============================================================================
+     BATTLE TRACKER - VERSIÓN INTEGRADA CON ESTILOS DEL SISTEMA
+     ============================================================================ -->
+
+<!-- SECCIÓN: Battle Tracker -->
+<div id="battle-tracker" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #000000; background-image: linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.95)), repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255, 174, 0, 0.05) 2px, transparent 4px); background-size: 100% 100%, 100% 4px; z-index: 2000; overflow-y: auto; padding-top: 60px;">
+    <button class="back-to-home-btn no-print" onclick="goHomeFromBattleTracker()" style="position: fixed; top: 20px; left: 20px; background: rgba(26, 26, 26, 0.8); border: 2px solid #b71c1c; color: #e0e0e0; padding: 12px 20px; font-family: 'Share Tech Mono', monospace; text-transform: uppercase; letter-spacing: 1.5px; cursor: pointer; clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%); z-index: 3000;">
+        ⚠️ SALIR AL MENÚ
+    </button>
+    
+    <!-- Scanner Effect -->
+    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 2px; background: linear-gradient(90deg, transparent, rgba(255, 140, 66, 0.5), transparent); animation: scanner-sweep 30s linear infinite alternate; z-index: 0;"></div>
+    
+    <div style="max-width: 900px; margin: 0 auto; padding: 20px;">
+        <!-- Header -->
+        <div style="text-align: center; margin-bottom: 40px;">
+            <h1 style="
+                font-family: 'Share Tech Mono', monospace;
+                color: #ffae00;
+                font-size: 3em;
+                text-transform: uppercase;
+                letter-spacing: 8px;
+                margin: 0;
+                text-shadow: 0 0 20px rgba(255, 174, 0, 0.6), 0 0 40px rgba(255, 174, 0, 0.3);
+            ">
+                [ BATTLE TRACKER ]
+            </h1>
+            <p style="
+                font-family: 'Share Tech Mono', monospace;
                 color: #00ff41;
-                border-bottom: 1px solid #00ff41;
-                padding-bottom: 5px;
-            ">05 // HABILIDADES</h3>
-            
-            <div style="font-size: 9px; display: grid; grid-template-columns: 2fr 0.5fr 0.5fr 1fr; gap: 5px; margin-bottom: 5px; color: #888;">
-                <span>HABILIDAD</span>
-                <span>MV</span>
-                <span>MR</span>
-                <span></span>
-            </div>
-            
-            ${datos.habilidades.map(hab => `
-                <div style="display: grid; grid-template-columns: 2fr 0.5fr 0.5fr 1fr; gap: 5px; font-size: 10px; padding: 4px 0; border-bottom: 1px solid rgba(0, 255, 65, 0.1);">
-                    <span style="color: #ffffff;">${hab.nombre}</span>
-                    <span style="color: #ffae00;">${hab.mv}</span>
-                    <span style="color: #ffae00;">${hab.mr}</span>
-                    <span style="color: #00ff41;">${'█'.repeat(hab.nivel)}</span>
-                </div>
-            `).join('')}
+                font-size: 0.9em;
+                letter-spacing: 3px;
+                margin-top: 10px;
+            ">
+                SISTEMA DE SEGUIMIENTO DE COMBATE
+            </p>
         </div>
         
-        <!-- 06 // ARMADURA (SP) -->
-        <div style="border: 1px solid #00ff41; padding: 15px; background: rgba(0, 255, 65, 0.05);">
-            <h3 style="
-                margin: 0 0 10px 0;
-                font-size: 12px;
-                color: #00ff41;
-                border-bottom: 1px solid #00ff41;
-                padding-bottom: 5px;
-            ">06 // ARMADURA (SP)</h3>
+        <!-- Vista Setup -->
+        <div id="bt-setup-view" style="display: block;">
+            <!-- Selector de jugadores -->
+            <div style="background: rgba(26, 26, 26, 0.8); border: 2px solid #5c4200; padding: 20px; margin-bottom: 24px; clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 0 100%);">
+                <label style="color: #ffae00; font-size: 18px; margin-bottom: 15px; display: block; font-family: 'Share Tech Mono', monospace; text-transform: uppercase; letter-spacing: 2px;">👥 NÚMERO DE COMBATIENTES</label>
+                <div style="display: flex; gap: 10px;">
+                    <button class="bt-player-btn" data-num="3" onclick="selectPlayers(3)" style="flex: 1; padding: 15px; background: rgba(26, 26, 26, 0.8); border: 2px solid #5c4200; color: #888; font-family: 'Share Tech Mono', monospace; font-weight: bold; font-size: 18px; cursor: pointer; text-transform: uppercase; transition: all 0.3s; clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);">3</button>
+                    <button class="bt-player-btn active" data-num="4" onclick="selectPlayers(4)" style="flex: 1; padding: 15px; background: #b71c1c; border: 2px solid #ffae00; color: #000; font-family: 'Share Tech Mono', monospace; font-weight: bold; font-size: 18px; cursor: pointer; text-transform: uppercase; box-shadow: 0 0 20px rgba(255, 174, 0, 0.5); clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);">4</button>
+                    <button class="bt-player-btn" data-num="5" onclick="selectPlayers(5)" style="flex: 1; padding: 15px; background: rgba(26, 26, 26, 0.8); border: 2px solid #5c4200; color: #888; font-family: 'Share Tech Mono', monospace; font-weight: bold; font-size: 18px; cursor: pointer; text-transform: uppercase; transition: all 0.3s; clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);">5</button>
+                </div>
+                
+                <!-- Lista de jugadores -->
+                <div id="bt-players-list" style="margin-top: 20px; display: flex; flex-direction: column; gap: 8px;">
+                    <!-- Se llenará dinámicamente -->
+                </div>
+            </div>
             
-            ${generarArmaduraBox('CABEZA', datos.armadura.cabeza)}
-            ${generarArmaduraBox('TORSO', datos.armadura.torso)}
-            ${generarArmaduraBox('BRAZOS', datos.armadura.brazos)}
-            ${generarArmaduraBox('PIERNAS', datos.armadura.piernas)}
+            <!-- Añadir enemigos -->
+            <div style="background: rgba(26, 26, 26, 0.8); border: 2px solid #5c4200; padding: 20px; margin-bottom: 24px; clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 0 100%);">
+                <h2 style="color: #ffae00; font-size: 18px; margin-bottom: 15px; font-family: 'Share Tech Mono', monospace; text-transform: uppercase; letter-spacing: 2px;">⚔️ AÑADIR HOSTILES</h2>
+                <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+                    <input type="text" id="bt-enemy-name" placeholder="Nombre (ej. Atlas)" style="flex-grow: 1; background: #0a0a0a; border: 1px solid #5c4200; padding: 12px; color: #ffae00; font-family: 'Share Tech Mono', monospace;">
+                    <input type="number" id="bt-enemy-xp" placeholder="XP" style="width: 120px; background: #0a0a0a; border: 1px solid #5c4200; padding: 12px; color: #ffae00; font-family: 'Share Tech Mono', monospace;">
+                    <button onclick="addEnemy()" style="background: #16a34a; border: 2px solid #22c55e; color: #000; font-family: 'Share Tech Mono', monospace; padding: 12px 20px; cursor: pointer; font-weight: bold; font-size: 18px; clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%); transition: all 0.3s;">+</button>
+                </div>
+                
+                <div id="bt-enemies-list" style="display: flex; flex-direction: column; gap: 8px;">
+                    <p style="color: #5c4200; text-align: center; font-size: 14px; padding: 20px; font-style: italic; font-family: 'Share Tech Mono', monospace;">ESPERANDO DATOS DE HOSTILES...</p>
+                </div>
+            </div>
             
-            <div style="font-size: 9px; color: #5c4200; margin-top: 10px; font-style: italic;">
-                *Tipo: ${datos.armadura.tipo}
+            <button id="bt-start-combat-btn" onclick="startCombat()" disabled style="width: 100%; background: rgba(183, 28, 28, 0.3); border: 2px solid #5c4200; color: #666; padding: 20px; font-family: 'Share Tech Mono', monospace; font-weight: bold; font-size: 20px; cursor: not-allowed; text-transform: uppercase; letter-spacing: 3px; clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 0 100%);">
+                INICIAR COMBATE
+            </button>
+        </div>
+        
+        <!-- Vista Combat -->
+        <div id="bt-combat-view" style="display: none;">
+            <p style="color: #ffae00; text-align: center; margin-bottom: 24px; font-size: 14px; font-family: 'Share Tech Mono', monospace; text-transform: uppercase; letter-spacing: 2px;">REGISTRAR IMPACTOS POR COMBATIENTE</p>
+            <div id="bt-combat-enemies"></div>
+            
+            <div style="position: fixed; bottom: 0; left: 0; right: 0; padding: 16px; background: rgba(0, 0, 0, 0.95); border-top: 2px solid #5c4200;">
+                <div style="max-width: 900px; margin: 0 auto;">
+                    <button onclick="finishCombat()" style="width: 100%; background: linear-gradient(135deg, #ffae00 0%, #ff8c42 100%); border: 2px solid #ffae00; color: #000; font-family: 'Share Tech Mono', monospace; padding: 15px; font-weight: bold; font-size: 18px; cursor: pointer; text-transform: uppercase; letter-spacing: 3px; box-shadow: 0 0 20px rgba(255, 174, 0, 0.5); clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%); transition: all 0.3s;">
+                        📊 CALCULAR EXPERIENCIA
+                    </button>
+                </div>
             </div>
         </div>
-    `;
-}
-
-/**
- * Genera box de armadura
- */
-function generarArmaduraBox(zona, valor) {
-    return `
-        <div style="
-            display: flex;
-            justify-content: space-between;
-            padding: 6px;
-            margin-bottom: 5px;
-            border: 1px solid #5c4200;
-            background: rgba(92, 66, 0, 0.1);
-            font-size: 10px;
-        ">
-            <span style="color: #ffffff;">${zona}</span>
-            <span style="
-                color: #ffae00;
-                border: 1px solid #ffae00;
-                padding: 0 8px;
-                background: rgba(255, 174, 0, 0.1);
-            ">${valor || '—'}</span>
+        
+        <!-- Vista Results -->
+        <div id="bt-results-view" style="display: none;">
+            <div style="text-align: center; padding: 30px 0;">
+                <div style="font-size: 64px; margin-bottom: 10px;">🏆</div>
+                <h2 style="font-size: 30px; font-weight: bold; color: #ffae00; margin: 0 0 8px 0; font-family: 'Share Tech Mono', monospace; text-transform: uppercase; letter-spacing: 4px; text-shadow: 0 0 20px rgba(255, 174, 0, 0.6);">COMBATE FINALIZADO</h2>
+                <p style="color: #00ff41; margin: 0; font-family: 'Share Tech Mono', monospace; letter-spacing: 2px;">REPARTO DE EXPERIENCIA BASADO EN CONTRIBUCIÓN</p>
+            </div>
+            
+            <div id="bt-results-table" style="background: rgba(26, 26, 26, 0.8); border: 2px solid #ffae00; overflow: hidden; margin-bottom: 24px; clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 0 100%);"></div>
+            
+            <div id="bt-results-summary" style="background: rgba(26, 26, 26, 0.6); border: 1px solid #5c4200; padding: 20px; color: #888; font-size: 14px; margin-bottom: 16px; font-family: 'Share Tech Mono', monospace;"></div>
+            
+            <!-- Aviso de invitado (se muestra solo si hay 5 jugadores) -->
+            <div id="bt-guest-warning" style="display: none; background: rgba(255, 174, 0, 0.1); border: 2px solid #ffae00; padding: 15px; margin-bottom: 20px; text-align: center; font-family: 'Share Tech Mono', monospace; color: #ffae00; font-weight: bold; letter-spacing: 1px;">
+                ⚠️ RECUERDA COPIAR LOS PX DEL INVITADO DE FORMA MANUAL
+            </div>
+            
+            <!-- Botones de acción -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <button onclick="goToRegistroAndCopy()" style="background: linear-gradient(135deg, #ffae00 0%, #ff8c42 100%); border: 2px solid #ffae00; color: #000; font-family: 'Share Tech Mono', monospace; padding: 15px; font-weight: bold; font-size: 16px; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; box-shadow: 0 0 20px rgba(255, 174, 0, 0.5); clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%); transition: all 0.3s;">
+                    📋 IR A REGISTRO
+                </button>
+                
+                <button onclick="resetBattleTracker()" style="background: rgba(26, 26, 26, 0.8); border: 2px solid #5c4200; color: #888; font-family: 'Share Tech Mono', monospace; padding: 15px; font-weight: bold; font-size: 16px; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%); transition: all 0.3s;">
+                    🔄 NUEVO COMBATE
+                </button>
+            </div>
         </div>
+    </div>
+</div>
+
+<script>
+// ============================================
+// BATTLE TRACKER - ESTADO GLOBAL
+// ============================================
+
+// Nombres de jugadores por defecto
+const PLAYER_NAMES = {
+    1: 'Marcos',
+    2: 'Jaime', 
+    3: 'Joan',
+    4: 'Juan Palacios',
+    5: 'Invitado'
+};
+
+let btState = {
+    step: 'setup',
+    numPlayers: 4,
+    enemies: [],
+    hits: {},
+    deadEnemies: {}
+};
+
+// ============================================
+// FUNCIONES DE SETUP
+// ============================================
+
+function selectPlayers(num) {
+    btState.numPlayers = num;
+    
+    // Actualizar botones
+    document.querySelectorAll('.bt-player-btn').forEach(btn => {
+        if (parseInt(btn.dataset.num) === num) {
+            btn.style.background = '#b71c1c';
+            btn.style.borderColor = '#ffae00';
+            btn.style.color = '#000';
+            btn.style.boxShadow = '0 0 20px rgba(255, 174, 0, 0.5)';
+        } else {
+            btn.style.background = 'rgba(26, 26, 26, 0.8)';
+            btn.style.borderColor = '#5c4200';
+            btn.style.color = '#888';
+            btn.style.boxShadow = 'none';
+        }
+    });
+    
+    // Mostrar lista de jugadores
+    renderPlayersList();
+    
+    console.log('👥 Jugadores seleccionados:', num);
+}
+
+function renderPlayersList() {
+    const list = document.getElementById('bt-players-list');
+    
+    let html = '<div style="color: #ffae00; font-family: \'Share Tech Mono\', monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; border-bottom: 1px solid #5c4200; padding-bottom: 8px;">COMBATIENTES ACTIVOS:</div>';
+    
+    for (let i = 1; i <= btState.numPlayers; i++) {
+        const name = PLAYER_NAMES[i];
+        html += `
+            <div style="background: rgba(0, 0, 0, 0.5); border-left: 3px solid #ffae00; padding: 8px 12px; font-family: 'Share Tech Mono', monospace; color: #00ff41; font-size: 14px; display: flex; align-items: center; gap: 10px;">
+                <span style="color: #ffae00; font-weight: bold;">[P${i}]</span> ${name}
+            </div>
+        `;
+    }
+    
+    list.innerHTML = html;
+}
+
+function addEnemy() {
+    const nameInput = document.getElementById('bt-enemy-name');
+    const xpInput = document.getElementById('bt-enemy-xp');
+    
+    const name = nameInput.value.trim();
+    const xp = parseInt(xpInput.value);
+    
+    if (!name || !xp || xp <= 0) {
+        alert('Ingresa un nombre y XP válidos');
+        return;
+    }
+    
+    const enemy = {
+        id: Date.now().toString(),
+        name: name,
+        xp: xp
+    };
+    
+    btState.enemies.push(enemy);
+    btState.hits[enemy.id] = Array(btState.numPlayers).fill(0);
+    btState.deadEnemies[enemy.id] = true;
+    
+    nameInput.value = '';
+    xpInput.value = '';
+    
+    renderEnemiesList();
+    updateStartButton();
+    
+    console.log('➕ Enemigo añadido:', enemy);
+}
+
+function removeEnemy(id) {
+    btState.enemies = btState.enemies.filter(e => e.id !== id);
+    delete btState.hits[id];
+    delete btState.deadEnemies[id];
+    
+    renderEnemiesList();
+    updateStartButton();
+    
+    console.log('➖ Enemigo eliminado:', id);
+}
+
+function renderEnemiesList() {
+    const list = document.getElementById('bt-enemies-list');
+    
+    if (btState.enemies.length === 0) {
+        list.innerHTML = '<p style="color: #5c4200; text-align: center; font-size: 14px; padding: 20px; font-style: italic; font-family: \'Share Tech Mono\', monospace;">ESPERANDO DATOS DE HOSTILES...</p>';
+        return;
+    }
+    
+    list.innerHTML = btState.enemies.map(enemy => `
+        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0, 0, 0, 0.5); border-left: 3px solid #b71c1c; padding: 12px; border-bottom: 1px solid #5c4200;">
+            <div>
+                <span style="font-weight: bold; color: #ffae00; display: block; font-family: 'Share Tech Mono', monospace; font-size: 16px; text-transform: uppercase; letter-spacing: 1px;">${enemy.name}</span>
+                <span style="font-size: 12px; color: #00ff41; font-family: 'Share Tech Mono', monospace;">VALOR: ${enemy.xp} XP</span>
+            </div>
+            <button onclick="removeEnemy('${enemy.id}')" style="background: transparent; border: 1px solid #b71c1c; color: #b71c1c; cursor: pointer; padding: 8px 12px; font-family: 'Share Tech Mono', monospace; font-weight: bold; transition: all 0.3s;" onmouseover="this.style.background='#b71c1c'; this.style.color='#000'" onmouseout="this.style.background='transparent'; this.style.color='#b71c1c'">DEL</button>
+        </div>
+    `).join('');
+}
+
+function updateStartButton() {
+    const btn = document.getElementById('bt-start-combat-btn');
+    if (btState.enemies.length > 0) {
+        btn.disabled = false;
+        btn.style.background = 'linear-gradient(135deg, #b71c1c 0%, #991616 100%)';
+        btn.style.borderColor = '#ffae00';
+        btn.style.color = '#ffae00';
+        btn.style.cursor = 'pointer';
+        btn.style.boxShadow = '0 0 20px rgba(183, 28, 28, 0.5)';
+    } else {
+        btn.disabled = true;
+        btn.style.background = 'rgba(183, 28, 28, 0.3)';
+        btn.style.borderColor = '#5c4200';
+        btn.style.color = '#666';
+        btn.style.cursor = 'not-allowed';
+        btn.style.boxShadow = 'none';
+    }
+}
+
+function startCombat() {
+    if (btState.enemies.length === 0) return;
+    
+    btState.step = 'combat';
+    document.getElementById('bt-setup-view').style.display = 'none';
+    document.getElementById('bt-combat-view').style.display = 'block';
+    
+    renderCombatEnemies();
+    
+    console.log('⚔️ Combate iniciado');
+}
+
+// ============================================
+// FUNCIONES DE COMBATE
+// ============================================
+
+function renderCombatEnemies() {
+    const container = document.getElementById('bt-combat-enemies');
+    
+    container.innerHTML = btState.enemies.map(enemy => {
+        const isDead = btState.deadEnemies[enemy.id];
+        
+        return `
+            <div style="background: rgba(26, 26, 26, 0.8); border: 2px solid ${isDead ? '#b71c1c' : '#16a34a'}; margin-bottom: 20px; overflow: hidden; opacity: ${isDead ? '1' : '0.6'}; ${isDead ? '' : 'filter: grayscale(0.7);'} clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 0 100%);">
+                <div style="background: rgba(0, 0, 0, 0.5); padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #5c4200;">
+                    <div>
+                        <h3 style="font-weight: bold; font-size: 18px; color: #ffae00; margin: 0 0 4px 0; font-family: 'Share Tech Mono', monospace; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 10px rgba(255, 174, 0, 0.5);">${enemy.name}</h3>
+                        <p style="font-size: 12px; color: #00ff41; font-family: 'Share Tech Mono', monospace; margin: 0;">VALOR TOTAL: ${enemy.xp} XP</p>
+                    </div>
+                    <button onclick="toggleDead('${enemy.id}')" style="display: flex; align-items: center; gap: 8px; padding: 8px 16px; border: 2px solid ${isDead ? '#b71c1c' : '#16a34a'}; background: ${isDead ? 'rgba(183, 28, 28, 0.3)' : 'rgba(22, 163, 74, 0.3)'}; color: ${isDead ? '#ffae00' : '#00ff41'}; cursor: pointer; font-family: 'Share Tech Mono', monospace; font-weight: bold; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; transition: all 0.3s; clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);">
+                        ${isDead ? '💀 ABATIDO' : '✓ VIVO'}
+                    </button>
+                </div>
+                
+                <div style="padding: 15px; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+                    ${Array.from({length: btState.numPlayers}).map((_, idx) => {
+                        const hits = btState.hits[enemy.id][idx];
+                        const playerName = PLAYER_NAMES[idx + 1];
+                        return `
+                            <div style="display: flex; flex-direction: column; gap: 6px;">
+                                <button onclick="handleHit('${enemy.id}', ${idx}, 1)" style="height: 80px; background: rgba(0, 0, 0, 0.5); border: 2px solid #5c4200; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; overflow: hidden; transition: all 0.2s; clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%);" onmouseover="this.style.borderColor='#ffae00'; this.style.boxShadow='0 0 15px rgba(255, 174, 0, 0.3)'" onmouseout="this.style.borderColor='#5c4200'; this.style.boxShadow='none'">
+                                    <span style="font-size: 11px; font-weight: bold; color: #888; text-transform: uppercase; letter-spacing: 1px; font-family: 'Share Tech Mono', monospace;">${playerName}</span>
+                                    <span style="font-size: 32px; font-weight: bold; color: #ffae00; font-family: 'Share Tech Mono', monospace; text-shadow: 0 0 10px rgba(255, 174, 0, 0.5);">${hits}</span>
+                                    <span style="font-size: 10px; color: #00ff41; font-family: 'Share Tech Mono', monospace;">IMPACTOS</span>
+                                </button>
+                                <button onclick="handleHit('${enemy.id}', ${idx}, -1)" ${hits === 0 ? 'disabled' : ''} style="height: 28px; background: rgba(183, 28, 28, 0.3); border: 1px solid #b71c1c; color: #b71c1c; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; font-family: 'Share Tech Mono', monospace; font-weight: bold; ${hits === 0 ? 'opacity: 0.3; cursor: not-allowed;' : ''}">−</button>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function handleHit(enemyId, playerIndex, change) {
+    const currentHits = btState.hits[enemyId][playerIndex];
+    const newHits = currentHits + change;
+    
+    if (newHits < 0) return;
+    
+    btState.hits[enemyId][playerIndex] = newHits;
+    renderCombatEnemies();
+    
+    console.log(`🎯 ${PLAYER_NAMES[playerIndex + 1]} → ${btState.enemies.find(e => e.id === enemyId).name}: ${newHits} impactos`);
+}
+
+function toggleDead(enemyId) {
+    btState.deadEnemies[enemyId] = !btState.deadEnemies[enemyId];
+    renderCombatEnemies();
+    
+    const enemy = btState.enemies.find(e => e.id === enemyId);
+    console.log(`${btState.deadEnemies[enemyId] ? '💀' : '✓'} ${enemy.name}: ${btState.deadEnemies[enemyId] ? 'ABATIDO' : 'VIVO'}`);
+}
+
+function finishCombat() {
+    btState.step = 'results';
+    document.getElementById('bt-combat-view').style.display = 'none';
+    document.getElementById('bt-results-view').style.display = 'block';
+    
+    renderResults();
+    
+    console.log('🏆 Combate finalizado');
+}
+
+// ============================================
+// FUNCIONES DE RESULTADOS
+// ============================================
+
+function calculateResults() {
+    const playerTotals = Array(btState.numPlayers).fill(0);
+    
+    btState.enemies.forEach(enemy => {
+        if (!btState.deadEnemies[enemy.id]) return;
+        
+        const enemyHits = btState.hits[enemy.id];
+        const totalHits = enemyHits.reduce((a, b) => a + b, 0);
+        
+        if (totalHits > 0) {
+            const xpPerHit = enemy.xp / totalHits;
+            
+            enemyHits.forEach((hits, idx) => {
+                playerTotals[idx] += hits * xpPerHit;
+            });
+        }
+    });
+    
+    return playerTotals.map(val => Math.floor(val));
+}
+
+function renderResults() {
+    const results = calculateResults();
+    
+    // Mostrar aviso si hay invitado (5 jugadores)
+    const guestWarning = document.getElementById('bt-guest-warning');
+    if (btState.numPlayers === 5) {
+        guestWarning.style.display = 'block';
+    } else {
+        guestWarning.style.display = 'none';
+    }
+    
+    // Tabla de resultados
+    const table = document.getElementById('bt-results-table');
+    table.innerHTML = `
+        <div style="display: grid; grid-template-columns: 1fr 1fr; background: rgba(0, 0, 0, 0.5); padding: 16px; border-bottom: 2px solid #5c4200; font-size: 14px; font-weight: bold; color: #ffae00; text-transform: uppercase; letter-spacing: 2px; font-family: 'Share Tech Mono', monospace;">
+            <div>COMBATIENTE</div>
+            <div style="text-align: right;">XP GANADA</div>
+        </div>
+        ${results.map((xp, idx) => {
+            const playerName = PLAYER_NAMES[idx + 1];
+            return `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; padding: 16px; border-bottom: 1px solid rgba(92, 66, 0, 0.5);">
+                    <div style="font-weight: bold; font-size: 16px; color: #e0e0e0; display: flex; align-items: center; gap: 12px; font-family: 'Share Tech Mono', monospace;">
+                        <div style="min-width: 40px; height: 40px; border: 2px solid #5c4200; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; font-size: 14px; color: #ffae00; font-weight: bold; clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 0 100%);">P${idx + 1}</div>
+                        ${playerName}
+                    </div>
+                    <div style="text-align: right; font-family: 'Share Tech Mono', monospace; font-size: 24px; color: #00ff41; font-weight: bold; text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);">+${xp}</div>
+                </div>
+            `;
+        }).join('')}
+    `;
+    
+    // Resumen
+    const summary = document.getElementById('bt-results-summary');
+    summary.innerHTML = `
+        <h3 style="font-weight: bold; color: #ffae00; margin: 0 0 12px 0; text-transform: uppercase; letter-spacing: 2px;">RESUMEN DE BAJAS:</h3>
+        <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px;">
+            ${btState.enemies.map(e => {
+                const totalHits = btState.hits[e.id].reduce((a,b)=>a+b,0);
+                if (!btState.deadEnemies[e.id]) {
+                    return `<li style="color: #5c4200; padding-left: 20px; border-left: 2px solid #5c4200;">• ${e.name}: Escapó (0 XP)</li>`;
+                }
+                return `
+                    <li style="padding-left: 20px; border-left: 2px solid #ffae00;">
+                        <span style="color: #ffae00; font-weight: bold;">• ${e.name}</span>: 
+                        <span style="color: #888;">${e.xp} XP / ${totalHits} impactos = ${totalHits > 0 ? Math.round(e.xp/totalHits) : 0} XP por golpe</span>
+                    </li>
+                `;
+            }).join('')}
+        </ul>
     `;
 }
 
-console.log('✅ Generador PDF réplica Barracones cargado');
+// ============================================
+// FUNCIONES DE NAVEGACIÓN Y COPY
+// ============================================
 
+function goToRegistroAndCopy() {
+    console.log('📋 Copiando XP y navegando al Registro de Combate...');
+    
+    const results = calculateResults();
+    console.log('📊 XP calculados:', results);
+    
+    // IMPORTANTE: Ocultar Battle Tracker primero
+    const bt = document.getElementById('battle-tracker');
+    if (bt) {
+        bt.style.display = 'none';
+        console.log('✓ Battle Tracker ocultado');
+    } else {
+        console.warn('⚠ No se encontró elemento #battle-tracker');
+    }
+    
+    // Pequeño delay para asegurar que el DOM se actualice
+    setTimeout(() => {
+        // Navegar al Registro de Combate
+        goToRegistroCombate();
+        
+        // Verificar que el Registro está visible
+        const registro = document.getElementById('registro-combate');
+        if (registro && registro.style.display === 'block') {
+            console.log('✓ Registro de Combate está visible');
+            
+            // Abrir modal automáticamente con los XP
+            setTimeout(() => {
+                abrirModalRecompensasConXP(results);
+            }, 300);
+        } else {
+            console.error('❌ Registro de Combate NO está visible');
+        }
+        
+        console.log('✅ Navegación completada');
+    }, 100);
+}
+
+function resetBattleTracker() {
+    btState = {
+        step: 'setup',
+        numPlayers: 4,
+        enemies: [],
+        hits: {},
+        deadEnemies: {}
+    };
+    
+    document.getElementById('bt-setup-view').style.display = 'block';
+    document.getElementById('bt-combat-view').style.display = 'none';
+    document.getElementById('bt-results-view').style.display = 'none';
+    
+    selectPlayers(4);
+    renderEnemiesList();
+    updateStartButton();
+    
+    console.log('🔄 Battle Tracker reiniciado');
+}
+
+function goToBattleTracker() {
+    console.log('🎯 Navegando a Battle Tracker...');
+    
+    // Ocultar todas las secciones
+    ['landing-page', 'pre-generacion', 'ficha-container', 'barracones', 'points-counter', 'registro-combate'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
+    
+    // Mostrar Battle Tracker
+    const bt = document.getElementById('battle-tracker');
+    if (bt) bt.style.display = 'block';
+    
+    // Inicializar si es necesario
+    if (btState.step === 'setup') {
+        selectPlayers(4); // Esto también renderiza la lista de jugadores
+        renderEnemiesList();
+        updateStartButton();
+    }
+    
+    console.log('✅ Battle Tracker mostrado');
+}
+
+function goHomeFromBattleTracker() {
+    console.log('🏠 Volviendo al menú desde Battle Tracker...');
+    
+    // Ocultar TODAS las secciones
+    const sections = ['battle-tracker', 'pre-generacion', 'ficha-container', 'barracones', 'points-counter', 'registro-combate'];
+    sections.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.style.display = 'none';
+        }
+    });
+    
+    // Mostrar landing page con display flex (importante para el layout)
+    const lp = document.getElementById('landing-page');
+    if (lp) {
+        lp.style.display = 'flex';
+        lp.style.position = '';  // Resetear position
+        lp.offsetHeight; // Trigger reflow
+    }
+    
+    console.log('✅ Vuelto al menú principal');
+}
+
+// Inicializar al cargar
+console.log('✅ Battle Tracker (Integrado) cargado correctamente');
+
+// Inicializar lista de jugadores por defecto
+if (document.getElementById('bt-players-list')) {
+    renderPlayersList();
+}
 </script>
 
 </body>
