@@ -4,14 +4,51 @@
     <meta charset="UTF-8">
     <title>Generador de Ficha MechWarrior Interactiva</title>
     <style>
-        body { font-family: 'Helvetica', 'Arial', sans-serif; margin: 20px; line-height: 1.4; color: #333; font-size: 11pt; padding-top: 60px; }
+        body { 
+            font-family: 'Helvetica', 'Arial', sans-serif; 
+            margin: 20px; 
+            line-height: 1.4; 
+            color: #e0e0e0; 
+            font-size: 11pt; 
+            padding-top: 60px; 
+            background-color: #1a1a1a;
+        }
         /* CONTADOR FLOTANTE */
         #points-counter { position: fixed; top: 0; left: 0; width: 100%; background-color: #333; color: white; padding: 15px; text-align: center; font-family: 'Impact', sans-serif; font-size: 24px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 1000; }
         .points-ok { color: #4caf50; } .points-bad { color: #f44336; }
 
         /* GENERADOR */
-        #pre-generacion { display: block; padding: 40px; text-align: center; border: 1px solid #ccc; background-color: #f9f9f9; max-width: 750px; margin: 0 auto 50px auto; border-radius: 8px; }
-        #pre-generacion h1 { font-size: 24px; margin-bottom: 25px; border-bottom: none; font-family: 'Impact', sans-serif; }
+        #pre-generacion { 
+            display: block; 
+            padding: 40px; 
+            text-align: center; 
+            border: 1px solid #444; 
+            background-color: #252525; 
+            max-width: 750px; 
+            margin: 0 auto 50px auto; 
+            border-radius: 8px; 
+        }
+        #pre-generacion h1 { 
+            font-size: 24px; 
+            margin-bottom: 25px; 
+            border-bottom: none; 
+            font-family: 'Impact', sans-serif; 
+            color: #f0f0f0;
+        }
+        #pre-generacion label {
+            color: #ccc;
+        }
+        #pre-generacion input, 
+        #pre-generacion select {
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            border: 1px solid #555;
+        }
+        #pre-generacion input:focus,
+        #pre-generacion select:focus {
+            border-color: #4a9eff;
+            outline: none;
+        }
         .main-label { font-size: 18px; display: block; margin-top: 25px; text-align: left; padding-left: 5px; border-bottom: 2px solid #ddd; padding-bottom: 5px; font-weight: bold; }
         .campaign-header { background-color: #333; color: #fff; padding: 15px; border-radius: 5px; margin-bottom: 20px; text-align: left; display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end; }
         .campaign-group { display: flex; flex-direction: column; gap: 5px; min-width: 150px; }
@@ -23,165 +60,239 @@
         .traits-gen-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 5px; text-align: left; }
         .skill-buy-row { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-top: 10px; }
 
-        select, input.main-input { width: 100%; font-size: 14px; padding: 5px; box-sizing: border-box; }
-        select:disabled { background-color: #e9ecef; color: #666; }
-        label { font-size: 14px; font-weight: bold; margin-bottom: 5px; display: block; }
+        select, input.main-input { 
+            width: 100%; 
+            font-size: 14px; 
+            padding: 5px; 
+            box-sizing: border-box; 
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            border: 1px solid #555;
+            border-radius: 4px;
+        }
+        select:focus, input.main-input:focus {
+            border-color: #4a9eff;
+            outline: none;
+        }
+        select:disabled { background-color: #2a2a2a; color: #666; }
+        label { font-size: 14px; font-weight: bold; margin-bottom: 5px; display: block; color: #ccc; }
 
-        #btn-generar { font-size: 20px; padding: 15px 30px; margin-top: 40px; background-color: #007bff; color: white; border: none; cursor: pointer; border-radius: 5px; font-family: 'Impact', sans-serif; letter-spacing: 1px; width: 100%; }
-        #btn-generar:hover { background-color: #0056b3; }
+        #btn-generar { font-size: 20px; padding: 15px 30px; margin-top: 40px; background-color: #4a9eff; color: white; border: none; cursor: pointer; border-radius: 5px; font-family: 'Impact', sans-serif; letter-spacing: 1px; width: 100%; }
+        #btn-generar:hover { background-color: #3a8adf; }
         .input-with-button { display: flex; gap: 5px; }
-        .input-with-button input { flex-grow: 1; }
+        .input-with-button input { flex-grow: 1; background-color: #1a1a1a; color: #e0e0e0; border: 1px solid #555; }
         .input-with-button button { cursor: pointer; }
         .random-button { padding: 8px 15px; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; color: white; margin: 0 5px; }
 
-        .mech-roll-container { display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 10px; align-items: center; margin-top: 10px; background-color: #e3f2fd; padding: 15px; border-radius: 5px; border: 1px solid #90caf9; }
-        .mech-result-display { font-weight: bold; font-size: 16px; color: #0056b3; text-align: left; padding: 5px; }
-        #opcion-noble-div { display: none; margin-top: 10px; padding: 10px; background-color: #e9ecef; border: 1px solid #ddd; border-radius: 5px; text-align: left; }
+        .mech-roll-container { display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 10px; align-items: center; margin-top: 10px; background-color: #2a3a4a; padding: 15px; border-radius: 5px; border: 1px solid #3a5a7a; }
+        .mech-result-display { font-weight: bold; font-size: 16px; color: #4a9eff; text-align: left; padding: 5px; }
+        #opcion-noble-div { display: none; margin-top: 10px; padding: 10px; background-color: #2a2a2a; border: 1px solid #444; border-radius: 5px; text-align: left; }
 
-        /* --- ESTILOS DE LA FICHA FINAL EDITABLE --- */
-        #ficha-container { display: none; max-width: 900px; margin: auto; position: relative; }
+        /* --- ESTILOS DE LA FICHA FINAL - TEMA MILITAR --- */
+        #ficha-container { 
+            display: none; 
+            max-width: 900px; 
+            margin: auto; 
+            position: relative; 
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #444;
+        }
         .container { max-width: 900px; margin: auto; }
-        h1.sheet-title, h2, h3 { font-family: 'Impact', sans-serif; text-transform: uppercase; border-bottom: 2px solid #000; margin-top: 20px; }
-        h1.sheet-title { font-size: 24px; text-align: center; }
-        h2 { font-size: 16px; background-color: #eee; padding: 5px; text-align: center; }
-        h3 { font-size: 12px; border-bottom: 1px solid #999; margin-top: 10px; text-align: left; }
-        .section { border: 1px solid #ccc; padding: 10px; margin-bottom: 15px; overflow: auto; }
+        #ficha-container h1.sheet-title, 
+        #ficha-container h2, 
+        #ficha-container h3 { 
+            font-family: 'Impact', sans-serif; 
+            text-transform: uppercase; 
+            border-bottom: 2px solid #5a5a5a; 
+            margin-top: 20px; 
+            color: #f0f0f0;
+        }
+        #ficha-container h1.sheet-title { 
+            font-size: 24px; 
+            text-align: center; 
+            background: linear-gradient(90deg, #2a2a2a, #3a3a3a, #2a2a2a);
+            padding: 10px;
+            border: 1px solid #555;
+            letter-spacing: 3px;
+        }
+        #ficha-container h2 { 
+            font-size: 16px; 
+            background-color: #333; 
+            padding: 8px; 
+            text-align: center; 
+            color: #fff;
+            border: 1px solid #555;
+        }
+        #ficha-container h3 { 
+            font-size: 12px; 
+            border-bottom: 1px solid #666; 
+            margin-top: 10px; 
+            text-align: left; 
+            color: #ccc;
+        }
+        #ficha-container .section { 
+            border: 1px solid #444; 
+            padding: 10px; 
+            margin-bottom: 15px; 
+            overflow: auto; 
+            background-color: #252525;
+            border-radius: 4px;
+        }
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; } 
         .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 20px; }
-        /* Inputs editables de la ficha */
-        .sheet-input, .sheet-select {
-            width: 100%; border: none; border-bottom: 1px solid #999;
-            font-family: 'Helvetica', 'Arial', sans-serif; font-size: 10pt;
-            background-color: transparent; color: #000; padding: 2px 0; border-radius: 0;
+        /* Inputs editables de la ficha - tema oscuro */
+        #ficha-container .sheet-input, 
+        #ficha-container .sheet-select {
+            width: 100%; 
+            border: none; 
+            border-bottom: 1px solid #666;
+            font-family: 'Helvetica', 'Arial', sans-serif; 
+            font-size: 10pt;
+            background-color: transparent; 
+            color: #e0e0e0; 
+            padding: 2px 0; 
+            border-radius: 0;
         }
-        .sheet-input:focus, .sheet-select:focus { outline: none; border-bottom: 2px solid #007bff; background-color: #f0f8ff; }
+        #ficha-container .sheet-input:focus, 
+        #ficha-container .sheet-select:focus { 
+            outline: none; 
+            border-bottom: 2px solid #4a9eff; 
+            background-color: #2a2a3a; 
+        }
 
-        .field { border-bottom: 1px solid #999; padding: 2px; min-height: 18px; margin-bottom: 6px;}
-        .field-label { font-weight: bold; font-size: 10px; color: #555; text-transform: uppercase; }
-        .special-trait { font-style: italic; color: #555; font-size: 10pt; margin-top: 5px; border-bottom: 1px dotted #ccc; }
+        #ficha-container .field { 
+            border-bottom: 1px solid #555; 
+            padding: 2px; 
+            min-height: 18px; 
+            margin-bottom: 6px;
+        }
+        #ficha-container .field-label { 
+            font-weight: bold; 
+            font-size: 10px; 
+            color: #999; 
+            text-transform: uppercase; 
+        }
+        #ficha-container .special-trait { 
+            font-style: italic; 
+            color: #aaa; 
+            font-size: 10pt; 
+            margin-top: 5px; 
+            border-bottom: 1px dotted #555; 
+        }
 
-        .attr-box { border: 1px solid #000; text-align: center; padding: 5px; background-color: #f9f9f9; }
+        #ficha-container .attr-box { 
+            border: 1px solid #555; 
+            text-align: center; 
+            padding: 5px; 
+            background-color: #2a2a2a;
+            border-radius: 4px;
+        }
         .attr-header-wrapper { display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .attr-label { font-weight: bold; font-size: 14px; }
-        .attr-value { font-size: 18px; border-top: 1px solid #999; margin-top: 5px; padding-top: 5px; }
+        #ficha-container .attr-label { 
+            font-weight: bold; 
+            font-size: 14px; 
+            color: #e0e0e0;
+        }
+        #ficha-container .attr-value { 
+            font-size: 18px; 
+            border-top: 1px solid #555; 
+            margin-top: 5px; 
+            padding-top: 5px; 
+            color: #4a9eff;
+            font-weight: bold;
+        }
         /* CUADRADOS INTERACTIVOS */
         .chk-box { 
-            width: 10px; height: 10px; border: 1px solid #000; background-color: white; 
+            width: 10px; height: 10px; border: 1px solid #888; background-color: #333; 
             display: block; cursor: pointer; 
         }
-        .chk-box.checked { background-color: #000 !important; }
+        .chk-box.checked { background-color: #4a9eff !important; border-color: #4a9eff; }
         .q-box-container { 
             display: grid !important; grid-template-columns: 12px 12px !important; grid-template-rows: 12px 12px !important;     
             gap: 1px; width: 25px; margin: 0 auto; justify-content: center;
         }
 
-        /* CIRCULOS DE VIDA */
-        .hp-box { 
-            width: 12px; height: 12px; border: 1.5px solid #333; background-color: white; 
-            display: inline-block; margin: 1px; border-radius: 50%; cursor: pointer;
-            box-sizing: border-box;
+        /* CIRCULOS DE VIDA SVG - TEMA MILITAR */
+        .hp-circle {
+            cursor: pointer;
+            transition: fill 0.2s;
         }
-        .hp-box.checked { background-color: #555 !important; border-color: #333; }
-        .v-box-container { display: flex; flex-direction: column; gap: 2px; }
+        .hp-circle.checked {
+            fill: #4a9eff !important;
+        }
         
-        /* TRACKER SVG - Tamaño aumentado */
+        /* TRACKER SVG */
         .health-tracker { 
             text-align: center; 
-            height: 600px; 
-            width: 240px; 
+            width: 280px;
             margin: 0 auto; 
-            position: relative; 
         }
-        .health-tracker svg { height: 100%; width: 100%; display: block; }
-
-        /* OVERLAY PUNTOS DE VIDA - Posicionados con % relativo al SVG viewBox (400x1024) */
-        /* Silueta real: Y=303 (cabeza) a Y=913 (pies), X=53 a X=378 */
-        .hp-location-box { 
-            position: absolute; 
-            display: flex; 
-            flex-wrap: wrap; 
-            justify-content: center; 
-            align-content: center;
-            z-index: 10; 
-            pointer-events: none;
-        }
-        .hp-location-box > .hp-box { pointer-events: auto; }
-
-        /* CABEZA - Y=303-400 en SVG → 29.5%-39% */
-        #hp-head { 
-            top: 31%;
-            left: 50%; 
-            transform: translateX(-50%); 
-            width: 14%; 
-            height: 5%;
+        .health-tracker svg { 
+            width: 100%; 
+            height: auto; 
+            display: block; 
         }
         
-        /* TORSO - Y=440-620 en SVG → 43%-60% */
-        #hp-torso { 
-            top: 43%;
-            left: 50%; 
-            transform: translateX(-50%); 
-            width: 20%; 
-            height: 15%;
-            padding: 2px;
-        }
-        
-        /* BRAZO IZQUIERDO - X=53-100, Y=420-580 → left=13%, top=41% */
-        #hp-arm-l { 
-            top: 42%;
-            left: 16%; 
-            width: 10%; 
-            height: 14%;
-            flex-direction: column;
-        }
-        
-        /* BRAZO DERECHO - X=300-378, Y=420-580 → right=13%, top=41% */
-        #hp-arm-r { 
-            top: 42%;
-            right: 16%; 
-            width: 10%; 
-            height: 14%;
-            flex-direction: column;
-        }
-        
-        /* PIERNA IZQUIERDA - X=120-180, Y=620-880 → left=35%, top=61% */
-        #hp-leg-l { 
-            top: 60%;
-            left: 35%; 
-            width: 10%; 
-            height: 22%; 
-            display: flex; 
-            flex-direction: column; 
-            flex-wrap: wrap; 
-            align-content: center;
-        }
-        
-        /* PIERNA DERECHA - X=220-280, Y=620-880 → right=35%, top=61% */
-        #hp-leg-r { 
-            top: 60%;
-            right: 35%; 
-            width: 10%; 
-            height: 22%; 
-            display: flex; 
-            flex-direction: column; 
-            flex-wrap: wrap; 
-            align-content: center;
+        /* Debug regions - quitar después de ajustar */
+        .debug-region {
+            /* opacity: 0; */ /* Descomentar para ocultar */
         }
         /* TABLAS */
-        .skill-table, .weapon-table { width: 100%; border-collapse: collapse; font-size: 10pt; }
-        .skill-table th, .weapon-table th { background-color: #eee; border: 1px solid #999; padding: 4px; text-align: left; font-size: 10px; text-transform: uppercase; }
-        .weapon-table th, .weapon-table td { text-align: center; vertical-align: middle; }
-        .weapon-table th:first-child, 
-        .weapon-table td:first-child { text-align: left !important; }
+        #ficha-container .skill-table, 
+        #ficha-container .weapon-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            font-size: 10pt; 
+            background-color: #2a2a2a;
+        }
+        #ficha-container .skill-table th, 
+        #ficha-container .weapon-table th { 
+            background-color: #333; 
+            border: 1px solid #555; 
+            padding: 4px; 
+            text-align: left; 
+            font-size: 10px; 
+            text-transform: uppercase; 
+            color: #e0e0e0;
+        }
+        #ficha-container .weapon-table th, 
+        #ficha-container .weapon-table td { 
+            text-align: center; 
+            vertical-align: middle; 
+        }
+        #ficha-container .weapon-table th:first-child, 
+        #ficha-container .weapon-table td:first-child { text-align: left !important; }
 
-        .skill-table td { border-bottom: 1px dotted #ccc; padding: 4px; height: 20px; vertical-align: middle; }
-        .skill-table td.skill-xp-col { width: 35px; text-align: center; padding: 2px; }
-        .skill-table td.skill-level-col { text-align: center; width: 50px; color: #003399; font-weight: bold; }
-        .skill-table td.skill-attr-col { text-align: center; width: 60px; font-weight: bold; }
-        .skill-table td.skill-roll-col { text-align: center; font-weight: bold; }
-        .weapon-table td { border: 1px solid #000; padding: 0; }
-        .weapon-table input { text-align: center; border: none; width: 100%; height: 100%; padding: 5px; font-family: inherit; background: transparent;}
+        #ficha-container .skill-table td { 
+            border-bottom: 1px dotted #444; 
+            padding: 4px; 
+            height: 20px; 
+            vertical-align: middle; 
+            color: #e0e0e0;
+        }
+        #ficha-container .skill-table td.skill-xp-col { width: 35px; text-align: center; padding: 2px; }
+        #ficha-container .skill-table td.skill-level-col { text-align: center; width: 50px; color: #4a9eff; font-weight: bold; }
+        #ficha-container .skill-table td.skill-attr-col { text-align: center; width: 60px; font-weight: bold; color: #ccc; }
+        #ficha-container .skill-table td.skill-roll-col { text-align: center; font-weight: bold; color: #4aff4a; }
+        #ficha-container .weapon-table td { 
+            border: 1px solid #555; 
+            padding: 0; 
+            color: #e0e0e0;
+        }
+        #ficha-container .weapon-table input { 
+            text-align: center; 
+            border: none; 
+            width: 100%; 
+            height: 100%; 
+            padding: 5px; 
+            font-family: inherit; 
+            background: transparent;
+            color: #e0e0e0;
+        }
         /* SELECTOR DE ARMAS */
         .weapon-select {
             width: 100%; border: none; font-family: inherit; font-size: 10pt; padding: 4px; background: transparent; 
@@ -192,8 +303,8 @@
         #cloud-search-results,
         #cloud-search-results-editor {
             display: none;
-            background-color: white;
-            border: 1px solid #ddd;
+            background-color: #2a2a2a;
+            border: 1px solid #444;
             border-radius: 5px;
             margin-top: 10px;
             padding: 10px;
@@ -203,17 +314,18 @@
         }
         .cloud-result-item {
             padding: 8px;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid #444;
             cursor: pointer;
             transition: background 0.2s;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            color: #e0e0e0;
         }
-        .cloud-result-item:hover { background-color: #f0f8ff; }
+        .cloud-result-item:hover { background-color: #3a3a4a; }
         .cloud-result-item:last-child { border-bottom: none; }
         .cloud-result-btn {
-            background-color: #007bff;
+            background-color: #4a9eff;
             color: white;
             border: none;
             border-radius: 3px;
@@ -656,21 +768,128 @@
             stroke-width: 1;
         }
 
-        /* IMPRESIÓN */
+        /* IMPRESIÓN - PDF BLANCO Y NEGRO */
         @media print {
-            body { margin: 10px; font-size: 9pt; padding-top: 0; }
+            body { 
+                margin: 10px; 
+                font-size: 9pt; 
+                padding-top: 0; 
+                background-color: white !important;
+                color: #000 !important;
+            }
             #pre-generacion, .no-print, #points-counter, .edit-mode-btn, .trait-remove-btn, #landing-page, .back-to-home-btn, .mech-silhouette-container, .mech-data-panel, #galactic-map, #trr-infantry { display: none !important; }
-            #ficha-container { display: block !important; }
-            .skill-table td.skill-level-col { color: #003399 !important; -webkit-print-color-adjust: exact; }
-            .section { page-break-inside: avoid; border: 1px solid #999; }
-            h2, th { background-color: #eee !important; -webkit-print-color-adjust: exact; }
-            .sheet-input, .sheet-select { border-bottom: 1px solid #000; }
-            input, select { background: transparent !important; border: none !important; }
-            .chk-box { border: 1px solid #000 !important; -webkit-print-color-adjust: exact; }
-            .chk-box.checked { background-color: #000 !important; }
-            .hp-box { border: 1px solid #000 !important; background-color: white !important; -webkit-print-color-adjust: exact; }
-            .hp-box.checked { background-color: #555 !important; }
-            .weapon-select { appearance: none; -moz-appearance: none; -webkit-appearance: none; }
+            
+            #ficha-container { 
+                display: block !important; 
+                background-color: white !important;
+                color: #000 !important;
+                border: none !important;
+            }
+            
+            #ficha-container h1.sheet-title,
+            #ficha-container h2,
+            #ficha-container h3 {
+                color: #000 !important;
+                background: #eee !important;
+                border-color: #000 !important;
+            }
+            
+            #ficha-container .section {
+                background-color: white !important;
+                border: 1px solid #999 !important;
+                page-break-inside: avoid;
+            }
+            
+            #ficha-container .attr-box {
+                background-color: #f9f9f9 !important;
+                border: 1px solid #000 !important;
+            }
+            
+            #ficha-container .attr-label,
+            #ficha-container .attr-value {
+                color: #000 !important;
+            }
+            
+            #ficha-container .field-label {
+                color: #555 !important;
+            }
+            
+            #ficha-container .sheet-input,
+            #ficha-container .sheet-select {
+                color: #000 !important;
+                border-bottom: 1px solid #000 !important;
+                background: transparent !important;
+            }
+            
+            /* Tablas */
+            #ficha-container .skill-table,
+            #ficha-container .weapon-table {
+                background-color: white !important;
+            }
+            
+            #ficha-container .skill-table th,
+            #ficha-container .weapon-table th {
+                background-color: #eee !important;
+                color: #000 !important;
+                border: 1px solid #999 !important;
+                -webkit-print-color-adjust: exact;
+            }
+            
+            #ficha-container .skill-table td,
+            #ficha-container .weapon-table td {
+                color: #000 !important;
+                border-color: #ccc !important;
+            }
+            
+            #ficha-container .skill-table td.skill-level-col { 
+                color: #003399 !important; 
+                -webkit-print-color-adjust: exact; 
+            }
+            
+            #ficha-container .skill-table td.skill-roll-col {
+                color: #000 !important;
+            }
+            
+            #ficha-container .weapon-table input {
+                color: #000 !important;
+            }
+            
+            /* Silueta SVG */
+            #character-silhouette ellipse,
+            #character-silhouette rect,
+            #character-silhouette path {
+                fill: #e0e0e0 !important;
+                stroke: #333 !important;
+            }
+            
+            /* Círculos HP */
+            .hp-circle {
+                fill: white !important;
+                stroke: #000 !important;
+            }
+            .hp-circle.checked {
+                fill: #555 !important;
+            }
+            
+            /* Checkboxes */
+            .chk-box { 
+                border: 1px solid #000 !important; 
+                background-color: white !important;
+                -webkit-print-color-adjust: exact; 
+            }
+            .chk-box.checked { 
+                background-color: #000 !important; 
+            }
+            
+            input, select { 
+                background: transparent !important; 
+                border: none !important; 
+            }
+            .weapon-select { 
+                appearance: none; 
+                -moz-appearance: none; 
+                -webkit-appearance: none; 
+            }
         }
 
         /* Responsive para esquemas en pantallas pequeñas */
@@ -695,6 +914,13 @@
         #exit-confirmation-modal button:hover {
             transform: translateY(-2px);
             filter: brightness(1.2);
+        }
+        
+        /* Estilos hover para botones del mapa estelar */
+        .map-year-btn:hover {
+            background: rgba(255, 140, 66, 0.3) !important;
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(255, 140, 66, 0.5);
         }
         #exit-confirmation-modal button:active {
             transform: translateY(0);
@@ -1816,7 +2042,6 @@ async function registrarGastoXPEnNube(jugador, cantidad, descripcion) {
                     html += `<tr><td class="skill-xp-col">${squaresHTML}</td><td><input type="text" class="sheet-input" placeholder="Nueva habilidad"></td><td class="skill-level-col"><input type="text" class="sheet-input" style="text-align:center" value="0" onchange="recalcularFilaManual(this)"></td><td class="skill-attr-col">${universalCaract}</td><td class="skill-roll-col">${universalCaract}</td></tr>`;
                 }
                 html += '</tbody></table>';
-                html += '<button onclick="agregarHabilidadManual()" class="no-print" style="margin-top: 10px; padding: 8px 16px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">+ Añadir Habilidad</button>';
                 skillContainer.innerHTML = html;
             }
 
@@ -3387,80 +3612,14 @@ async function registrarGastoXPEnNube(jugador, cantidad, descripcion) {
         }
 
         function renderizarPuntosDeVida(strValue) {
-            const FUE = parseInt(strValue) || 0;
-            const headHP = FUE * 1; 
-            const torsoHP = FUE * 3; 
-            const limbsHP = FUE * 2; 
-                // CABEZA - Grid centrado
-            renderHPLocation('hp-head', headHP, 'grid');
-                // TORSO - Grid centrado
-            renderHPLocation('hp-torso', torsoHP, 'grid');
-                // BRAZOS - Columna vertical
-            renderHPLocation('hp-arm-l', limbsHP, 'column');
-            renderHPLocation('hp-arm-r', limbsHP, 'column');
-                // PIERNAS - Columna vertical con offset especial para izquierda
-            renderHPLocation('hp-leg-l', limbsHP, 'column-offset');
-            renderHPLocation('hp-leg-r', limbsHP, 'column-offset-right');
+            // Usar la función de círculos SVG
+            generarPuntosVidaParaFicha(parseInt(strValue) || 0, []);
         }
 
+        // Función legacy - ya no se usa
         function renderHPLocation(locationId, count, layoutType) {
-            const element = document.getElementById(locationId);
-            if(!element) return;
-                element.innerHTML = '';
-                if(layoutType === 'grid') {
-                // Layout normal en grid para cabeza y torso
-                element.style.display = 'flex';
-                element.style.flexWrap = 'wrap';
-                for (let i = 0; i < count; i++) {
-                    const box = document.createElement('div');
-                    box.className = 'hp-box';
-                    box.onclick = function() { toggleBox(this); };
-                    element.appendChild(box);
-                }
-            } else if(layoutType === 'column') {
-                // Layout en columna para brazos
-                element.style.display = 'flex';
-                element.style.flexDirection = 'column';
-                element.style.flexWrap = 'wrap';
-                element.style.alignContent = 'flex-start';
-                element.style.maxHeight = '180px';
-                for (let i = 0; i < count; i++) {
-                    const box = document.createElement('div');
-                    box.className = 'hp-box';
-                    box.onclick = function() { toggleBox(this); };
-                    element.appendChild(box);
-                }
-            } else if(layoutType === 'column-offset') {
-                // Layout especial para pierna izquierda con offset en los primeros 6
-                for (let i = 0; i < count; i++) {
-                    const box = document.createElement('div');
-                    box.className = 'hp-box';
-                    box.onclick = function() { toggleBox(this); };
-                                box.style.position = 'relative';
-                                // Los primeros 6 círculos (índices 0-5) se desplazan a la derecha
-                    if (i < 6) {
-                        box.style.left = '10px';
-                    } else {
-                        box.style.left = '0px';
-                    }
-                                element.appendChild(box);
-                }
-            } else if(layoutType === 'column-offset-right') {
-                // Layout especial para pierna derecha (reflejo exacto de la izquierda)
-                for (let i = 0; i < count; i++) {
-                    const box = document.createElement('div');
-                    box.className = 'hp-box';
-                    box.onclick = function() { toggleBox(this); };
-                                box.style.position = 'relative';
-                                // Los primeros 6 círculos (índices 0-5) se desplazan a la IZQUIERDA (reflejo)
-                    if (i < 6) {
-                        box.style.left = '-10px';
-                    } else {
-                        box.style.left = '0px';
-                    }
-                                element.appendChild(box);
-                }
-            }
+            // Esta función ya no hace nada - los HP se renderizan via SVG
+            console.log('renderHPLocation deprecated - using SVG circles');
         }
 
         // NAVEGACIÓN
@@ -5530,7 +5689,6 @@ document.getElementById('btn-registrar-mision').onclick = registrarMisionConGast
                        html += `<tr><td class="skill-xp-col">${squaresHTML}</td><td><input type="text" class="sheet-input" placeholder="Nueva habilidad"></td><td class="skill-level-col"><input type="text" class="sheet-input" style="text-align:center" value="0" onchange="recalcularFilaManual(this)"></td><td class="skill-attr-col">${universalCaract}</td><td class="skill-roll-col">${universalCaract}</td></tr>`;
                 }
                 html += '</tbody></table>';
-                html += '<button onclick="agregarHabilidadManual()" class="no-print" style="margin-top: 10px; padding: 8px 16px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">+ Añadir Habilidad</button>';
                 skillContainer.innerHTML = html;
 
                 document.getElementById('nombre-field').value = vals.nombre; 
@@ -94953,7 +95111,7 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
             <button class="cyber-button" onclick="goToTRRUtilities()">TRR Utilidades</button>
             <button class="cyber-button" onclick="goToMechHangar()">Mech Hangar</button>
             <button class="cyber-button" onclick="goToVehicleDepot()">Deposito de Vehiculos</button>
-            <button class="cyber-button" onclick="goToGalacticMap()">Galactic Map</button>
+            <button class="cyber-button" onclick="goToGalacticMap()">Mapa Estelar</button>
             <button class="cyber-button" onclick="goToRegistroCombate()">Registro de Combate</button>
             <button class="cyber-button" onclick="goToBattleTracker()">🎯 Seguimiento de Combate</button>
             <button class="cyber-button disabled">Database Archive [WIP]</button>
@@ -96989,24 +97147,133 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
         </div>
     </div>
 
-    <!-- GALACTIC MAP SECTION (SIMPLIFICADO) -->
+    <!-- MAPA ESTELAR SECTION -->
     <div id="galactic-map" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #0a0a0a; background-image: linear-gradient(rgba(15, 20, 25, 0.85), rgba(10, 10, 10, 0.95)), repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(74, 90, 106, 0.1) 2px, transparent 4px), repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(183, 28, 28, 0.08) 40px, rgba(183, 28, 28, 0.08) 41px), repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(183, 28, 28, 0.08) 40px, rgba(183, 28, 28, 0.08) 41px), radial-gradient(circle at center, #1a1a1a 0%, #000 100%); background-size: 100% 100%, 100% 4px, 100% 100%, 100% 100%, 100% 100%; z-index: 2000; overflow-y: auto; padding-top: 60px;">
         <button class="back-to-home-btn no-print" onclick="goHomeFromTRR()">⚠️ VOLVER AL MENÚ</button>
-        <div style="text-align:center; margin: 20px auto; max-width: 1400px; padding: 20px;">
+        <div style="text-align:center; margin: 20px auto; max-width: 1600px; padding: 20px;">
             <h1 style="font-family: Impact, sans-serif; color: #ff8c42; text-transform: uppercase; letter-spacing: 3px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">
-                MAPA GALÁCTICO - ESFERA INTERIOR
+                MAPA ESTELAR - ESFERA INTERIOR
             </h1>
-            <p style="color: #888; font-family: 'Courier New', monospace; margin-bottom: 30px;">Mapa Político - Año 3025</p>
-                <div style="background: #0a0a0a; border: 2px solid #ff8c42; padding: 20px; border-radius: 8px;">
-                <img src="https://atlasoficeandfireblog.wordpress.com/wp-content/uploads/2021/06/battletech-3025-political-map.png" 
-                     alt="Mapa Político de la Esfera Interior 3025" 
-                     style="width: 100%; max-width: 1200px; height: auto; display: block; margin: 0 auto; border-radius: 4px;">
+            
+            <!-- BOTONES DE AÑOS -->
+            <div id="map-year-buttons" style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin: 20px 0 30px 0;">
+                <button onclick="cambiarMapaEstelar('3025')" id="map-btn-3025" class="map-year-btn active" style="padding: 12px 20px; font-family: 'Courier New', monospace; font-size: 16px; font-weight: bold; background: #ff8c42; color: #000; border: 2px solid #ff8c42; border-radius: 4px; cursor: pointer; transition: all 0.3s;">3025</button>
+                <button onclick="cambiarMapaEstelar('3030')" id="map-btn-3030" class="map-year-btn" style="padding: 12px 20px; font-family: 'Courier New', monospace; font-size: 16px; font-weight: bold; background: transparent; color: #ff8c42; border: 2px solid #ff8c42; border-radius: 4px; cursor: pointer; transition: all 0.3s;">3030</button>
+                <button onclick="cambiarMapaEstelar('3040')" id="map-btn-3040" class="map-year-btn" style="padding: 12px 20px; font-family: 'Courier New', monospace; font-size: 16px; font-weight: bold; background: transparent; color: #ff8c42; border: 2px solid #ff8c42; border-radius: 4px; cursor: pointer; transition: all 0.3s;">3040</button>
+                <button onclick="cambiarMapaEstelar('3049')" id="map-btn-3049" class="map-year-btn" style="padding: 12px 20px; font-family: 'Courier New', monospace; font-size: 16px; font-weight: bold; background: transparent; color: #ff8c42; border: 2px solid #ff8c42; border-radius: 4px; cursor: pointer; transition: all 0.3s;">3049</button>
+                <button onclick="cambiarMapaEstelar('3052')" id="map-btn-3052" class="map-year-btn" style="padding: 12px 20px; font-family: 'Courier New', monospace; font-size: 16px; font-weight: bold; background: transparent; color: #ff8c42; border: 2px solid #ff8c42; border-radius: 4px; cursor: pointer; transition: all 0.3s;">3052</button>
+                <button onclick="cambiarMapaEstelar('3057')" id="map-btn-3057" class="map-year-btn" style="padding: 12px 20px; font-family: 'Courier New', monospace; font-size: 16px; font-weight: bold; background: transparent; color: #ff8c42; border: 2px solid #ff8c42; border-radius: 4px; cursor: pointer; transition: all 0.3s;">3057</button>
+                <button onclick="cambiarMapaEstelar('3058')" id="map-btn-3058" class="map-year-btn" style="padding: 12px 20px; font-family: 'Courier New', monospace; font-size: 16px; font-weight: bold; background: transparent; color: #ff8c42; border: 2px solid #ff8c42; border-radius: 4px; cursor: pointer; transition: all 0.3s;">3058</button>
+                <button onclick="cambiarMapaEstelar('3059')" id="map-btn-3059" class="map-year-btn" style="padding: 12px 20px; font-family: 'Courier New', monospace; font-size: 16px; font-weight: bold; background: transparent; color: #ff8c42; border: 2px solid #ff8c42; border-radius: 4px; cursor: pointer; transition: all 0.3s;">3059</button>
+                <button onclick="cambiarMapaEstelar('3063')" id="map-btn-3063" class="map-year-btn" style="padding: 12px 20px; font-family: 'Courier New', monospace; font-size: 16px; font-weight: bold; background: transparent; color: #ff8c42; border: 2px solid #ff8c42; border-radius: 4px; cursor: pointer; transition: all 0.3s;">3063</button>
+                <button onclick="cambiarMapaEstelar('3067')" id="map-btn-3067" class="map-year-btn" style="padding: 12px 20px; font-family: 'Courier New', monospace; font-size: 16px; font-weight: bold; background: transparent; color: #ff8c42; border: 2px solid #ff8c42; border-radius: 4px; cursor: pointer; transition: all 0.3s;">3067</button>
             </div>
-                <div style="margin-top: 15px; color: #666; font-size: 12px;">
-                Mapa Político de la Esfera Interior - Era de Sucesión (3025)
+            
+            <p id="map-year-label" style="color: #888; font-family: 'Courier New', monospace; margin-bottom: 20px; font-size: 18px;">Mapa Político - Año <span id="current-map-year">3025</span></p>
+            
+            <!-- CONTROLES DE ZOOM -->
+            <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 15px;">
+                <button onclick="zoomMapa(-0.25)" style="padding: 10px 20px; font-size: 20px; font-weight: bold; background: #333; color: #ff8c42; border: 2px solid #ff8c42; border-radius: 4px; cursor: pointer; transition: all 0.3s;" onmouseover="this.style.background='#ff8c42'; this.style.color='#000'" onmouseout="this.style.background='#333'; this.style.color='#ff8c42'">−</button>
+                <span id="zoom-level" style="padding: 10px 20px; font-family: 'Courier New', monospace; color: #ff8c42; font-size: 16px; display: flex; align-items: center;">100%</span>
+                <button onclick="zoomMapa(0.25)" style="padding: 10px 20px; font-size: 20px; font-weight: bold; background: #333; color: #ff8c42; border: 2px solid #ff8c42; border-radius: 4px; cursor: pointer; transition: all 0.3s;" onmouseover="this.style.background='#ff8c42'; this.style.color='#000'" onmouseout="this.style.background='#333'; this.style.color='#ff8c42'">+</button>
+                <button onclick="resetZoomMapa()" style="padding: 10px 20px; font-size: 14px; font-weight: bold; background: #333; color: #ff8c42; border: 2px solid #ff8c42; border-radius: 4px; cursor: pointer; transition: all 0.3s; margin-left: 10px;" onmouseover="this.style.background='#ff8c42'; this.style.color='#000'" onmouseout="this.style.background='#333'; this.style.color='#ff8c42'">Reset</button>
+            </div>
+            
+            <!-- CONTENEDOR DEL MAPA CON SCROLL -->
+            <div id="map-container" style="background: #0a0a0a; border: 2px solid #ff8c42; padding: 20px; border-radius: 8px; overflow: auto; max-height: 70vh; cursor: grab;">
+                <div id="map-wrapper" style="display: inline-block; transition: width 0.2s, height 0.2s;">
+                    <object id="stellar-map-display" 
+                            data="3025_Inner_Sphere__Sarna_.svg" 
+                            type="image/svg+xml"
+                            style="width: 1400px; height: auto; display: block;">
+                        <img src="3025_Inner_Sphere__Sarna_.svg" alt="Mapa Esfera Interior" style="width: 1400px;">
+                    </object>
+                </div>
+            </div>
+            
+            <div style="margin-top: 15px; color: #666; font-size: 12px;">
+                Mapas de la Esfera Interior - Fuente: Sarna.net
             </div>
         </div>
     </div>
+    
+    <script>
+    // Variables para el zoom del mapa
+    let currentZoom = 1;
+    const minZoom = 0.5;
+    const maxZoom = 4;
+    const baseWidth = 1400; // Ancho base del mapa
+    
+    // Función para cambiar el mapa estelar
+    function cambiarMapaEstelar(year) {
+        // Actualizar el mapa
+        const mapDisplay = document.getElementById('stellar-map-display');
+        const fileName = year + '_Inner_Sphere__Sarna_.svg';
+        mapDisplay.data = fileName;
+        
+        // Actualizar el label del año
+        document.getElementById('current-map-year').textContent = year;
+        
+        // Actualizar estilos de botones
+        const allButtons = document.querySelectorAll('.map-year-btn');
+        allButtons.forEach(btn => {
+            btn.style.background = 'transparent';
+            btn.style.color = '#ff8c42';
+        });
+        
+        const activeButton = document.getElementById('map-btn-' + year);
+        if (activeButton) {
+            activeButton.style.background = '#ff8c42';
+            activeButton.style.color = '#000';
+        }
+        
+        console.log('🗺️ Mapa cambiado a año:', year);
+    }
+    
+    // Función para zoom del mapa
+    function zoomMapa(delta) {
+        currentZoom = Math.max(minZoom, Math.min(maxZoom, currentZoom + delta));
+        aplicarZoom();
+    }
+    
+    // Reset zoom
+    function resetZoomMapa() {
+        currentZoom = 1;
+        aplicarZoom();
+        // Centrar el scroll
+        const container = document.getElementById('map-container');
+        container.scrollLeft = 0;
+        container.scrollTop = 0;
+    }
+    
+    // Aplicar el zoom actual - usando ancho real para scroll correcto
+    function aplicarZoom() {
+        const mapDisplay = document.getElementById('stellar-map-display');
+        const mapWrapper = document.getElementById('map-wrapper');
+        const zoomPercent = Math.round(currentZoom * 100);
+        const newWidth = baseWidth * currentZoom;
+        
+        // Cambiar el ancho real del elemento (no transform)
+        mapDisplay.style.width = newWidth + 'px';
+        
+        document.getElementById('zoom-level').textContent = zoomPercent + '%';
+        console.log('🔍 Zoom:', zoomPercent + '%', 'Ancho:', newWidth + 'px');
+    }
+    
+    // Zoom con rueda del ratón
+    document.addEventListener('DOMContentLoaded', function() {
+        const mapContainer = document.getElementById('map-container');
+        if (mapContainer) {
+            mapContainer.addEventListener('wheel', function(e) {
+                if (e.ctrlKey) {
+                    e.preventDefault();
+                    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+                    zoomMapa(delta);
+                }
+            }, { passive: false });
+        }
+    });
+    </script>
 
     <!-- TRR INFANTERÍA SECTION -->
     <div id="trr-infantry" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #0a0a0a; background-image: linear-gradient(rgba(15, 20, 25, 0.85), rgba(10, 10, 10, 0.95)), repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(74, 90, 106, 0.1) 2px, transparent 4px), repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(183, 28, 28, 0.08) 40px, rgba(183, 28, 28, 0.08) 41px), repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(183, 28, 28, 0.08) 40px, rgba(183, 28, 28, 0.08) 41px), radial-gradient(circle at center, #1a1a1a 0%, #000 100%); background-size: 100% 100%, 100% 4px, 100% 100%, 100% 100%, 100% 100%; z-index: 2000; overflow-y: auto; padding-top: 60px;">
@@ -97457,13 +97724,13 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                 <div id="cloud-search-results"></div>
             </div>
 
-            <hr style="margin: 15px 0; border-top: 1px solid #ccc;">
+            <hr style="margin: 15px 0; border-top: 1px solid #444;">
 
             <!-- BOTONES ACCIÓN -->
             <div style="display:flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
                 <button id="btn-cloud-save" onclick="guardarEnNube()" class="random-button" style="background-color: #28a745; font-size: 16px;">☁️ Guardar en Nube</button>
 
-                <span style="border-left: 1px solid #999; margin: 0 10px;"></span>
+                <span style="border-left: 1px solid #555; margin: 0 10px;"></span>
 
                 <!-- SISTEMA LEGACY (JSON) PARA MIGRACIÓN -->
                 <button onclick="exportarDatos()" class="random-button" style="background-color: #6c757d; font-size: 14px;">💾 Bajar JSON (Respaldo)</button>
@@ -97536,24 +97803,24 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
             <div class="section grid-2">
                 <div>
                     <div class="grid-2">
-                        <div><div class="field-label">Nombre del Personaje:</div><input type="text" readonly class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;" id="nombre-field"></div>
-                        <div><div class="field-label">Jugador:</div><input type="text" readonly class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;" id="jugador-field"></div>
+                        <div><div class="field-label">Nombre del Personaje:</div><input type="text" readonly class="sheet-input" style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;" id="nombre-field"></div>
+                        <div><div class="field-label">Jugador:</div><input type="text" readonly class="sheet-input" style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;" id="jugador-field"></div>
                     </div>
                     <div class="grid-2">
-                        <div><div class="field-label">Lugar de nacimiento:</div><input type="text" readonly class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;" id="origen-output"></div>
-                        <div><div class="field-label">Formación:</div><input type="text" readonly class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;" id="estudios-output"></div>
+                        <div><div class="field-label">Lugar de nacimiento:</div><input type="text" readonly class="sheet-input" style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;" id="origen-output"></div>
+                        <div><div class="field-label">Formación:</div><input type="text" readonly class="sheet-input" style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;" id="estudios-output"></div>
                     </div>
                     <div class="grid-2">
-                        <div><div class="field-label">Afiliación:</div><input type="text" readonly class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;" id="faction-output"></div>
-                        <div><div class="field-label">Mech Inicial:</div><input type="text" readonly class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;" id="mech-output"></div>
+                        <div><div class="field-label">Afiliación:</div><input type="text" readonly class="sheet-input" style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;" id="faction-output"></div>
+                        <div><div class="field-label">Mech Inicial:</div><input type="text" readonly class="sheet-input" style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;" id="mech-output"></div>
                     </div>
                     <div class="grid-3">
-                        <div><div class="field-label">Año de nacimiento:</div><input type="text" readonly class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;" id="edad-field"></div>
-                        <div><div class="field-label">Sexo:</div><input type="text" readonly class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;" id="sexo-field"></div>
-                        <div><div class="field-label">Altura:</div><input type="text" readonly class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;" id="altura-field"></div>
-                        <div><div class="field-label">Ojos:</div><input type="text" readonly class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;" id="ojos-field"></div>
-                        <div><div class="field-label">Pelo:</div><input type="text" readonly class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;" id="pelo-field"></div>
-                        <div><div class="field-label">Peso:</div><input type="text" readonly class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;" id="peso-field"></div>
+                        <div><div class="field-label">Año de nacimiento:</div><input type="text" readonly class="sheet-input" style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;" id="edad-field"></div>
+                        <div><div class="field-label">Sexo:</div><input type="text" readonly class="sheet-input" style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;" id="sexo-field"></div>
+                        <div><div class="field-label">Altura:</div><input type="text" readonly class="sheet-input" style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;" id="altura-field"></div>
+                        <div><div class="field-label">Ojos:</div><input type="text" readonly class="sheet-input" style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;" id="ojos-field"></div>
+                        <div><div class="field-label">Pelo:</div><input type="text" readonly class="sheet-input" style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;" id="pelo-field"></div>
+                        <div><div class="field-label">Peso:</div><input type="text" readonly class="sheet-input" style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;" id="peso-field"></div>
                     </div>
                                 <h3>ATRIBUTOS</h3>
                     <div class="grid-2"> 
@@ -97588,176 +97855,74 @@ l-51 25 53 23 c28 13 52 29 52 36 0 17 -5 16 -66 -10z"/>
                     </div>
                 </div>
                         <div class="health-tracker">
-                    <svg version="1.1" viewBox="0 0 400 1024" xmlns="http://www.w3.org/2000/svg">
-                        <path fill="#e0e0e0" stroke="#333" stroke-width="2" d="
-M117.667564,518.839600 
-	C120.990585,505.324768 124.758530,492.371368 129.634277,479.775391 
-	C131.010254,476.220734 132.282120,473.060638 136.858414,471.129150 
-	C140.859528,469.440460 141.906738,463.547699 141.491150,458.819336 
-	C141.285538,456.479889 141.459869,454.651917 142.691391,452.746918 
-	C147.465530,445.361847 149.887482,437.436035 148.286041,428.541840 
-	C147.831940,426.019714 148.081879,423.413727 150.093781,421.554199 
-	C153.149124,418.730408 154.015823,415.150330 154.362625,411.231476 
-	C155.114182,402.739044 155.287018,394.295288 153.772430,385.836060 
-	C152.813766,380.481750 150.039871,376.420166 145.885178,372.373444 
-	C140.750961,380.611389 135.779175,388.438141 130.986542,396.373077 
-	C129.602112,398.665253 129.019318,401.373566 129.205612,404.081543 
-	C130.027985,416.036072 125.787354,427.038574 122.813156,438.267914 
-	C121.910881,441.674561 120.016579,444.741333 117.716446,447.378723 
-	C105.200996,461.729095 98.371346,479.019501 91.227142,496.331635 
-	C86.890221,506.841095 89.520233,515.618774 93.965927,524.729736 
-	C95.345406,527.556824 96.753410,530.274048 97.440933,533.475830 
-	C99.122368,541.306213 92.204575,544.542664 89.260490,549.868408 
-	C88.568924,551.119446 87.098251,551.913269 86.208748,553.086304 
-	C83.262138,556.972290 79.307678,558.495972 74.753616,557.238037 
-	C68.504196,555.511841 62.251953,553.610229 56.278976,551.117554 
-	C49.357754,548.229065 48.789108,542.218323 50.120453,531.954651 
-	C51.163155,523.916077 53.812496,516.078552 55.868851,508.183197 
-	C56.474228,505.858887 56.962528,503.696411 55.648849,501.446777 
-	C53.902390,498.455963 55.353035,495.551239 56.289101,492.777710 
-	C61.471031,477.423798 65.091705,461.713715 67.228081,445.663330 
-	C68.197464,438.380432 68.284637,431.030365 68.026817,423.707764 
-	C67.833740,418.223663 68.866982,413.149200 71.261345,408.246948 
-	C74.770042,401.063171 78.114899,393.799438 81.616402,386.612091 
-	C82.526360,384.744232 83.099907,382.058197 85.774742,382.229065 
-	C88.241394,382.386597 88.011269,385.211884 89.043381,386.811279 
-	C89.296806,387.204010 89.621071,387.550995 90.228729,388.317596 
-	C92.259018,385.787811 93.683243,383.251099 93.668098,380.169678 
-	C93.593163,364.934662 94.885605,349.916321 100.768623,335.580017 
-	C94.678040,334.662292 94.038361,333.859100 95.976280,328.346222 
-	C98.842316,320.193146 97.319321,311.463531 99.593224,303.243225 
-	C100.700317,299.241058 101.484940,295.147797 102.362015,291.084229 
-	C104.316292,282.029846 108.957916,275.229828 117.047752,270.130310 
-	C125.667419,264.696808 134.481094,259.723389 143.500458,255.039169 
-	C146.332779,253.568237 149.009674,253.647003 151.559433,255.227432 
-	C154.231186,256.883484 156.456848,256.338989 158.956757,254.828690 
-	C165.057739,251.142822 171.274551,247.648697 177.081558,244.287598 
-	C177.507629,242.040222 176.171783,241.323059 175.390930,240.311951 
-	C152.321075,210.438263 141.524338,176.873260 149.791229,139.623718 
-	C160.926346,89.450325 215.523666,78.904762 248.791183,105.464821 
-	C257.380066,112.321983 261.738678,121.897705 265.126648,131.890228 
-	C272.532135,153.732285 271.023743,175.540741 263.851349,197.124680 
-	C261.843292,203.167511 258.793121,208.861237 254.238281,213.353760 
-	C248.086548,219.421341 247.353287,227.109070 246.698364,234.954346 
-	C246.487122,237.484863 248.251282,238.443726 250.107849,239.308487 
-	C258.714722,243.317413 267.360992,247.243530 275.923889,251.343948 
-	C278.273132,252.468887 280.298828,252.703812 282.392120,251.000641 
-	C285.263184,248.664627 288.369110,248.714508 291.807709,249.735947 
-	C302.399933,252.882309 312.421387,257.316162 322.162933,262.480164 
-	C327.262787,265.183624 330.704498,269.123444 332.854553,274.487091 
-	C337.715302,286.612885 341.590698,298.950867 342.336823,312.106445 
-	C342.536407,315.625122 343.690002,318.944763 344.778534,322.276276 
-	C345.708099,325.121490 347.948639,327.985687 344.375549,330.822968 
-	C343.150208,331.795929 344.513672,333.273987 345.100372,334.422241 
-	C347.190033,338.512054 348.201599,342.891022 348.166595,347.439209 
-	C348.101105,355.947845 353.065674,362.318817 356.478943,369.116272 
-	C358.625153,369.176331 358.787323,367.791168 359.362671,366.858063 
-	C360.199371,365.501099 360.444733,363.414581 362.613739,363.596832 
-	C364.325897,363.740723 364.919769,365.399231 365.580170,366.710144 
-	C371.078247,377.623810 375.110413,389.065186 377.767456,400.990723 
-	C378.520996,404.372772 377.461731,407.616821 376.849731,410.868164 
-	C373.342163,429.501984 368.743652,447.943420 367.666534,466.991394 
-	C367.220581,474.877808 367.939911,482.630280 369.084320,490.377716 
-	C369.584442,493.763306 369.847809,496.963196 367.448608,499.849823 
-	C366.096436,501.476746 366.139191,503.563538 366.131592,505.579681 
-	C366.097595,514.615784 364.457764,523.473572 363.196503,532.377625 
-	C362.373413,538.188293 359.389618,542.011719 353.930237,544.337769 
-	C346.802582,547.374695 339.381165,549.205139 331.779602,550.162964 
-	C323.506866,551.205505 319.930603,548.757080 317.850647,540.828979 
-	C316.838898,536.972717 315.653473,533.631104 311.830536,531.655945 
-	C310.801117,531.124084 309.688263,529.574280 309.662964,528.467712 
-	C309.483124,520.600403 308.372437,512.349976 314.455109,505.943146 
-	C317.984497,502.225739 321.543915,498.413055 326.204590,495.932678 
-	C328.590393,494.662933 329.560272,492.477112 329.954926,489.813873 
-	C332.632507,471.745209 331.859497,453.690125 322.896667,437.722931 
-	C314.014404,421.899292 313.556091,405.819244 316.070496,388.911224 
-	C316.474823,386.192566 316.378510,383.942688 314.055420,382.227234 
-	C304.547211,375.206146 299.446136,365.133392 294.865265,354.676331 
-	C293.679565,351.969666 292.932709,349.004608 290.598572,346.585938 
-	C286.660156,348.057312 284.708282,351.240845 283.409851,354.861359 
-	C282.061554,358.620880 281.034973,362.494507 279.787994,366.292084 
-	C278.895020,369.011566 277.748169,371.676605 275.224152,373.272919 
-	C271.375519,375.706909 269.787628,379.346832 268.983490,383.614349 
-	C267.658295,390.647034 266.010223,397.608734 266.100433,404.852081 
-	C266.167755,410.259491 266.396973,415.428497 270.193481,419.888489 
-	C272.315857,422.381805 271.418427,425.722839 270.928223,428.601898 
-	C269.632874,436.209198 270.758331,443.159576 275.312164,449.509857 
-	C276.675873,451.411530 277.319611,453.609558 277.490295,456.045898 
-	C277.678467,458.732178 278.656586,461.437347 280.778778,463.154816 
-	C289.490814,470.205292 293.447540,480.228455 297.148193,490.134064 
-	C308.637756,520.888489 314.690338,552.972717 318.565094,585.436035 
-	C320.005676,597.505371 318.163086,609.747437 316.642303,621.792664 
-	C315.299042,632.432129 315.838623,642.248840 322.663879,651.162476 
-	C326.032959,655.562378 328.351471,660.485229 326.349976,666.497986 
-	C325.439484,669.233215 326.652344,672.038452 327.822174,674.689880 
-	C331.786896,683.675964 336.448456,692.324646 340.569275,701.244446 
-	C348.204132,717.770508 350.066742,735.038452 350.039642,752.818481 
-	C350.019562,765.980591 350.314911,779.128296 351.239197,792.273071 
-	C352.168701,805.491638 356.684662,817.581848 361.859039,829.540710 
-	C363.644226,833.666687 365.134338,837.927185 367.062561,841.982056 
-	C368.515320,845.037170 367.679291,847.898987 366.896027,850.738770 
-	C365.856476,854.507629 366.454102,857.819885 368.150848,861.315002 
-	C373.325897,871.974854 379.190887,882.231018 385.417847,892.298035 
-	C389.413239,898.757385 384.935333,909.293518 377.386414,910.207886 
-	C363.968170,911.833069 350.524414,913.094299 338.049591,905.497925 
-	C333.795410,902.907410 329.236359,901.078979 326.116699,896.788940 
-	C324.523590,894.598083 321.851074,893.108582 319.482452,891.588867 
-	C317.111145,890.067505 316.022858,888.250061 316.386566,885.370300 
-	C316.740295,882.569763 316.464813,879.681702 316.903748,876.901306 
-	C318.112396,869.244629 318.048309,862.044739 312.089264,855.981812 
-	C310.540863,854.406372 311.158783,851.929199 311.247589,849.731201 
-	C311.732147,837.739929 311.903076,825.682678 310.024323,813.839050 
-	C307.401520,797.304626 299.936676,782.537598 291.369843,768.347839 
-	C288.531158,763.646057 285.530090,758.995850 282.147186,754.679565 
-	C276.732391,747.770752 274.964935,739.980225 274.590546,731.392639 
-	C273.994171,717.713318 274.223053,704.122375 276.423645,690.596619 
-	C276.715790,688.801147 275.860931,687.348022 275.313019,685.805054 
-	C272.195679,677.026672 268.611938,668.419983 267.443298,659.028564 
-	C266.878693,654.491333 264.461639,650.421143 261.328735,647.173035 
-	C249.247879,634.647766 243.305588,619.322876 238.877502,602.778748 
-	C233.669785,583.321655 225.890488,564.641541 218.814514,545.771240 
-	C218.463989,544.836426 218.105560,543.888184 217.609940,543.027283 
-	C216.059784,540.334290 214.967834,536.833069 210.934174,537.297424 
-	C206.743256,537.779785 203.315094,539.548523 202.073471,544.132507 
-	C199.287033,554.419922 196.489365,564.705627 193.552872,574.950928 
-	C185.981445,601.367126 179.085861,628.041016 166.403595,652.653381 
-	C157.983261,668.994568 158.919785,686.058350 161.573135,703.409119 
-	C163.108810,713.451233 163.487686,723.612671 164.217636,733.741089 
-	C164.973846,744.234009 162.215744,753.597595 156.418716,762.071716 
-	C144.170746,779.975891 138.791229,800.445129 134.650269,821.213989 
-	C132.603531,831.479370 133.908661,842.147461 134.550583,852.630432 
-	C134.621338,853.785950 135.259521,855.269165 134.763733,856.041138 
-	C129.447678,864.318298 133.540390,872.903442 133.749069,881.344666 
-	C133.786041,882.840820 133.961578,884.334656 134.100555,885.826965 
-	C134.349670,888.501953 133.347031,890.529846 130.693710,891.183899 
-	C110.383675,896.190430 91.606827,906.894836 70.210335,907.767151 
-	C58.727142,908.235229 47.249474,907.841125 35.917084,905.431946 
-	C31.919062,904.581970 30.460808,902.613708 30.795137,898.446655 
-	C31.240160,892.899780 32.938072,888.948730 38.422981,886.275696 
-	C46.471184,882.353333 54.661720,878.516113 61.543797,872.500488 
-	C65.840523,868.744629 69.756325,864.723572 72.933144,859.970459 
-	C74.828651,857.134399 76.353836,854.432922 75.198105,850.713074 
-	C74.299583,847.820984 76.260246,845.284241 77.429550,842.726257 
-	C81.156036,834.573975 86.651634,827.021912 87.934837,818.011841 
-	C90.817360,797.771851 95.882988,777.774109 95.580078,757.158752 
-	C95.445633,748.008423 94.965523,738.831787 94.011345,729.733215 
-	C92.913376,719.263489 95.481239,709.520081 98.960884,699.950500 
-	C100.795349,694.905396 101.389259,690.250366 99.779076,684.971191 
-	C97.940712,678.943787 97.043411,672.629395 95.736359,666.439880 
-	C95.312553,664.433105 95.354988,662.473572 96.247284,660.575806 
-	C100.070496,652.444336 103.313217,643.998962 108.825523,636.772400 
-	C110.116524,635.079895 111.008652,633.412903 110.367477,631.275085 
-	C103.240112,607.511169 106.073318,583.843018 110.729515,560.106201 
-	C113.386971,546.558777 114.356010,532.710632 117.667564,518.839600 
-z
-z"/>
+                    <svg viewBox="0 0 200 380" xmlns="http://www.w3.org/2000/svg" id="character-silhouette">
+                        <!-- SILUETA GUERRERO ESTILIZADA - TEMA MILITAR -->
+                        
+                        <!-- Cabeza -->
+                        <ellipse cx="100" cy="32" rx="24" ry="30" fill="#3a3a3a" stroke="#666" stroke-width="1.5"/>
+                        
+                        <!-- Cuello -->
+                        <rect x="90" y="60" width="20" height="18" fill="#3a3a3a" stroke="#666" stroke-width="1"/>
+                        
+                        <!-- Hombros/Torso superior -->
+                        <path d="M45,78 L155,78 L160,95 L40,95 Z" fill="#3a3a3a" stroke="#666" stroke-width="1.5"/>
+                        
+                        <!-- Torso principal -->
+                        <path d="M50,95 L150,95 L145,180 L55,180 Z" fill="#3a3a3a" stroke="#666" stroke-width="1.5"/>
+                        
+                        <!-- Brazo izquierdo (más largo) -->
+                        <path d="M45,78 L20,85 L0,195 L8,200 L32,200 L40,95" fill="#3a3a3a" stroke="#666" stroke-width="1.5"/>
+                        
+                        <!-- Brazo derecho (más largo) -->
+                        <path d="M155,78 L180,85 L200,195 L192,200 L168,200 L160,95" fill="#3a3a3a" stroke="#666" stroke-width="1.5"/>
+                        
+                        <!-- Cinturón -->
+                        <rect x="55" y="175" width="90" height="12" fill="#2a2a2a" stroke="#666" stroke-width="1"/>
+                        
+                        <!-- Pierna izquierda -->
+                        <path d="M55,187 L80,187 L85,340 L45,340 Z" fill="#3a3a3a" stroke="#666" stroke-width="1.5"/>
+                        
+                        <!-- Pierna derecha -->
+                        <path d="M120,187 L145,187 L155,340 L115,340 Z" fill="#3a3a3a" stroke="#666" stroke-width="1.5"/>
+                        
+                        <!-- Botas izquierda -->
+                        <ellipse cx="65" cy="350" rx="22" ry="10" fill="#2a2a2a" stroke="#666" stroke-width="1"/>
+                        
+                        <!-- Bota derecha -->
+                        <ellipse cx="135" cy="350" rx="22" ry="10" fill="#2a2a2a" stroke="#666" stroke-width="1"/>
+                        
+                        <!-- ============================================ -->
+                        <!-- REGIONES DEBUG (ocultas en producción) -->
+                        <!-- ============================================ -->
+                        
+                        <!-- Región CABEZA -->
+                        <rect x="80" y="12" width="40" height="40" fill="none" stroke="none" class="debug-region"/>
+                        
+                        <!-- Región TORSO -->
+                        <rect x="65" y="98" width="70" height="75" fill="none" stroke="none" class="debug-region"/>
+                        
+                        <!-- Región BRAZO IZQ -->
+                        <rect x="12" y="95" width="30" height="92" fill="none" stroke="none" class="debug-region"/>
+                        
+                        <!-- Región BRAZO DER -->
+                        <rect x="158" y="95" width="30" height="92" fill="none" stroke="none" class="debug-region"/>
+                        
+                        <!-- Región PIERNA IZQ -->
+                        <rect x="52" y="195" width="28" height="140" fill="none" stroke="none" class="debug-region"/>
+                        
+                        <!-- Región PIERNA DER -->
+                        <rect x="120" y="195" width="28" height="140" fill="none" stroke="none" class="debug-region"/>
+                        
+                        <!-- ============================================ -->
+                        <!-- CONTENEDORES HP (grupos para los círculos) -->
+                        <!-- ============================================ -->
+                        <g id="hp-head" class="hp-group" data-region="cabeza"></g>
+                        <g id="hp-torso" class="hp-group" data-region="torso"></g>
+                        <g id="hp-arm-l" class="hp-group" data-region="brazo-izq"></g>
+                        <g id="hp-arm-r" class="hp-group" data-region="brazo-der"></g>
+                        <g id="hp-leg-l" class="hp-group" data-region="pierna-izq"></g>
+                        <g id="hp-leg-r" class="hp-group" data-region="pierna-der"></g>
                     </svg>
-                                <div class="hp-location-box hp-head" id="hp-head"></div>
-                    <div class="hp-location-box hp-torso" id="hp-torso"></div>
-                    <div class="hp-location-box hp-arm-l" id="hp-arm-l"></div>
-                    <div class="hp-location-box hp-arm-r" id="hp-arm-r"></div>
-                    <div class="hp-location-box hp-leg-l" id="hp-leg-l"></div>
-                    <div class="hp-location-box hp-leg-r" id="hp-leg-r"></div>
                 </div>
             </div>
             <div class="grid-2">
@@ -97767,10 +97932,10 @@ z"/>
                     <h2>FINANZAS Y EQUIPO</h2>
                     <div class="section">
                         <div class="grid-4"> 
-                            <div><div class="field-label">C-Bills:</div><input type="text" readonly id="sheet-cbills" class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></div>
-                            <div><div class="field-label">Salario/Ingresos:</div><input type="text" readonly id="sheet-salary" class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></div>
-                            <div><div class="field-label">PX Totales:</div><input type="text" readonly id="sheet-xp-total" class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></div>
-                            <div><div class="field-label">PX Disp.:</div><input type="text" readonly id="sheet-xp-avail" class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></div>
+                            <div><div class="field-label">C-Bills:</div><input type="text" readonly id="sheet-cbills" class="sheet-input" style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></div>
+                            <div><div class="field-label">Salario/Ingresos:</div><input type="text" readonly id="sheet-salary" class="sheet-input" style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></div>
+                            <div><div class="field-label">PX Totales:</div><input type="text" readonly id="sheet-xp-total" class="sheet-input" style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></div>
+                            <div><div class="field-label">PX Disp.:</div><input type="text" readonly id="sheet-xp-avail" class="sheet-input" style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></div>
                         </div>
                     </div>
                 </div>
@@ -97794,12 +97959,12 @@ z"/>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr><td><select class="weapon-select" disabled style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></select></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td></tr>
-                                <tr><td><select class="weapon-select" disabled style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></select></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td></tr>
-                                <tr><td><select class="weapon-select" disabled style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></select></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td></tr>
-                                <tr><td><select class="weapon-select" disabled style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></select></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td></tr>
-                                <tr><td><select class="weapon-select" disabled style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></select></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td></tr>
-                                <tr><td><select class="weapon-select" disabled style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></select></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td></tr>
+                                <tr><td><select class="weapon-select" disabled style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></select></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td></tr>
+                                <tr><td><select class="weapon-select" disabled style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></select></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td></tr>
+                                <tr><td><select class="weapon-select" disabled style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></select></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td></tr>
+                                <tr><td><select class="weapon-select" disabled style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></select></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td></tr>
+                                <tr><td><select class="weapon-select" disabled style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></select></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td></tr>
+                                <tr><td><select class="weapon-select" disabled style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></select></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -97811,9 +97976,9 @@ z"/>
                                 <tr><th style="width: 25px;">C</th><th style="width: 25px;">T</th><th style="width: 25px;">B</th><th style="width: 25px;">P</th></tr>
                             </thead>
                             <tbody>
-                                <tr><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td></tr>
-                                <tr><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td></tr>
-                                <tr><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td></tr>
+                                <tr><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td></tr>
+                                <tr><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td></tr>
+                                <tr><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td><td><input type="text" readonly style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"></td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -97833,8 +97998,8 @@ z"/>
                 </div>
                 <div>
                     <h3 style="text-align: left; border: none; background-color: #eee; margin-top: 0; padding: 0;">Contactos y Notas</h3>
-                    <input type="text" readonly class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"><input type="text" readonly class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"><input type="text" readonly class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"><input type="text" readonly class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;">
-                    <input type="text" readonly class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"><input type="text" readonly class="sheet-input" style="background-color: #f5f5f5; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;">
+                    <input type="text" readonly class="sheet-input" style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"><input type="text" readonly class="sheet-input" style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"><input type="text" readonly class="sheet-input" style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"><input type="text" readonly class="sheet-input" style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;">
+                    <input type="text" readonly class="sheet-input" style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;"><input type="text" readonly class="sheet-input" style="background-color: #2a2a2a; cursor: default; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;">
                 </div>
             </div>
         </div>
@@ -98076,6 +98241,97 @@ async function generarPDFPersonaje() {
         const noprints = elementToCapture.querySelectorAll('.no-print');
         noprints.forEach(el => el.style.display = 'none');
         
+        // ========== APLICAR ESTILOS BLANCO Y NEGRO PARA PDF ==========
+        // Guardar estilos originales
+        const originalStyles = {
+            containerBg: elementToCapture.style.backgroundColor,
+            containerColor: elementToCapture.style.color,
+            containerBorder: elementToCapture.style.border
+        };
+        
+        // Aplicar fondo blanco y texto negro
+        elementToCapture.style.backgroundColor = '#ffffff';
+        elementToCapture.style.color = '#000000';
+        elementToCapture.style.border = 'none';
+        
+        // Cambiar colores de la silueta SVG
+        const svgPaths = elementToCapture.querySelectorAll('#character-silhouette path, #character-silhouette ellipse, #character-silhouette rect');
+        const originalSvgStyles = [];
+        svgPaths.forEach((el, i) => {
+            originalSvgStyles[i] = { fill: el.getAttribute('fill'), stroke: el.getAttribute('stroke') };
+            el.setAttribute('fill', '#e0e0e0');
+            el.setAttribute('stroke', '#333333');
+        });
+        
+        // Cambiar colores de los círculos HP
+        const hpCircles = elementToCapture.querySelectorAll('.hp-circle');
+        const originalCircleStyles = [];
+        hpCircles.forEach((circle, i) => {
+            originalCircleStyles[i] = { fill: circle.getAttribute('fill'), stroke: circle.getAttribute('stroke') };
+            if (circle.classList.contains('checked')) {
+                circle.setAttribute('fill', '#555555');
+            } else {
+                circle.setAttribute('fill', '#ffffff');
+            }
+            circle.setAttribute('stroke', '#000000');
+        });
+        
+        // Cambiar colores de secciones, títulos, etc.
+        const sections = elementToCapture.querySelectorAll('.section');
+        const originalSectionStyles = [];
+        sections.forEach((el, i) => {
+            originalSectionStyles[i] = { bg: el.style.backgroundColor, border: el.style.border };
+            el.style.backgroundColor = '#ffffff';
+            el.style.border = '1px solid #999999';
+        });
+        
+        const h2s = elementToCapture.querySelectorAll('h2');
+        const originalH2Styles = [];
+        h2s.forEach((el, i) => {
+            originalH2Styles[i] = { bg: el.style.backgroundColor, color: el.style.color };
+            el.style.backgroundColor = '#eeeeee';
+            el.style.color = '#000000';
+        });
+        
+        const h1s = elementToCapture.querySelectorAll('h1');
+        const originalH1Styles = [];
+        h1s.forEach((el, i) => {
+            originalH1Styles[i] = { bg: el.style.backgroundColor, color: el.style.color };
+            el.style.backgroundColor = '#eeeeee';
+            el.style.color = '#000000';
+        });
+        
+        const attrBoxes = elementToCapture.querySelectorAll('.attr-box');
+        const originalAttrStyles = [];
+        attrBoxes.forEach((el, i) => {
+            originalAttrStyles[i] = { bg: el.style.backgroundColor };
+            el.style.backgroundColor = '#f9f9f9';
+        });
+        
+        const attrValues = elementToCapture.querySelectorAll('.attr-value');
+        attrValues.forEach(el => el.style.color = '#000000');
+        
+        const attrLabels = elementToCapture.querySelectorAll('.attr-label');
+        attrLabels.forEach(el => el.style.color = '#000000');
+        
+        const fieldLabels = elementToCapture.querySelectorAll('.field-label');
+        fieldLabels.forEach(el => el.style.color = '#555555');
+        
+        const inputs = elementToCapture.querySelectorAll('.sheet-input');
+        inputs.forEach(el => el.style.color = '#000000');
+        
+        const tables = elementToCapture.querySelectorAll('.skill-table, .weapon-table');
+        tables.forEach(el => el.style.backgroundColor = '#ffffff');
+        
+        const ths = elementToCapture.querySelectorAll('.skill-table th, .weapon-table th');
+        ths.forEach(el => {
+            el.style.backgroundColor = '#eeeeee';
+            el.style.color = '#000000';
+        });
+        
+        const tds = elementToCapture.querySelectorAll('.skill-table td, .weapon-table td');
+        tds.forEach(el => el.style.color = '#000000');
+        
         // Mostrar mensaje de progreso
         alert('Generando PDF... Esto puede tardar unos segundos.');
         
@@ -98094,6 +98350,60 @@ async function generarPDFPersonaje() {
         
         // Restaurar botones
         noprints.forEach(el => el.style.display = '');
+        
+        // ========== RESTAURAR ESTILOS ORIGINALES ==========
+        elementToCapture.style.backgroundColor = originalStyles.containerBg;
+        elementToCapture.style.color = originalStyles.containerColor;
+        elementToCapture.style.border = originalStyles.containerBorder;
+        
+        svgPaths.forEach((el, i) => {
+            if (originalSvgStyles[i]) {
+                el.setAttribute('fill', originalSvgStyles[i].fill);
+                el.setAttribute('stroke', originalSvgStyles[i].stroke);
+            }
+        });
+        
+        hpCircles.forEach((circle, i) => {
+            if (originalCircleStyles[i]) {
+                circle.setAttribute('fill', originalCircleStyles[i].fill);
+                circle.setAttribute('stroke', originalCircleStyles[i].stroke);
+            }
+        });
+        
+        sections.forEach((el, i) => {
+            if (originalSectionStyles[i]) {
+                el.style.backgroundColor = originalSectionStyles[i].bg;
+                el.style.border = originalSectionStyles[i].border;
+            }
+        });
+        
+        h2s.forEach((el, i) => {
+            if (originalH2Styles[i]) {
+                el.style.backgroundColor = originalH2Styles[i].bg;
+                el.style.color = originalH2Styles[i].color;
+            }
+        });
+        
+        h1s.forEach((el, i) => {
+            if (originalH1Styles[i]) {
+                el.style.backgroundColor = originalH1Styles[i].bg;
+                el.style.color = originalH1Styles[i].color;
+            }
+        });
+        
+        attrBoxes.forEach((el, i) => {
+            if (originalAttrStyles[i]) {
+                el.style.backgroundColor = originalAttrStyles[i].bg;
+            }
+        });
+        
+        attrValues.forEach(el => el.style.color = '');
+        attrLabels.forEach(el => el.style.color = '');
+        fieldLabels.forEach(el => el.style.color = '');
+        inputs.forEach(el => el.style.color = '');
+        tables.forEach(el => el.style.backgroundColor = '');
+        ths.forEach(el => { el.style.backgroundColor = ''; el.style.color = ''; });
+        tds.forEach(el => el.style.color = '');
         
         // Si estábamos en Barracones, restaurar la vista
         if (wasHidden) {
@@ -98405,35 +98715,86 @@ function generarPuntosVidaParaFicha(str, estadoFisico) {
     }
     
     let indexGlobal = 0;
+    const radio = 6; // Radio de los círculos
+    const espaciado = 14; // Espaciado entre círculos
     
-    // Función helper para crear cuadrados HP con estado de daño
-    const crearCuadrados = (cantidad) => {
-        let html = '';
-        for (let i = 0; i < cantidad; i++) {
-            const checked = dañados.has(indexGlobal) ? ' checked' : '';
-            html += `<div class="hp-box${checked}"></div>`;
-            indexGlobal++;
-        }
-        return html;
+    // Definición de regiones con coordenadas SVG
+    // {x, y} = esquina superior izquierda, cols = columnas máximas
+    const regiones = {
+        cabeza:     { x: 82, y: 18, cols: 3, contenedor: 'hp-head' },
+        brazoIzq:   { x: 15, y: 100, cols: 2, contenedor: 'hp-arm-l' },
+        torso:      { x: 70, y: 103, cols: 5, contenedor: 'hp-torso' },
+        brazoDer:   { x: 163, y: 100, cols: 2, contenedor: 'hp-arm-r' },
+        piernaIzq:  { x: 52, y: 200, cols: 2, contenedor: 'hp-leg-l' },
+        piernaDer:  { x: 120, y: 200, cols: 2, contenedor: 'hp-leg-r' }
     };
     
-    // Rellenar cada localización EN EL MISMO ORDEN QUE BARRACONES:
+    // Función para crear círculos SVG en una región
+    const crearCirculosSVG = (cantidad, region) => {
+        const contenedor = document.getElementById(region.contenedor);
+        if (!contenedor) return;
+        
+        // Limpiar contenedor
+        contenedor.innerHTML = '';
+        
+        // Calcular filas completas y resto
+        const filasCompletas = Math.floor(cantidad / region.cols);
+        const resto = cantidad % region.cols;
+        
+        let idx = 0;
+        
+        // Generar filas completas
+        for (let fila = 0; fila < filasCompletas; fila++) {
+            for (let col = 0; col < region.cols; col++) {
+                const cx = region.x + (col * espaciado) + radio;
+                const cy = region.y + (fila * espaciado) + radio;
+                
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', cx);
+                circle.setAttribute('cy', cy);
+                circle.setAttribute('r', radio);
+                circle.setAttribute('fill', dañados.has(indexGlobal) ? '#4a9eff' : '#1a1a1a');
+                circle.setAttribute('stroke', '#888');
+                circle.setAttribute('stroke-width', '1.5');
+                circle.setAttribute('class', dañados.has(indexGlobal) ? 'hp-circle checked' : 'hp-circle');
+                
+                contenedor.appendChild(circle);
+                indexGlobal++;
+            }
+        }
+        
+        // Generar última fila centrada si hay resto
+        if (resto > 0) {
+            const offsetX = ((region.cols - resto) * espaciado) / 2;
+            for (let col = 0; col < resto; col++) {
+                const cx = region.x + offsetX + (col * espaciado) + radio;
+                const cy = region.y + (filasCompletas * espaciado) + radio;
+                
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', cx);
+                circle.setAttribute('cy', cy);
+                circle.setAttribute('r', radio);
+                circle.setAttribute('fill', dañados.has(indexGlobal) ? '#4a9eff' : '#1a1a1a');
+                circle.setAttribute('stroke', '#888');
+                circle.setAttribute('stroke-width', '1.5');
+                circle.setAttribute('class', dañados.has(indexGlobal) ? 'hp-circle checked' : 'hp-circle');
+                
+                contenedor.appendChild(circle);
+                indexGlobal++;
+            }
+        }
+    };
+    
+    // Generar círculos EN EL MISMO ORDEN QUE BARRACONES:
     // CABEZA → B.IZQ → TORSO → B.DER → P.IZQ → P.DER
-    const hpHead = document.getElementById('hp-head');
-    const hpArmL = document.getElementById('hp-arm-l');
-    const hpTorso = document.getElementById('hp-torso');
-    const hpArmR = document.getElementById('hp-arm-r');
-    const hpLegL = document.getElementById('hp-leg-l');
-    const hpLegR = document.getElementById('hp-leg-r');
+    crearCirculosSVG(distribucion.cabeza, regiones.cabeza);
+    crearCirculosSVG(distribucion.brazoIzq, regiones.brazoIzq);
+    crearCirculosSVG(distribucion.torso, regiones.torso);
+    crearCirculosSVG(distribucion.brazoDer, regiones.brazoDer);
+    crearCirculosSVG(distribucion.piernaIzq, regiones.piernaIzq);
+    crearCirculosSVG(distribucion.piernaDer, regiones.piernaDer);
     
-    if (hpHead) hpHead.innerHTML = crearCuadrados(distribucion.cabeza);
-    if (hpArmL) hpArmL.innerHTML = crearCuadrados(distribucion.brazoIzq);
-    if (hpTorso) hpTorso.innerHTML = crearCuadrados(distribucion.torso);
-    if (hpArmR) hpArmR.innerHTML = crearCuadrados(distribucion.brazoDer);
-    if (hpLegL) hpLegL.innerHTML = crearCuadrados(distribucion.piernaIzq);
-    if (hpLegR) hpLegR.innerHTML = crearCuadrados(distribucion.piernaDer);
-    
-    console.log(`💔 HP generados: ${indexGlobal} cuadrados, ${dañados.size} dañados`);
+    console.log(`💔 HP generados: ${indexGlobal} círculos SVG, ${dañados.size} dañados`);
 }
 
 /**
