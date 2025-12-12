@@ -367709,10 +367709,14 @@ function saveCurrentForce() {
 
 function loadForce(forceId) {
     const forces = getSavedForces();
-    const force = forces.find(f => f.id === forceId);
+    // Comparar como strings para evitar problemas de tipo (número vs string)
+    const force = forces.find(f => String(f.id) === String(forceId));
+    
+    console.log('🔍 loadForce - buscando ID:', forceId, 'tipo:', typeof forceId);
+    console.log('🔍 IDs disponibles:', forces.map(f => ({ id: f.id, tipo: typeof f.id, name: f.name })));
     
     if (!force) {
-        alert('Fuerza no encontrada');
+        alert('Fuerza no encontrada. ID buscado: ' + forceId);
         return;
     }
     
@@ -367753,7 +367757,8 @@ function loadForce(forceId) {
 
 function deleteForce(forceId) {
     const forces = getSavedForces();
-    const force = forces.find(f => f.id === forceId);
+    // Comparar como strings para evitar problemas de tipo
+    const force = forces.find(f => String(f.id) === String(forceId));
     
     if (!force) return;
     
@@ -367761,7 +367766,7 @@ function deleteForce(forceId) {
         return;
     }
     
-    const updatedForces = forces.filter(f => f.id !== forceId);
+    const updatedForces = forces.filter(f => String(f.id) !== String(forceId));
     saveForcesToStorage(updatedForces);
     
     renderSavedForcesList();
@@ -368024,6 +368029,16 @@ function descargarFuerzasDeNube() {
                 return;
             }
             
+            // Asegurar que todas las fuerzas de la nube tienen ID válido (como string)
+            cloudForces.forEach(cloudForce => {
+                if (!cloudForce.id) {
+                    cloudForce.id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+                } else {
+                    // Convertir ID existente a string para consistencia
+                    cloudForce.id = String(cloudForce.id);
+                }
+            });
+            
             // Preguntar modo de importación
             const localForces = getSavedForces();
             let finalForces;
@@ -368046,7 +368061,6 @@ function descargarFuerzasDeNube() {
                             f.name.toLowerCase() === cloudForce.name.toLowerCase()
                         );
                         if (!exists) {
-                            cloudForce.id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
                             finalForces.push(cloudForce);
                         }
                     });
