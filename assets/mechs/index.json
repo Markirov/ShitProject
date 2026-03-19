@@ -5,22 +5,22 @@
   },
   {
     "name": "Grasshopper GHR-5H ELH",
-    "file": "assets\mechs\Grasshopper GHR-5H ELH.ssw"
+    "file": "assets/mechs/Grasshopper GHR-5H ELH.ssw"
   }
   {
     "name": "Catapult CPLT-C1 Salazar",
-    "file": "assets\mechs\Catapult CPLT-C1 Salazar.ssw"
+    "file": "assets/mechs/Catapult CPLT-C1 Salazar.ssw"
   }
   {
     "name": "Dervish DV-6M ELH",
-    "file": "assets\mechs\Dervish DV-6M ELH.ssw"
+    "file": "assets/mechs/Dervish DV-6M ELH.ssw"
   }
   {
     "name": "Thunderbolt TDR-5SE ELH",
-    "file": "assets\mechs\Thunderbolt TDR-5SE ELH.ssw"
+    "file": "assets/mechs/Thunderbolt TDR-5SE ELH.ssw"
   }
   {
     "name": "Wolverine WVR-6M ELH",
-    "file": "assets\mechs\Wolverine WVR-6M ELH.ssw"
+    "file": "assets/mechs/Wolverine WVR-6M ELH.ssw"
   }
 ]
