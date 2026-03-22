@@ -6,5 +6,9 @@
   {
     "name": "Armored Personnel Carrier (Hover)",
     "file": "assets/vehicles/Armored_Personnel_Carrier_Hover_.saw"
+  },
+  {
+    "name": "Schrek PPC Carrier",
+    "file": "assets/vehicles/Schrek_PPC_Carrier.saw"
   }
 ]
